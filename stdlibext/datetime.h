@@ -54,14 +54,23 @@ namespace stdext
     class datetime
     {
     public:
-
-        typedef __int64 Value;
-        typedef __int64 DatePartValue;
-
+        typedef int datepart_t;
+        struct datetime_data
+        {
+            datepart_t sec;    // seconds after the minute - [0, 60] including leap second
+            datepart_t min;    // minutes after the hour - [0, 59]
+            datepart_t hour;   // hours since midnight - [0, 23]
+            datepart_t day;    // day of the month - [1, 31]
+            datepart_t month;  // months since January - [0, 11]
+            datepart_t year;   // year [0, 9999)
+        };
+    public:
         /*
          * Default constructor initializes the object with the current date and time
          */
         datetime();
+
+        datetime(const struct tm &t);
 
         /*
          * Initializes the object with the values taken from the formatted string like:
@@ -85,7 +94,7 @@ namespace stdext
          */
         datetime& operator =(const datetime& dt);
 
-        enum Format
+        enum class Format
         {
             INVALID = 0,
             DATETIME,
@@ -94,7 +103,7 @@ namespace stdext
         };
 
 
-        enum TimeUnit
+        enum class TimeUnit
         {
             SECONDS,
             MINUTES,
@@ -104,7 +113,7 @@ namespace stdext
             YEARS,
         };
 
-        enum DatePart
+        enum class datepart
         {
             NONE = -1,
             SECOND = 0,
@@ -112,8 +121,6 @@ namespace stdext
             HOUR,
             TIME_HM,
             TIME_HMS,
-            DATE_TIME_HM,
-            DATE_TIME_HMS,
             DATE_ONLY,
             DAY_OF_WEEK,
             DAY_OF_MONTH,
@@ -129,34 +136,36 @@ namespace stdext
         /*
          * Returns the part of date
          *
-         * E.g. if the initial date is 01/01/1973 00:00:00
-         * GetDatePart(YEAR) returns 1973
-         * GetDatePart(MONTH_OF_YEAR) returns 1
-         * GetDatePart(DAY_OF_MONTH) returns 1
+         * E.g. if the initial date is "10 Jan 1973"
+         * get_datepart(YEAR) returns 1973
+         * get_datepart(MONTH_OF_YEAR) returns 1
+         * get_datepart(DAY_OF_MONTH) returns 10
          */
-        DatePartValue GetDatePart(const DatePart part) const;
+        datepart_t get_datepart(const datepart part) const;
 
-        int GetYear()  const { return GetDatePart(DatePart::YEAR); }
-        int GetMonth() const { return GetDatePart(DatePart::MONTH_OF_YEAR); }
-        int GetDay()   const { return GetDatePart(DatePart::DAY_OF_MONTH); }
+        datepart_t year()        const { return get_datepart(datepart::YEAR); }
+        datepart_t month()       const { return get_datepart(datepart::MONTH_OF_YEAR); }
+        datepart_t quarter()     const { return datetime::get_quarter_of_month(month()); }
+        datepart_t day()         const { return get_datepart(datepart::DAY_OF_MONTH); }
+        datepart_t day_of_week() const { return datetime::day_of_week(*this); };
+        datepart_t hour()        const { return get_datepart(datepart::HOUR); }
+        datepart_t minute()      const { return get_datepart(datepart::MINUTE); }
+        datepart_t second()      const { return get_datepart(datepart::SECOND); }
 
         /*
          * Returns the number of the required date/time unit since the epoch (currently is 00:00:00 November 17, 1858)
          * If the format is TIME, returns the 0 for all date units.
          *
          * E.g. if the initial date is 01/01/1973 00:00:00
-         * getValue( HOURS ) returns the number of hours since the epoch
-         * getValue( SECONDS ) returns the number of seconds since the epoch
+         * get_value(HOURS) returns the number of hours since the epoch
+         * get_value(SECONDS) returns the number of seconds since the epoch
          */
-        Value getValue(TimeUnit unit);
+        datepart_t get_value(TimeUnit unit);
 
         /*
-         * Returns one of the datetime formats, see the Format enumeration
+         * Returns internal format, see the enumeration
          */
-        Format getFormat()
-        {
-            return m_format;
-        }
+        Format format() { return m_format; }
 
         /*
          * Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
@@ -173,25 +182,23 @@ namespace stdext
          * Returns the modified Julian date (the number of days since 17/11/1858)
          * of the date specified by the day/month/year
          */
-        static Value getMJDFromDate(short day, short month, short year);
+        static datepart_t getMJDFromDate(datepart_t day, datepart_t month, datepart_t year);
 
         /*
          * Returns the date structure given the number of days since 17/11/1858
-         * Note that the tm_year member already contains the right year (not the year minus 1900),
-         * and the tm_mon member starts with 1, not 0.
          */
-        static struct tm getDateFromMJD(Value days);
+        static datetime getDateFromMJD(datepart_t days);
 
         /*
          * Returns the quarter number given the month number
          */
-        static short getQuarterFromMonth(short month);
+        static datepart_t get_quarter_of_month(datepart_t month);
 
         /*
          * Returns the day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
          * of the date specified by the day/month/year
          */
-        static short getDayOfWeek(short day, short month, short year);
+        static datepart_t day_of_week(const datetime& dt);
 
         /*
          * Returns the absolute value of the difference between two dates
@@ -199,32 +206,31 @@ namespace stdext
          * Warning: only DAYS, MONTHS and YEARS units accepted
          * otherwise returns 0
          */
-        static Value getDateDiff
-                (
-                        short day1, short month1, short year1,
-                        short day2, short month2, short year2,
-                        TimeUnit unit
-                        );
+        static datepart_t diff(
+            datepart_t day1, datepart_t month1, datepart_t year1,
+            datepart_t day2, datepart_t month2, datepart_t year2,
+            TimeUnit unit);
 
         /*
          * Returns true if the specified year is a leap year
          */
-        static bool isLeapYear(short year)
-        {
-            return ( (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0)) );
-        }
+        bool is_leap_year();
+        static bool is_leap_year(const datetime& dt);
+        static bool is_leap_year(const datepart_t year);
 
         /*
          * Returns the number of days in the specified month/year
          */
-        static short getDaysInMonth(short month, short year);
+        static datepart_t getDaysInMonth(datepart_t month, datepart_t year);
 
         /*
          * Returns the number of days in the specified month/year
          */
-        static short getMonthNumberByName(const char *name);
+        static datepart_t getMonthNumberByName(const char* name);
 
     private:
+        void init(const struct tm &t);
+        void init(const datetime& dt);
 
         /*
          * Common initializer
@@ -232,7 +238,7 @@ namespace stdext
         void parse(const char* str);
 
         /*
-         * Validate the stored (in m_tm) date/time value
+         * Validate the stored (in m_data) date/time value
          * If not valid, sets the format to INVALID
          */
         bool isValid();
@@ -240,19 +246,9 @@ namespace stdext
         /*
          * Truncate the fractional part of the floating point value
          */
-        inline static Value trunc(double dv)
-        {
-            return (Value) dv;
-        }
-
-        /*
-         * m_tm structure is not usable for date/time system functions
-         * internal use only
-         * Note that the tm_year member already contains the right year (not the year minus 1900),
-         * and the tm_mon member starts with 1, not 0.
-         */
-        struct tm m_tm;
-
+        inline static datepart_t trunc(double dv) { return (datepart_t)dv; }
+    private:
+        struct datetime_data m_data;
         Format m_format;
     };
 }
