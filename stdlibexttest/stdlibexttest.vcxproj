@@ -167,6 +167,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="datetimetest.cpp" />
+    <ClCompile Include="strutilstest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\stdlibext\stdlibext.vcxproj">

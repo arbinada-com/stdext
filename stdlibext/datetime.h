@@ -55,201 +55,199 @@ namespace stdext
     {
     public:
         typedef int datepart_t;
-        struct datetime_data
-        {
-            datepart_t sec;    // seconds after the minute - [0, 60] including leap second
-            datepart_t min;    // minutes after the hour - [0, 59]
-            datepart_t hour;   // hours since midnight - [0, 23]
-            datepart_t day;    // day of the month - [1, 31]
-            datepart_t month;  // months since January - [0, 11]
-            datepart_t year;   // year [0, 9999)
-        };
+        static const datepart_t epoch_year  = 1858;
+        static const datepart_t epoch_month = 11;
+        static const datepart_t epoch_day   = 17;
     public:
         /*
-         * Default constructor initializes the object with the current date and time
+         * Default constructor initializes the object with the epoch date (November 17, 1858 at 00:00:00)
          */
         datetime();
 
         datetime(const struct tm &t);
 
+        datetime(const datepart_t year, const datepart_t month, const datepart_t day,
+            const datepart_t hour, const datepart_t minute, const datepart_t second);
+
         /*
-         * Initializes the object with the values taken from the formatted string like:
-         * "YYYY-MM-DD hh:mm:ss"
-         * "YYYY-MM-DD hh:mm"
-         * "YYYY-MM-DD"
-         * "hh:mm:ss"
-         * "hh:mm"
-         * where number of the seconds is 0 by default
+         Initializes the object with the values taken from the ISO-formatted string like:
+            "YYYY-MM-DD hh:mm:ss"
+            "YYYY-MM-DDThh:mm:ss"
+            "YYYY-MM-DD hh:mm"
+            "YYYY-MM-DD"
+            "hh:mm:ss"
+            "hh:mm"
+         Unspecified time values will be set to 0
+         Unspecified date value will be set to current one
          */
         datetime(const char* str);
         datetime(const std::string& str);
+        datetime(const wchar_t* str);
+        datetime(const std::wstring& str);
 
         /*
-         * Copy constructor
+         Copy constructor
          */
         datetime(const datetime& dt);
 
         /*
-         * Assignment operator
+         Assignment operator
          */
         datetime& operator =(const datetime& dt);
 
-        enum class Format
-        {
-            INVALID = 0,
-            DATETIME,
-            DATE,
-            TIME
-        };
+        /*
+         Move constructor
+         */
+        datetime(datetime&& dt) noexcept;
 
+        /*
+         Move assignment operator
+         */
+        datetime& operator =(datetime&& dt) noexcept;
 
-        enum class TimeUnit
+        enum class datetime_unit
         {
-            SECONDS,
-            MINUTES,
-            HOURS,
-            DAYS,
-            MONTHS,
-            YEARS,
+            seconds,
+            minutes,
+            hours,
+            days,
+            months,
+            years
         };
 
         enum class datepart
         {
-            NONE = -1,
-            SECOND = 0,
-            MINUTE,
-            HOUR,
-            TIME_HM,
-            TIME_HMS,
-            DATE_ONLY,
-            DAY_OF_WEEK,
-            DAY_OF_MONTH,
-            DAY_OF_YEAR,
-            MONTH_OF_YEAR,
-            MONTH_AND_DAY,
-            QUARTER,
-            YEAR,
-            YEAR_AND_MONTH,
-            YEAR_AND_QUARTER,
+            second,
+            minute,
+            hour,
+            day_of_week,
+            day_of_month,
+            day_of_year,
+            month,
+            quarter,
+            year
         };
 
         /*
          * Returns the part of date
          *
          * E.g. if the initial date is "10 Jan 1973"
-         * get_datepart(YEAR) returns 1973
-         * get_datepart(MONTH_OF_YEAR) returns 1
-         * get_datepart(DAY_OF_MONTH) returns 10
+         * get_datepart(year) returns 1973
+         * get_datepart(month) returns 1
+         * get_datepart(day_of_month) returns 10
          */
-        datepart_t get_datepart(const datepart part) const;
+        datepart_t get_datepart(const datepart part) const noexcept(false);
 
-        datepart_t year()        const { return get_datepart(datepart::YEAR); }
-        datepart_t month()       const { return get_datepart(datepart::MONTH_OF_YEAR); }
+        datepart_t year()        const { return get_datepart(datepart::year); }
+        datepart_t month()       const { return get_datepart(datepart::month); }
         datepart_t quarter()     const { return datetime::get_quarter_of_month(month()); }
-        datepart_t day()         const { return get_datepart(datepart::DAY_OF_MONTH); }
+        datepart_t day()         const { return get_datepart(datepart::day_of_month); }
         datepart_t day_of_week() const { return datetime::day_of_week(*this); };
-        datepart_t hour()        const { return get_datepart(datepart::HOUR); }
-        datepart_t minute()      const { return get_datepart(datepart::MINUTE); }
-        datepart_t second()      const { return get_datepart(datepart::SECOND); }
+        datepart_t hour()        const { return get_datepart(datepart::hour); }
+        datepart_t minute()      const { return get_datepart(datepart::minute); }
+        datepart_t second()      const { return get_datepart(datepart::second); }
 
         /*
-         * Returns the number of the required date/time unit since the epoch (currently is 00:00:00 November 17, 1858)
-         * If the format is TIME, returns the 0 for all date units.
-         *
-         * E.g. if the initial date is 01/01/1973 00:00:00
-         * get_value(HOURS) returns the number of hours since the epoch
-         * get_value(SECONDS) returns the number of seconds since the epoch
+         Returns the number of the required date/time unit since the epoch
+         If the format is TIME, returns the 0 for all date units.
+         By example, the initial date is 01/01/1973 00:00:00 then
+         get_value(hours) returns the number of hours since the epoch
+         get_value(seconds) returns the number of seconds since the epoch
          */
-        datepart_t get_value(TimeUnit unit);
+        datepart_t get_value(datetime_unit unit) noexcept(false);
 
         /*
-         * Returns internal format, see the enumeration
-         */
-        Format format() { return m_format; }
-
-        /*
-         * Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
+         Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
          */
         std::string to_str();
 
-        /*
-         * Increments the date/time value. The offset is expressed in the time units
-         * specified in timeUnit.
+        /* 
+         Increments the date/time value. 
+         The offset is specified in the date/time units
          */
-        void increment(int offset, TimeUnit timeUnit);
+        void increment(int offset, datetime_unit unit);
 
         /*
-         * Returns the modified Julian date (the number of days since 17/11/1858)
-         * of the date specified by the day/month/year
+         Returns the modified Julian date (the number of days since 17/11/1858)
+         of the date specified by the day/month/year
          */
         static datepart_t getMJDFromDate(datepart_t day, datepart_t month, datepart_t year);
 
         /*
-         * Returns the date structure given the number of days since 17/11/1858
+         Returns the date structure given the number of days since 17/11/1858
          */
         static datetime getDateFromMJD(datepart_t days);
 
         /*
-         * Returns the quarter number given the month number
+         Returns the quarter number given the month number
          */
         static datepart_t get_quarter_of_month(datepart_t month);
 
         /*
-         * Returns the day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
-         * of the date specified by the day/month/year
+         Returns the day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
+         of the date specified by the day/month/year
          */
         static datepart_t day_of_week(const datetime& dt);
 
         /*
-         * Returns the absolute value of the difference between two dates
-         * specified by day/month/year in the specified time units
-         * Warning: only DAYS, MONTHS and YEARS units accepted
-         * otherwise returns 0
+         Returns the absolute value between two dates in specified time units
+         Warning: only days, months and years units are accepted
+         otherwise returns 0
          */
         static datepart_t diff(
             datepart_t day1, datepart_t month1, datepart_t year1,
             datepart_t day2, datepart_t month2, datepart_t year2,
-            TimeUnit unit);
+            datetime_unit unit);
 
         /*
-         * Returns true if the specified year is a leap year
+         Returns true if the specified year is a leap year
          */
         bool is_leap_year();
         static bool is_leap_year(const datetime& dt);
         static bool is_leap_year(const datepart_t year);
 
         /*
-         * Returns the number of days in the specified month/year
+         Returns the number of days in the specified month/year
          */
-        static datepart_t getDaysInMonth(datepart_t month, datepart_t year);
+        static datepart_t days_in_month(datepart_t month, datepart_t year);
 
         /*
-         * Returns the number of days in the specified month/year
-         */
-        static datepart_t getMonthNumberByName(const char* name);
-
+         Returns current date and time
+        */
+        static datetime now();
     private:
+        /*
+         Common initializers
+         */
         void init(const struct tm &t);
         void init(const datetime& dt);
+        void parse(const char* str) noexcept(false);
 
         /*
-         * Common initializer
+         Validates the stored (m_data) date/time value
          */
-        void parse(const char* str);
+        bool is_valid();
 
         /*
-         * Validate the stored (in m_data) date/time value
-         * If not valid, sets the format to INVALID
-         */
-        bool isValid();
-
-        /*
-         * Truncate the fractional part of the floating point value
+         Truncate the fractional part of the floating point value
          */
         inline static datepart_t trunc(double dv) { return (datepart_t)dv; }
     private:
-        struct datetime_data m_data;
-        Format m_format;
+        typedef struct datetime_data
+        {
+            datepart_t sec;    // seconds after the minute - [0, 59] including leap second
+            datepart_t min;    // minutes after the hour - [0, 59]
+            datepart_t hour;   // hours since midnight - [0, 23]
+            datepart_t day;    // day of the month - [1, 31]
+            datepart_t month;  // months since January - [0, 11]
+            datepart_t year;   // year [0, 9999)
+            datetime_data()
+            {
+                sec = min = hour = day = month = year = 0;
+            }
+        } datetime_data_t;
+
+        datetime_data_t m_data;
     };
 }
 

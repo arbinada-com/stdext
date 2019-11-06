@@ -16,33 +16,11 @@
 #include <cmath>
 #include <cwchar>
 #include "datetime.h"
+#include "strutils.h"
 
 using namespace std;
 using namespace stdext;
 
-string str_format(const std::string fmt, ...)
-{
-    size_t size = fmt.size() * 2;
-    string str;
-    va_list ap;
-    while (true)
-    {
-        str.resize(size);
-        va_start(ap, fmt);
-        int n = vsnprintf_s((char*)str.data(), size, size - 1, fmt.c_str(), ap);
-        va_end(ap);
-        if (n > -1 && (size_t)n < size)
-        {
-            str.resize(n);
-            return str;
-        }
-        if (n > -1)
-            size = n + 1;
-        else
-            size *= 2;
-    }
-    return str;
-}
 
 /**
  * datetime_exception class
@@ -54,14 +32,12 @@ datetime_exception::datetime_exception(const datetime_exception::kind kind)
 datetime_exception::datetime_exception(const datetime_exception::kind kind, const char* value)
     : m_kind(kind)
 {
-    m_message = str_format(msg_by_kind(kind), value);
+    m_message = strutils::format(msg_by_kind(kind), value);
 }
 
 datetime_exception::datetime_exception(const datetime_exception::kind kind, const int value)
     : m_kind(kind)
-{
-
-}
+{ }
 
 const char* datetime_exception::what() const throw()
 {
@@ -94,18 +70,34 @@ std::string datetime_exception::msg_by_kind(const datetime_exception::kind kind)
 /**
  * datetime class
  */
-datetime::datetime() 
-	: m_format(Format::DATETIME)
+datetime::datetime()
+{ 
+    m_data.sec = 0;
+    m_data.min = 0;
+    m_data.hour = 0;
+    m_data.day = epoch_day;
+    m_data.month = epoch_month;
+    m_data.year = epoch_year;
+}
+
+datetime::datetime(const datepart_t year, const datepart_t month, const datepart_t day,
+                   const datepart_t hour, const datepart_t minute, const datepart_t second)
 {
-	time_t cur_time;
-    time(&cur_time);
-    struct tm t;
-    localtime_s(&t, &cur_time);
-    init(t);
+    m_data.sec = second;
+    m_data.min = minute;
+    m_data.hour = hour;
+    m_data.day = day;
+    m_data.month = month;
+    m_data.year = year;
+    if (!is_valid())
+    {
+        string s = strutils::format("Year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d",
+            year, month, day, hour, minute, second);
+        throw datetime_exception(datetime_exception::kind::invalid_datetime_string, s.c_str());
+    }
 }
 
 datetime::datetime(const struct tm &t)
-    : m_format(Format::DATETIME)
 {
     init(t);
 }
@@ -114,6 +106,15 @@ datetime::datetime(const char* str)
 {
 	parse(str);
 }
+
+datetime::datetime(const std::wstring& str)
+{
+    parse(strutils::to_string(str).c_str());
+}
+
+datetime::datetime(const wchar_t* str)
+    : datetime(wstring(str))
+{ }
 
 
 datetime::datetime(const std::string& str)
@@ -132,6 +133,16 @@ datetime& datetime::operator =(const datetime& dt)
     return *this;
 }
 
+datetime::datetime(datetime&& dt) noexcept
+    : m_data(std::move(dt.m_data))
+{ }
+
+datetime& datetime::operator =(datetime&& dt) noexcept
+{
+    m_data = std::move(dt.m_data);
+    return *this;
+}
+
 void datetime::init(const struct tm &t)
 {
     m_data.sec = t.tm_sec;
@@ -145,57 +156,50 @@ void datetime::init(const struct tm &t)
 void datetime::init(const datetime& dt)
 {
     m_data = dt.m_data;
-    m_format = dt.m_format;
 }
 
 
+datetime datetime::now()
+{
+    time_t cur_time;
+    time(&cur_time);
+    struct tm t;
+    localtime_s(&t, &cur_time);
+    return datetime(t);
+}
+
 void datetime::parse(const char* str)
 {
-	m_format = Format::INVALID;
     datepart_t year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
-	char month_name[32];
+    int npos = EOF;
 	if (strchr(str, '-') != NULL)
 	{
-		// try to read date and time
-		int npos = sscanf_s(str, "%2d-%3s-%4d %2d:%2d:%2d",
-                        &day, month_name, &year, &hour, &minute, &second);
-		if ((npos < 3) || (npos == EOF) || (npos == 4)
-			|| (month = getMonthNumberByName(month_name)) == 0)
-        {
-			npos = sscanf_s(str, "%4d-%2d-%2d %2d:%2d:%2d",
-                            &year, &month, &day, &hour, &minute, &second);
-			if ((npos < 3) || (npos == EOF) || (npos == 4))
-			{
-                throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
-			}
-		}
-		if (npos == 3)
-			m_format = Format::DATE;
-		else
-			m_format = Format::DATETIME;
-	}
+        // try to read date and time
+        if (strchr(str, 'T') != NULL)
+            npos = sscanf_s(str, "%4d-%2d-%2dT%2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
+        else
+			npos = sscanf_s(str, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &minute, &second);
+        if (npos < 3 || npos == EOF || npos == 4)
+            throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
+    }
 	else
 	{
 		// try to read time only
-		int npos = sscanf_s(str, "%2d:%2d:%2d", &hour, &minute, &second);
-		if ((npos < 2) || (npos == EOF))
-		{
+		npos = sscanf_s(str, "%2d:%2d:%2d", &hour, &minute, &second);
+		if (npos < 2 || npos == EOF)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
-		}
-		else
-		{
-			m_format = Format::TIME;
-		}
-	}
-
+        datetime dt = datetime::now();
+        year = dt.year();
+        month = dt.month();
+        day = dt.day();
+    }
 	m_data.year = year;
 	m_data.month = month;
 	m_data.day = day;
 	m_data.hour = hour;
 	m_data.min = minute;
 	m_data.sec = second;
-
-	if (!isValid())
+	if (!is_valid())
         throw datetime_exception(datetime_exception::kind::invalid_datetime_value, str);
 }
 
@@ -213,56 +217,24 @@ datetime::datepart_t datetime::get_datepart(const datepart part) const
 {
 	switch (part)
 	{
-    case datepart::SECOND:
+    case datepart::second:
 		return m_data.sec;
-	case datepart::MINUTE:
+	case datepart::minute:
 		return m_data.min;
-	case datepart::HOUR:
+	case datepart::hour:
 		return m_data.hour;
-	case datepart::TIME_HM:
-		return m_data.hour * 100 + m_data.min;
-	case datepart::TIME_HMS:
-		return m_data.hour * 10000 + m_data.min * 100 + m_data.sec;
-	case datepart::DATE_ONLY:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
-		return m_data.year * 10000 + m_data.month * 100 + m_data.day;
-	case datepart::DAY_OF_WEEK:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
+	case datepart::day_of_week:
 		return day_of_week(*this);
-	case datepart::DAY_OF_MONTH:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
+	case datepart::day_of_month:
 		return m_data.day;
-	case datepart::DAY_OF_YEAR:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
-		return diff(m_data.day, m_data.month, m_data.year, 1, 1, m_data.year, TimeUnit::DAYS) + 1;
-	case datepart::MONTH_OF_YEAR:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
+	case datepart::day_of_year:
+		return diff(m_data.day, m_data.month, m_data.year, 1, 1, m_data.year, datetime_unit::days) + 1;
+	case datepart::month:
 		return m_data.month;
-	case datepart::MONTH_AND_DAY:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
-		return m_data.month * 100 + m_data.day;
-	case datepart::QUARTER:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
+	case datepart::quarter:
 		return get_quarter_of_month(m_data.month);
-	case datepart::YEAR:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
+	case datepart::year:
 		return m_data.year;
-	case datepart::YEAR_AND_MONTH:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
-		return m_data.year * 100 + m_data.month;
-	case datepart::YEAR_AND_QUARTER:
-		if (m_format == Format::TIME)
-            throw datetime_exception(datetime_exception::kind::invalid_date_part_for_time_format, (int)part);
-		return m_data.year * 100 + get_quarter_of_month(m_data.month);
 	default:
         throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)part);
 	}
@@ -275,34 +247,30 @@ datetime::datepart_t datetime::get_quarter_of_month(datepart_t month)
 }
 
 
-datetime::datepart_t datetime::get_value(TimeUnit unit)
+datetime::datepart_t datetime::get_value(datetime_unit unit)
 {
-    datepart_t days = (m_format != Format::TIME) ? getMJDFromDate(m_data.day, m_data.month, m_data.year) : 0;
+    datepart_t days = getMJDFromDate(m_data.day, m_data.month, m_data.year);
 	switch (unit)
 	{
-	case TimeUnit::SECONDS:
+	case datetime_unit::seconds:
 		return (days * 3600 * 24) + (m_data.hour * 3600) + (m_data.min * 60) + m_data.sec;
-	case TimeUnit::MINUTES:
+	case datetime_unit::minutes:
 		return (days * 60 * 24) + (m_data.hour * 60) + m_data.min;
-	case TimeUnit::HOURS:
+	case datetime_unit::hours:
 		return (days * 24) + m_data.hour;
-	case TimeUnit::DAYS:
+	case datetime_unit::days:
 		return days;
-	case TimeUnit::MONTHS:
+	case datetime_unit::months:
 	{
-		if (m_format == Format::TIME)
-			return 0;
-		// is the same as the difference in months between this date and 17/11/1858
+		// is the same as the difference in month between this date and 17/11/1858
 		return diff(m_data.day, m_data.month, m_data.year,
-                            17, 11, 1858, TimeUnit::MONTHS);
+                    17, 11, 1858, datetime_unit::months);
 	}
-	case TimeUnit::YEARS:
+	case datetime_unit::years:
 	{
-		if (m_format == Format::TIME)
-			return 0;
 		// is the same as the difference in years between this date and 17/11/1858
 		return diff(m_data.day, m_data.month, m_data.year,
-                            17, 11, 1858, TimeUnit::YEARS);
+                    17, 11, 1858, datetime_unit::years);
 	}
 	default:
         throw datetime_exception(datetime_exception::kind::invalid_time_unit, (int)unit);
@@ -310,67 +278,55 @@ datetime::datepart_t datetime::get_value(TimeUnit unit)
 }
 
 
-void datetime::increment(int offset, TimeUnit unit)
+void datetime::increment(int offset, datetime_unit unit)
 {
-    datepart_t seconds = get_value(TimeUnit::SECONDS);
+    datepart_t seconds = get_value(datetime_unit::seconds);
 	switch (unit)
 	{
-	case TimeUnit::SECONDS:
+	case datetime_unit::seconds:
 		seconds += offset;
 		break;
-	case TimeUnit::MINUTES:
+	case datetime_unit::minutes:
 		seconds += offset * SECONDS_IN_MINUTE;
 		break;
-	case TimeUnit::HOURS:
+	case datetime_unit::hours:
 		seconds += offset * SECONDS_IN_HOUR;
 		break;
-	case TimeUnit::DAYS:
-		if (m_format != Format::TIME)
-		{
-			seconds += offset * SECONDS_IN_DAY;
-		}
+	case datetime_unit::days:
+		seconds += offset * SECONDS_IN_DAY;
 		break;
-	case TimeUnit::MONTHS:
-		if (m_format != Format::TIME)
-		{
-			int months = m_data.month + offset;
-			if (months > 1)
-			{
-				m_data.year += months / MONTHS_IN_YEAR;
-				m_data.month = months % MONTHS_IN_YEAR;
-			}
-			else if (months == 0)
-			{
-				m_data.year--;
-				m_data.month = MONTHS_IN_YEAR;
-			}
-			else  // months < 0
-			{
-				m_data.year -= abs(months) / MONTHS_IN_YEAR + 1;
-				m_data.month = (MONTHS_IN_YEAR + months) % MONTHS_IN_YEAR;
-			}
-
-			if (m_data.day > getDaysInMonth(m_data.month, m_data.year))
-				m_data.day = getDaysInMonth(m_data.month, m_data.year);
-
-			isValid();
-		}
-		return;
-	case TimeUnit::YEARS:
-		if (m_format != Format::TIME)
-		{
-			m_data.year += offset;
-			isValid();
-		}
+	case datetime_unit::months:
+    {
+        int month = m_data.month + offset;
+        if (month > 1)
+        {
+            m_data.year += month / MONTHS_IN_YEAR;
+            m_data.month = month % MONTHS_IN_YEAR;
+        }
+        else if (month == 0)
+        {
+            m_data.year--;
+            m_data.month = MONTHS_IN_YEAR;
+        }
+        else  // month < 0
+        {
+            m_data.year -= abs(month) / MONTHS_IN_YEAR + 1;
+            m_data.month = (MONTHS_IN_YEAR + month) % MONTHS_IN_YEAR;
+        }
+        if (m_data.day > days_in_month(m_data.month, m_data.year))
+            m_data.day = days_in_month(m_data.month, m_data.year);
+        is_valid();
+        return;
+    }
+	case datetime_unit::years:
+		m_data.year += offset;
+		is_valid();
 		return;
 	default:
         throw datetime_exception(datetime_exception::kind::invalid_time_unit, (int)unit);
 	}
-	if (m_format != Format::TIME)
-	{
-        datepart_t days = seconds / SECONDS_IN_DAY;
-		m_data = getDateFromMJD(days).m_data;
-	}
+    datepart_t days = seconds / SECONDS_IN_DAY;
+	m_data = getDateFromMJD(days).m_data;
 	if (seconds < 0)
 	{
 		seconds = ((-seconds / SECONDS_IN_DAY + 1) * SECONDS_IN_DAY + seconds) % SECONDS_IN_DAY;
@@ -378,35 +334,21 @@ void datetime::increment(int offset, TimeUnit unit)
 	m_data.sec = seconds % SECONDS_IN_MINUTE;
 	m_data.min = seconds / SECONDS_IN_MINUTE % MINUTES_IN_HOUR;
 	m_data.hour = seconds / SECONDS_IN_HOUR % HOURS_IN_DAY;
-	isValid();
+	is_valid();
 }
 
 
-bool datetime::isValid()
+bool datetime::is_valid()
 {
-	if (m_format == Format::INVALID)
-		return false;
-    if (
-            (
-                ((m_format == Format::DATETIME) || (m_format == Format::DATE)) &&
-                (
-                    (m_data.year < 1858) || (m_data.month < 1)  ||
-                    (m_data.month > MONTHS_IN_YEAR) || (m_data.day < 1) ||
-                    (m_data.day > getDaysInMonth(m_data.month, m_data.year))
-                )
-            )
-            ||
-            (
-                    (m_data.hour < 0) || (m_data.hour > 23) ||
-                    (m_data.min < 0)  || (m_data.min > 59) ||
-                    (m_data.sec < 0)  || (m_data.sec > 59)
-            )
-        )
-    {
-		m_format = Format::INVALID;
-		return false;
-	}
-	return true;
+    return 
+    (
+        m_data.year >= 1858 &&
+        m_data.month > 0 && m_data.month <= MONTHS_IN_YEAR &&
+        m_data.day > 0 && m_data.day <= days_in_month(m_data.month, m_data.year) &&
+        m_data.hour >= 0 && m_data.hour <= 24 &&
+        m_data.min >= 0 && m_data.min <= 59 &&
+        m_data.sec >= 0 && m_data.sec <= 59
+    );
 }
 
 
@@ -477,11 +419,11 @@ datetime::datepart_t datetime::day_of_week(const datetime& dt)
 datetime::datepart_t datetime::diff(
     datepart_t day1, datepart_t month1, datepart_t year1,
     datepart_t day2, datepart_t month2, datepart_t year2,
-    TimeUnit unit)
+    datetime_unit unit)
 {
     switch (unit)
     {
-    case TimeUnit::DAYS:
+    case datetime_unit::days:
     {
         if (month1 > 2)
             month1++;
@@ -501,7 +443,7 @@ datetime::datepart_t datetime::diff(
             (trunc(365.25 * year1) + trunc(30.6 * month1) + day1);
         return abs(diff);
     }
-    case TimeUnit::MONTHS:
+    case datetime_unit::months:
     {
         short cf = 0;
         if (day1 > day2)
@@ -516,7 +458,7 @@ datetime::datepart_t datetime::diff(
         short y = year1 - year2 - cf;
         return abs(y * 12) + m;
     }
-    case TimeUnit::YEARS:
+    case datetime_unit::years:
     {
         short cf = 0;
         if (day1 > day2)
@@ -534,7 +476,7 @@ datetime::datepart_t datetime::diff(
 }
 
 
-datetime::datepart_t datetime::getDaysInMonth(datepart_t month, datepart_t year)
+datetime::datepart_t datetime::days_in_month(datepart_t month, datepart_t year)
 {
 	static datepart_t days[MONTHS_IN_YEAR] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	if ((month < 0) || (month > MONTHS_IN_YEAR))
@@ -544,21 +486,6 @@ datetime::datepart_t datetime::getDaysInMonth(datepart_t month, datepart_t year)
 	return days[month - 1];
 }
 
-
-datetime::datepart_t datetime::getMonthNumberByName(const char* name)
-{
-    static const char* names[MONTHS_IN_YEAR] =
-    { "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec" };
-
-    for (int i = 0; i < MONTHS_IN_YEAR; i++)
-    {
-        if (_stricmp(name, names[i]) == 0)
-        {
-            return i + 1;
-        }
-    }
-    return 0;
-}
 
 bool datetime::is_leap_year()
 {

@@ -20,9 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="datetime.cpp" />
+    <ClCompile Include="strutils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h" />
+    <ClInclude Include="strutils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

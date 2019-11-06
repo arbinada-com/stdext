@@ -29,5 +29,8 @@
     <ClCompile Include="datetimetest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="strutilstest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -18,9 +18,15 @@
     <ClCompile Include="datetime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="strutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="strutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
