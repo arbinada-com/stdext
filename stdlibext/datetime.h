@@ -35,7 +35,8 @@ namespace stdext
                 invalid_datetime_value,
                 invalid_date_part,
                 invalid_time_unit,
-                invalid_date_part_for_time_format
+                invalid_date_part_for_time_format,
+                not_implemented
             };
 
         public:
@@ -54,20 +55,41 @@ namespace stdext
     class datetime
     {
     public:
-        typedef int datepart_t;
-        static const datepart_t epoch_year  = 1858;
-        static const datepart_t epoch_month = 11;
-        static const datepart_t epoch_day   = 17;
+        typedef double jd_t;
+        typedef long jdn_t;
+        typedef short datepart_t;
+        typedef struct data
+        {
+            datepart_t msec;   // milliseconds
+            datepart_t sec;    // seconds after the minute - [0, 60] including leap second
+            datepart_t min;    // minutes after the hour - [0, 59]
+            datepart_t hour;   // hours since midnight - [0, 23]
+            datepart_t day;    // day of the month - [1, 31]
+            datepart_t month;  // months of year - [1, 12]
+            datepart_t year;   // year starting from epoch 1 Jan 4713 BC (julian)
+            data()
+                : year(0), month(0), day(0), hour(0), min(0), sec(0), msec(0)
+            { }
+            data(const datepart_t year, const datepart_t month, const datepart_t day)
+                : year(year), month(month), day(day), hour(0), min(0), sec(0), msec(0)
+            { }
+            data(const datepart_t year, const datepart_t month, const datepart_t day,
+                 const datepart_t hour, const datepart_t minute, const datepart_t second, 
+                 const datepart_t millisecond)
+                : year(year), month(month), day(day), hour(hour), min(minute), sec(second), msec(millisecond)
+            { }
+        } data_t;
     public:
         /*
-         * Default constructor initializes the object with the epoch date (November 17, 1858 at 00:00:00)
+         * Default constructor initializes the object with the zero date (November 17, 1858 at 00:00:00)
          */
         datetime();
 
         datetime(const struct tm &t);
 
         datetime(const datepart_t year, const datepart_t month, const datepart_t day,
-            const datepart_t hour, const datepart_t minute, const datepart_t second);
+                 const datepart_t hour, const datepart_t minute, const datepart_t second, 
+                 const datepart_t millisecond);
 
         /*
          Initializes the object with the values taken from the ISO-formatted string like:
@@ -105,6 +127,12 @@ namespace stdext
          */
         datetime& operator =(datetime&& dt) noexcept;
 
+        enum class calendar
+        {
+            julian,
+            gregorian
+        };
+
         enum class datetime_unit
         {
             seconds,
@@ -117,6 +145,7 @@ namespace stdext
 
         enum class datepart
         {
+            millisecond,
             second,
             minute,
             hour,
@@ -142,19 +171,10 @@ namespace stdext
         datepart_t month()       const { return get_datepart(datepart::month); }
         datepart_t quarter()     const { return datetime::get_quarter_of_month(month()); }
         datepart_t day()         const { return get_datepart(datepart::day_of_month); }
-        datepart_t day_of_week() const { return datetime::day_of_week(*this); };
         datepart_t hour()        const { return get_datepart(datepart::hour); }
         datepart_t minute()      const { return get_datepart(datepart::minute); }
         datepart_t second()      const { return get_datepart(datepart::second); }
-
-        /*
-         Returns the number of the required date/time unit since the epoch
-         If the format is TIME, returns the 0 for all date units.
-         By example, the initial date is 01/01/1973 00:00:00 then
-         get_value(hours) returns the number of hours since the epoch
-         get_value(seconds) returns the number of seconds since the epoch
-         */
-        datepart_t get_value(datetime_unit unit) noexcept(false);
+        datepart_t millisecond() const { return get_datepart(datepart::millisecond); }
 
         /*
          Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
@@ -168,33 +188,22 @@ namespace stdext
         void increment(int offset, datetime_unit unit);
 
         /*
-         Returns the modified Julian date (the number of days since 17/11/1858)
-         of the date specified by the day/month/year
-         */
-        static datepart_t getMJDFromDate(datepart_t day, datepart_t month, datepart_t year);
-
-        /*
-         Returns the date structure given the number of days since 17/11/1858
-         */
-        static datetime getDateFromMJD(datepart_t days);
-
-        /*
          Returns the quarter number given the month number
          */
         static datepart_t get_quarter_of_month(datepart_t month);
 
         /*
-         Returns the day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
-         of the date specified by the day/month/year
+         Returns the ISO number of day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
          */
-        static datepart_t day_of_week(const datetime& dt);
+        static datepart_t day_of_week(const jd_t& jd);
+        datepart_t day_of_week() const;
 
         /*
          Returns the absolute value between two dates in specified time units
          Warning: only days, months and years units are accepted
          otherwise returns 0
          */
-        static datepart_t diff(
+        static long diff(
             datepart_t day1, datepart_t month1, datepart_t year1,
             datepart_t day2, datepart_t month2, datepart_t year2,
             datetime_unit unit);
@@ -215,39 +224,39 @@ namespace stdext
          Returns current date and time
         */
         static datetime now();
+
+        /*
+         Julian date (JD) and day number (JDN) calculations
+         */
+        static jdn_t gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
+        static jdn_t julian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
+        static jd_t gregorian_to_jd(const data_t& dt);
+        static jd_t julian_to_jd(const data_t& dt);
+        static data_t jd_to_calendar(const datetime::calendar cal, const jd_t jd);
+        static jdn_t jd_to_jdn(const jd_t jd);
+        static jd_t jdn_to_jd(const jdn_t jdn, 
+                              const datepart_t hour, const datepart_t minute, const datepart_t second,
+                              const datepart_t millisecond);
+        static inline jd_t jd_to_mjd(const jd_t jd) { return jd - 2400000.5; }
+        static data_t hh_to_hms(const double hh);
+        static double hms_to_hh(const data_t time);
+
+        jd_t jd() { return m_jd; }
+        jd_t mjd() { return jd_to_mjd(m_jd); }
+        jdn_t jdn() { return jd_to_jdn(m_jd); }
     private:
         /*
          Common initializers
          */
-        void init(const struct tm &t);
-        void init(const datetime& dt);
         void parse(const char* str) noexcept(false);
 
         /*
-         Validates the stored (m_data) date/time value
+         Validates stored date/time value
          */
         bool is_valid();
-
-        /*
-         Truncate the fractional part of the floating point value
-         */
-        inline static datepart_t trunc(double dv) { return (datepart_t)dv; }
     private:
-        typedef struct datetime_data
-        {
-            datepart_t sec;    // seconds after the minute - [0, 59] including leap second
-            datepart_t min;    // minutes after the hour - [0, 59]
-            datepart_t hour;   // hours since midnight - [0, 23]
-            datepart_t day;    // day of the month - [1, 31]
-            datepart_t month;  // months since January - [0, 11]
-            datepart_t year;   // year [0, 9999)
-            datetime_data()
-            {
-                sec = min = hour = day = month = year = 0;
-            }
-        } datetime_data_t;
+        jd_t m_jd = 0.0;
 
-        datetime_data_t m_data;
     };
 }
 
