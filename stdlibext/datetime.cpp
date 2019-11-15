@@ -2,10 +2,14 @@
  * Log: datetime.cpp
  *
  * Revision 1.0.2 / 2001-01-05
- * - initial revision generelized from production code
+ * - initial revision generalized from production code
  * Revision 2.0.0 / 2019-10-31
  * - refactoring to use C++11 features and safe functions
  * - changed naming convention (STL compliance)
+ *
+ * Implementations are based on following sources:
+ * 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition, 
+ *    Cambridge University Press, 1988
  */
 
 
@@ -60,6 +64,8 @@ std::string datetime_exception::msg_by_kind(const datetime_exception::kind kind)
             return "Invalid time unit. Code = %d";
         case kind::invalid_date_part_for_time_format:
             return "Invalid date part when object has the TIME format. Code = %d";
+        case kind::unknown_calendar:
+            return "Unknown calendar. Code: %d";
         case kind::not_implemented:
             return "Not implemented";
         default:
@@ -73,14 +79,16 @@ std::string datetime_exception::msg_by_kind(const datetime_exception::kind kind)
  * datetime class
  */
 datetime::datetime()
-    : m_jd(0.0)
+    : m_jd(0.0), m_cal(calendar_t::julian)
 { }
+
 
 datetime::datetime(const datepart_t year, const datepart_t month, const datepart_t day,
                    const datepart_t hour, const datepart_t minute, const datepart_t second, 
-                   const datepart_t millisecond)
+                   const datepart_t millisecond,
+                   const calendar_t cal)
 {
-    m_jd = gregorian_to_jd(data_t(year, month, day, hour, minute, second, millisecond));
+    init(year, month, day, hour, minute, second, millisecond, cal);
     if (!is_valid())
     {
         string s = strutils::format("Year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d",
@@ -90,14 +98,8 @@ datetime::datetime(const datepart_t year, const datepart_t month, const datepart
 }
 
 datetime::datetime(const struct tm &t)
-{
-    //m_data.sec = t.tm_sec;
-    //m_data.min = t.tm_min;
-    //m_data.hour = t.tm_hour;
-    //m_data.day = t.tm_mday;
-    //m_data.month = t.tm_mon + 1;
-    //m_data.year = t.tm_year + 1900;
-}
+    : datetime(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, 0, calendar_t::gregorian)
+{ }
 
 datetime::datetime(const char* str)
 {
@@ -120,27 +122,68 @@ datetime::datetime(const std::string& str)
 }
 
 datetime::datetime(const datetime& dt)
-    : m_jd(dt.m_jd)
+    : m_jd(dt.m_jd),
+      m_cal(dt.m_cal)
 { }
 
 datetime& datetime::operator =(const datetime& dt)
 {
     m_jd = dt.m_jd;
+    m_cal = dt.m_cal;
     return *this;
 }
 
 datetime::datetime(datetime&& dt) noexcept
-    : m_jd(std::move(dt.m_jd))
+    : m_jd(std::move(dt.m_jd)),
+      m_cal(std::move(dt.m_cal))
 { }
 
 datetime& datetime::operator =(datetime&& dt) noexcept
 {
     m_jd = std::move(dt.m_jd);
+    m_cal = std::move(dt.m_cal);
     return *this;
 }
 
+void datetime::init(const datepart_t year, const datepart_t month, const datepart_t day,
+                    const datepart_t hour, const datepart_t minute, const datepart_t second,
+                    const datepart_t millisecond,
+                    const calendar_t cal)
+{
+    m_cal = cal;
+    if (m_cal == calendar_t::date_default)
+        m_cal = (year > 1582 || (year == 1582 && month > 10) || (year == 1582 && month == 10 && day >= 15))
+                ? calendar_t::gregorian : calendar_t::julian;
+    m_jd = calendar_to_jd(m_cal, data_t(year, month, day, hour, minute, second, millisecond));
+}
 
 
+datetime::jd_t datetime::calendar_to_jd(const calendar_t cal, const data_t& dt)
+{
+    datepart_t y = dt.year;
+    datepart_t m = dt.month;
+    if (m == 1 || m == 2)
+    {
+        y--;
+        m += 12;
+    }
+    long b = 0;
+    if (cal == calendar_t::gregorian)
+    {
+        short a = div(y, 100).quot;
+        b = 2 - a + div(a, 4).quot;
+    }
+    long c = (long)trunc(365.25 * y);
+    if (y < 0)
+        c = (long)trunc(365.25 * y - 0.75);
+    long d = (long)trunc(30.6001 * (m + 1));
+    double hh = hms_to_hh(dt);
+    jd_t jd = b + c + d + dt.day + hh + 1720994.5;
+    return jd;
+}
+
+
+/*
 datetime::jdn_t datetime::gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day)
 {
     return jd_to_jdn(
@@ -159,19 +202,6 @@ datetime::jdn_t datetime::julian_to_jdn(const datepart_t year, const datepart_t 
         div(275 * month, 9).quot + day + 1729777;
 }
 
-datetime::jdn_t datetime::jd_to_jdn(const jd_t jd)
-{
-    return (jdn_t)trunc(jd);
-}
-
-datetime::jd_t datetime::jdn_to_jd(const jdn_t jdn,
-                                   const datepart_t hour, const datepart_t minute, const datepart_t second, 
-                                   const datepart_t millisecond)
-{
-    data_t dt(0, 0, 0, hour, minute, second, millisecond);
-    return jdn + hms_to_hh(dt);
-}
-
 datetime::jd_t datetime::gregorian_to_jd(const data_t& dt)
 {
     return jdn_to_jd(gregorian_to_jdn(dt.year, dt.month, dt.day), dt.hour, dt.min, dt.sec, dt.msec);
@@ -182,27 +212,42 @@ datetime::jd_t datetime::julian_to_jd(const data_t& dt)
     return jdn_to_jd(julian_to_jdn(dt.year, dt.month, dt.day), dt.hour, dt.min, dt.sec, dt.msec);
 }
 
-datetime::data_t datetime::jd_to_calendar(const datetime::calendar cal, const jd_t jd)
+datetime::jd_t datetime::jdn_to_jd(const jdn_t jdn,
+                                   const datepart_t hour, const datepart_t minute, const datepart_t second,
+                                   const datepart_t millisecond)
 {
-    long jdn = jd_to_jdn(jd);
-    long f = jdn + 1401;
-    if (cal == calendar::gregorian)
-        f += div(div(4 * jdn + 274277, (long)146097).quot * 3, (long)4).quot - 38;
-    const long m = 2;
-    const long n = 12;
-    const long r = 4;
-    const long v = 3;
-    const long p = 1461;
-    const long s = 153;
-    const long u = 5;
-    const long w = 2;
-    long e = r * f + v;
-    long g = div(div(e, p).rem, r).quot;
-    long h = u * g + w;
-    data_t dt;
-    dt.day = (datepart_t)(div(div(h, s).rem, u).quot + 1);
-    dt.month = (datepart_t)(div(div(h, s).quot + m, n).rem + 1);
-    dt.year = (datepart_t)(div(e, p).quot - 4716 + div(n + m - dt.month, n).quot);
+    data_t dt(0, 0, 0, hour, minute, second, millisecond);
+    return jdn + hms_to_hh(dt);
+}
+
+datetime::jdn_t datetime::jd_to_jdn(const jd_t jd)
+{
+    return (jdn_t)trunc(jd);
+}
+*/
+
+datetime::data_t datetime::jd_to_calendar(const calendar_t cal, const jd_t jd)
+{
+    
+    double fpart, ipart;
+    fpart = modf(jd + 0.5, &ipart);
+    double b = ipart;
+    if (cal == calendar_t::gregorian) // Also can check (b > 2299160) when consider calendar is Gregorian for all dates since 15 Oct 1582 at 00:00
+    {
+        double a = trunc((ipart - 1867216.25) / 36524.25);
+        b = ipart + 1 + a - trunc(a / 4.0);
+    }
+    double c = b + 1524;
+    double d = trunc((c - 122.1) / 365.25);
+    double e = trunc(365.25 * d);
+    double g = trunc((c - e) / 30.6001);
+    double day = c - e + fpart - trunc(30.6001 * g);
+    double hh, dd;
+    hh = modf(day, &dd);
+    data_t dt = hh_to_hms(hh);
+    dt.day = (datepart_t)dd;
+    dt.month = (datepart_t)trunc(g < 13.5 ? g - 1 : g - 13);
+    dt.year = (datepart_t)trunc(dt.month > 2.5 ? d - 4716 : d - 4715);
     return dt;
 }
 
@@ -211,9 +256,7 @@ datetime::data_t datetime::hh_to_hms(const double hh)
     data_t dt;
     double ipart;
     double fpart = modf(hh * 24, &ipart);
-    dt.hour = (datepart_t)ipart + 12;
-    if (dt.hour > 23)
-        dt.hour -= 24;
+    dt.hour = (datepart_t)ipart;
     fpart = modf(fpart * 60, &ipart);
     dt.min = (datepart_t)ipart;
     fpart = modf(fpart * 60, &ipart);
@@ -243,12 +286,8 @@ datetime::data_t datetime::hh_to_hms(const double hh)
 double datetime::hms_to_hh(const data_t time)
 {
     double ss = time.sec + (time.msec / 1000.0);
-    double hh = ((((ss / 60.0) + time.min) / 60.0) + (time.hour - 12)) / 24.0;
-    if (hh < 0)
-        return hh + 1;
+    double hh = ((((ss / 60.0) + time.min) / 60.0) + time.hour) / 24.0;
     return hh;
-    //return time.hour / 24.0 + time.min / 1440.0 + ss / 86400.0;
-    //return ((((ss / 60.0) + time.min) / 60.0) + time.hour) / 100.0;
 }
 
 
@@ -286,7 +325,7 @@ void datetime::parse(const char* str)
         month = dt.month();
         day = dt.day();
     }
-    m_jd = gregorian_to_jd(data_t(year, month, day, hour, minute, second, millisec));
+    init(year, month, day, hour, minute, second, millisec, calendar_t::date_default);
 	if (!is_valid())
         throw datetime_exception(datetime_exception::kind::invalid_datetime_value, str);
 }
@@ -300,39 +339,48 @@ string datetime::to_str()
 	return string(buf);
 }
 
+datepart_t datetime::year() const 
+{ 
+    return jd_to_calendar(m_cal, m_jd).year;
+}
 
-datetime::datepart_t datetime::get_datepart(const datepart part) const
+datepart_t datetime::month() const 
 {
-    data_t dt = jd_to_calendar(calendar::gregorian, m_jd);
-    switch (part)
-	{
-    case datepart::millisecond:
-        return dt.msec;
-    case datepart::second:
-		return dt.sec;
-	case datepart::minute:
-		return dt.min;
-	case datepart::hour:
-		return dt.hour;
-	case datepart::day_of_week:
-		return day_of_week();
-	case datepart::day_of_month:
-		return dt.day;
-	case datepart::day_of_year:
-        return 0; // diff(m_data.day, m_data.month, m_data.year, 1, 1, m_data.year, datetime_unit::days) + 1;
-	case datepart::month:
-		return dt.month;
-	case datepart::quarter:
-		return get_quarter_of_month(dt.month);
-	case datepart::year:
-		return dt.year;
-	default:
-        throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)part);
-	}
+    return jd_to_calendar(m_cal, m_jd).month;
+}
+
+datepart_t datetime::quarter() const 
+{ 
+    return datetime::get_quarter_of_month(month()); 
+}
+
+datepart_t datetime::day() const 
+{ 
+    return jd_to_calendar(m_cal, m_jd).day;
+}
+
+datepart_t datetime::hour() const 
+{ 
+    return jd_to_calendar(m_cal, m_jd).hour;
+}
+
+datepart_t datetime::minute() const 
+{ 
+    return jd_to_calendar(m_cal, m_jd).min;
+}
+
+datepart_t datetime::second() const 
+{ 
+    return jd_to_calendar(m_cal, m_jd).sec;
+}
+
+datepart_t datetime::millisecond() const 
+{
+    return jd_to_calendar(m_cal, m_jd).msec;
 }
 
 
-datetime::datepart_t datetime::get_quarter_of_month(datepart_t month)
+datepart_t datetime::get_quarter_of_month(datepart_t month)
 {
     return div(month - 1, 3).quot + 1;
 }
@@ -406,18 +454,68 @@ bool datetime::is_valid()
 }
 
 
-datetime::datepart_t datetime::day_of_week(const jd_t& jd)
+datepart_t datetime::day_of_week(const jd_t& jd)
 {
-    return (datepart_t)(div(datetime::jd_to_jdn(jd), (long)7).rem + 1);
+    double ipart;
+    double fpart = modf(trunc(jd + 1.5) / 7.0, &ipart);
+    datepart_t dow = (datepart_t)round(fpart * 7);
+    if (dow == 0)
+        return 7;
+    return dow;
 }
 
-datetime::datepart_t datetime::day_of_week() const
+datepart_t datetime::day_of_week() const
 {
     return datetime::day_of_week(m_jd);
 }
 
+datepart_t datetime::day_of_year() const
+{
+    datepart_t a = month();
+    datepart_t b = is_leap_year() ? 62 : 63;
+    if (a > 2)
+        a = (datepart_t)trunc((a + 1) * 30.6) - b;
+    else
+        a = div((a - 1) * b, 2).quot;
+    return a + day();
+}
 
-long datetime::diff(
+long datetime::diff(const datetime_unit unit, const datetime& dt_then)
+{
+    switch (unit)
+    {
+    case datetime_unit::days:
+    {
+        return (long)round(dt_then.jd() - jd());
+        /*
+        datepart_t month1 = month(), month2 = dt_then.month();
+        datepart_t year1 = year(), year2 = dt_then.year();
+        datepart_t day1 = day(), day2 = dt_then.day();
+        if (month1 > 2)
+            month1++;
+        else
+        {
+            month1 += 13;
+            year1--;
+        }
+        if (month2 > 2)
+            month2++;
+        else
+        {
+            month2 += 13;
+            year2--;
+        }
+        int diff = (long)((trunc(365.25 * year2) + trunc(30.6 * month2) + day2) -
+            (trunc(365.25 * year1) + trunc(30.6 * month1) + day1));
+        return abs(diff);
+        */
+    }
+    default:
+        throw datetime_exception(datetime_exception::kind::not_implemented);
+    }
+}
+
+long diff(
     datepart_t day1, datepart_t month1, datepart_t year1,
     datepart_t day2, datepart_t month2, datepart_t year2,
     datetime_unit unit)
@@ -477,18 +575,18 @@ long datetime::diff(
 }
 
 
-datetime::datepart_t datetime::days_in_month(datepart_t month, datepart_t year)
+datepart_t datetime::days_in_month(datepart_t month, datepart_t year)
 {
 	static datepart_t days[MONTHS_IN_YEAR] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	if (month < 0 || month > MONTHS_IN_YEAR)
-        throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)datepart::month);
+        throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)datetime_unit_t::months);
 	if (month == 2 && is_leap_year(year))
 		return 29;
 	return days[month - 1];
 }
 
 
-bool datetime::is_leap_year()
+bool datetime::is_leap_year() const
 {
     return datetime::is_leap_year(year());
 }

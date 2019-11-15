@@ -16,14 +16,22 @@
 namespace stdext
 {
 
-    const short SECONDS_IN_MINUTE   = 60;
-    const short MINUTES_IN_HOUR     = 60;
-    const short SECONDS_IN_HOUR     = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
-    const short HOURS_IN_DAY	    = 24;
-    const int   SECONDS_IN_DAY  	= SECONDS_IN_HOUR * HOURS_IN_DAY;
-    const int   MINUTES_IN_DAY 		= MINUTES_IN_HOUR * HOURS_IN_DAY;
-    const short MONTHS_IN_YEAR		= 12;
-
+    typedef short datepart_t;
+    typedef enum class calendar
+    {
+        julian,
+        gregorian,
+        date_default
+    } calendar_t;
+    typedef enum class datetime_unit
+    {
+        seconds,
+        minutes,
+        hours,
+        days,
+        months,
+        years
+    } datetime_unit_t;
 
     class datetime_exception : public std::exception
     {
@@ -36,6 +44,7 @@ namespace stdext
                 invalid_date_part,
                 invalid_time_unit,
                 invalid_date_part_for_time_format,
+                unknown_calendar,
                 not_implemented
             };
 
@@ -55,9 +64,18 @@ namespace stdext
     class datetime
     {
     public:
+        constexpr static short SECONDS_IN_MINUTE = 60;
+        constexpr static short MINUTES_IN_HOUR = 60;
+        constexpr static short SECONDS_IN_HOUR = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+        constexpr static short HOURS_IN_DAY = 24;
+        constexpr static int   SECONDS_IN_DAY = SECONDS_IN_HOUR * HOURS_IN_DAY;
+        constexpr static int   MINUTES_IN_DAY = MINUTES_IN_HOUR * HOURS_IN_DAY;
+        constexpr static short MONTHS_IN_YEAR = 12;
+
+    public:
         typedef double jd_t;
         typedef long jdn_t;
-        typedef short datepart_t;
+
         typedef struct data
         {
             datepart_t msec;   // milliseconds
@@ -79,6 +97,7 @@ namespace stdext
                 : year(year), month(month), day(day), hour(hour), min(minute), sec(second), msec(millisecond)
             { }
         } data_t;
+
     public:
         /*
          * Default constructor initializes the object with the zero date (November 17, 1858 at 00:00:00)
@@ -88,8 +107,9 @@ namespace stdext
         datetime(const struct tm &t);
 
         datetime(const datepart_t year, const datepart_t month, const datepart_t day,
-                 const datepart_t hour, const datepart_t minute, const datepart_t second, 
-                 const datepart_t millisecond);
+                 const datepart_t hour, const datepart_t minute, const datepart_t second,
+                 const datepart_t millisecond,
+                 const calendar_t cal = calendar_t::date_default);
 
         /*
          Initializes the object with the values taken from the ISO-formatted string like:
@@ -127,54 +147,33 @@ namespace stdext
          */
         datetime& operator =(datetime&& dt) noexcept;
 
-        enum class calendar
-        {
-            julian,
-            gregorian
-        };
-
-        enum class datetime_unit
-        {
-            seconds,
-            minutes,
-            hours,
-            days,
-            months,
-            years
-        };
-
-        enum class datepart
-        {
-            millisecond,
-            second,
-            minute,
-            hour,
-            day_of_week,
-            day_of_month,
-            day_of_year,
-            month,
-            quarter,
-            year
-        };
-
         /*
-         * Returns the part of date
+         * Returns the parts of date
          *
          * E.g. if the initial date is "10 Jan 1973"
-         * get_datepart(year) returns 1973
-         * get_datepart(month) returns 1
-         * get_datepart(day_of_month) returns 10
+         * year() returns 1973
+         * month() returns 1
+         * day() returns 10
          */
-        datepart_t get_datepart(const datepart part) const noexcept(false);
+        datepart_t year()        const;
+        datepart_t month()       const;
+        datepart_t day()         const;
+        datepart_t day_of_year() const;
+        datepart_t hour()        const;
+        datepart_t minute()      const;
+        datepart_t second()      const;
+        datepart_t millisecond() const;
+        /*
+         Returns the ISO number of day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
+         */
+        datepart_t day_of_week() const;
+        static datepart_t day_of_week(const jd_t& jd);
+        /*
+         Returns the quarter number given the month number
+         */
+        datepart_t quarter() const;
+        static datepart_t get_quarter_of_month(datepart_t month);
 
-        datepart_t year()        const { return get_datepart(datepart::year); }
-        datepart_t month()       const { return get_datepart(datepart::month); }
-        datepart_t quarter()     const { return datetime::get_quarter_of_month(month()); }
-        datepart_t day()         const { return get_datepart(datepart::day_of_month); }
-        datepart_t hour()        const { return get_datepart(datepart::hour); }
-        datepart_t minute()      const { return get_datepart(datepart::minute); }
-        datepart_t second()      const { return get_datepart(datepart::second); }
-        datepart_t millisecond() const { return get_datepart(datepart::millisecond); }
 
         /*
          Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
@@ -188,30 +187,16 @@ namespace stdext
         void increment(int offset, datetime_unit unit);
 
         /*
-         Returns the quarter number given the month number
-         */
-        static datepart_t get_quarter_of_month(datepart_t month);
-
-        /*
-         Returns the ISO number of day of week (1 - Monday, 2 - Tuesday, ... 7 - Sunday)
-         */
-        static datepart_t day_of_week(const jd_t& jd);
-        datepart_t day_of_week() const;
-
-        /*
          Returns the absolute value between two dates in specified time units
          Warning: only days, months and years units are accepted
-         otherwise returns 0
+         otherwise throw exception
          */
-        static long diff(
-            datepart_t day1, datepart_t month1, datepart_t year1,
-            datepart_t day2, datepart_t month2, datepart_t year2,
-            datetime_unit unit);
+        long diff(const datetime_unit unit, const datetime& dt_then) noexcept(false);
 
         /*
          Returns true if the specified year is a leap year
          */
-        bool is_leap_year();
+        bool is_leap_year() const;
         static bool is_leap_year(const datetime& dt);
         static bool is_leap_year(const datepart_t year);
 
@@ -228,26 +213,29 @@ namespace stdext
         /*
          Julian date (JD) and day number (JDN) calculations
          */
-        static jdn_t gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
-        static jdn_t julian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
-        static jd_t gregorian_to_jd(const data_t& dt);
-        static jd_t julian_to_jd(const data_t& dt);
-        static data_t jd_to_calendar(const datetime::calendar cal, const jd_t jd);
-        static jdn_t jd_to_jdn(const jd_t jd);
-        static jd_t jdn_to_jd(const jdn_t jdn, 
-                              const datepart_t hour, const datepart_t minute, const datepart_t second,
-                              const datepart_t millisecond);
+        //static jdn_t gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
+        //static jdn_t julian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
+        //static jd_t gregorian_to_jd(const data_t& dt);
+        //static jd_t julian_to_jd(const data_t& dt);
+        static jd_t calendar_to_jd(const calendar_t cal, const data_t& dt);
+        //static data_t jdn_to_calendar(const calendar_t cal, const jdn_t jdn);
+        static data_t jd_to_calendar(const calendar_t cal, const jd_t jd);
         static inline jd_t jd_to_mjd(const jd_t jd) { return jd - 2400000.5; }
         static data_t hh_to_hms(const double hh);
         static double hms_to_hh(const data_t time);
 
-        jd_t jd() { return m_jd; }
-        jd_t mjd() { return jd_to_mjd(m_jd); }
-        jdn_t jdn() { return jd_to_jdn(m_jd); }
+        jd_t jd() const { return m_jd; }
+        jd_t mjd() const { return jd_to_mjd(m_jd); }
+        calendar_t calendar() const { return m_cal; }
+
     private:
         /*
          Common initializers
          */
+        void init(const datepart_t year, const datepart_t month, const datepart_t day,
+                  const datepart_t hour, const datepart_t minute, const datepart_t second,
+                  const datepart_t millisecond,
+                  const calendar_t cal = calendar_t::date_default);
         void parse(const char* str) noexcept(false);
 
         /*
@@ -255,7 +243,8 @@ namespace stdext
          */
         bool is_valid();
     private:
-        jd_t m_jd = 0.0;
+        jd_t       m_jd = 0.0;
+        calendar_t m_cal = calendar_t::julian;
 
     };
 }

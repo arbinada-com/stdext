@@ -42,7 +42,7 @@ wstring strutils::format(const wstring fmt, ...)
         va_start(ap, fmt);
         int n = _vsnwprintf_s((wchar_t *)s.data(), s.size(), size - 1, fmt.c_str(), ap);
         va_end(ap);
-        if (n > -1 && n < size)
+        if (n > -1 && (size_t)n < size)
         {
             s.resize(n);
             return s;
