@@ -97,6 +97,13 @@ datetime::datetime(const datepart_t year, const datepart_t month, const datepart
     }
 }
 
+datetime::datetime(const datepart_t year, const datepart_t month, const datepart_t day,
+                   const calendar_t cal)
+    : datetime(year, month, day, 
+        (year == -4712 && month == 1 && day == 1 && (cal == calendar_t::date_default || cal == calendar_t::julian) ? 12 : 0), 
+        0, 0, 0, cal)
+{ }
+
 datetime::datetime(const struct tm &t)
     : datetime(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, 0, calendar_t::gregorian)
 { }
@@ -480,97 +487,42 @@ datepart_t datetime::day_of_year() const
     return a + day();
 }
 
+
+datetime::jd_t jd_diff_dd(const datetime::jd_t jd1, const datetime::jd_t jd2)
+{
+    return (trunc(jd2 + 0.5) - trunc(jd1 + 0.5));
+    //return (round(jd2) - round(jd2));
+}
+
 long datetime::diff(const datetime_unit unit, const datetime& dt_then)
 {
+    data_t d1 = jd_to_calendar(m_cal, m_jd);
+    data_t d2 = jd_to_calendar(dt_then.calendar(), dt_then.jd());
     switch (unit)
     {
-    case datetime_unit::days:
+    case datetime_unit::years:
     {
-        return (long)round(dt_then.jd() - jd());
-        /*
-        datepart_t month1 = month(), month2 = dt_then.month();
-        datepart_t year1 = year(), year2 = dt_then.year();
-        datepart_t day1 = day(), day2 = dt_then.day();
-        if (month1 > 2)
-            month1++;
-        else
-        {
-            month1 += 13;
-            year1--;
-        }
-        if (month2 > 2)
-            month2++;
-        else
-        {
-            month2 += 13;
-            year2--;
-        }
-        int diff = (long)((trunc(365.25 * year2) + trunc(30.6 * month2) + day2) -
-            (trunc(365.25 * year1) + trunc(30.6 * month1) + day1));
-        return abs(diff);
-        */
+        long d = d2.year - d1.year;
+        if (d1.year < 0 && d2.year > 0)
+            d--;
+        else if (d1.year > 0 && d2.year < 0)
+            d++;
+        return d;
+    }
+    case datetime_unit::months:
+        return (d2.year - d1.year) * 12 + (d2.month - d1.month);
+    case datetime_unit::days:
+        return (long)jd_diff_dd(jd(), dt_then.jd());
+    case datetime_unit_t::hours:
+    {
+        double hh;
+        double fpart = modf(dt_then.jd() - jd(), &hh);
+        data_t hms = hh_to_hms(hh);
+        return trunc(fpart * HOURS_IN_DAY) + hms.hour;
+        //return (long)jd_diff_dd(jd(), dt_then.jd()) * HOURS_IN_DAY + (d2.hour - d1.hour);
     }
     default:
         throw datetime_exception(datetime_exception::kind::not_implemented);
-    }
-}
-
-long diff(
-    datepart_t day1, datepart_t month1, datepart_t year1,
-    datepart_t day2, datepart_t month2, datepart_t year2,
-    datetime_unit unit)
-{
-    switch (unit)
-    {
-    case datetime_unit::days:
-    {
-        if (month1 > 2)
-            month1++;
-        else
-        {
-            month1 += 13;
-            year1--;
-        }
-        if (month2 > 2)
-            month2++;
-        else
-        {
-            month2 += 13;
-            year2--;
-        }
-        int diff = (long)((trunc(365.25 * year2) + trunc(30.6 * month2) + day2) -
-            (trunc(365.25 * year1) + trunc(30.6 * month1) + day1));
-        return abs(diff);
-    }
-    case datetime_unit::months:
-    {
-        short cf = 0;
-        if (day1 > day2)
-            cf = 1;
-        short m = month1 - month2 - cf;
-        cf = 0;
-        if (m < 0)
-        {
-            m += 12;
-            cf = 1;
-        }
-        short y = year1 - year2 - cf;
-        return abs(y * 12) + m;
-    }
-    case datetime_unit::years:
-    {
-        short cf = 0;
-        if (day1 > day2)
-            cf = 1;
-        if ((month1 - month2 - cf) < 0)
-            cf = 1;
-        else
-            cf = 0;
-        short y = year1 - year2 - cf;
-        return abs(y);
-    }
-    default:
-        return 0;
     }
 }
 

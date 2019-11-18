@@ -299,13 +299,68 @@ namespace stdexttest
 
         TEST_METHOD(TestDayOfYear)
         {
-            Assert::AreEqual((datepart_t)1, datetime(-4712, 1, 1, 12, 0, 0, 0, calendar_t::julian).day_of_year(), L"DOY 1");
-            Assert::AreEqual((datepart_t)1, datetime("2019-01-01").day_of_year(), L"DOY 2");
+            Assert::AreEqual((datepart_t)1,  datetime(-4712, 1, 1, 12, 0, 0, 0, calendar_t::julian).day_of_year(), L"DOY 1");
+            Assert::AreEqual((datepart_t)48, datetime("1985-02-17").day_of_year(), L"DOY 2");
+            Assert::AreEqual((datepart_t)60, datetime("1980-02-29").day_of_year(), L"DOY 3.1 leap");
+            Assert::AreEqual((datepart_t)61, datetime("1980-03-01").day_of_year(), L"DOY 3.2 leap");
+            Assert::AreEqual((datepart_t)1,   datetime("2019-01-01").day_of_year(), L"DOY 2019.1.1");
+            Assert::AreEqual((datepart_t)31,  datetime("2019-01-31").day_of_year(), L"DOY 2019.1.2");
+            Assert::AreEqual((datepart_t)32,  datetime("2019-02-01").day_of_year(), L"DOY 2019.2.1");
+            Assert::AreEqual((datepart_t)59,  datetime("2019-02-28").day_of_year(), L"DOY 2019.2.2");
+            Assert::AreEqual((datepart_t)60,  datetime("2019-03-01").day_of_year(), L"DOY 2019.3.1");
+            Assert::AreEqual((datepart_t)90,  datetime("2019-03-31").day_of_year(), L"DOY 2019.3.2");
+            Assert::AreEqual((datepart_t)91,  datetime("2019-04-01").day_of_year(), L"DOY 2019.4.1");
+            Assert::AreEqual((datepart_t)120, datetime("2019-04-30").day_of_year(), L"DOY 2019.4.2");
+            Assert::AreEqual((datepart_t)121, datetime("2019-05-01").day_of_year(), L"DOY 2019.5.1");
+            Assert::AreEqual((datepart_t)151, datetime("2019-05-31").day_of_year(), L"DOY 2019.5.2");
+            Assert::AreEqual((datepart_t)152, datetime("2019-06-01").day_of_year(), L"DOY 2019.6.1");
+            Assert::AreEqual((datepart_t)181, datetime("2019-06-30").day_of_year(), L"DOY 2019.6.2");
+            Assert::AreEqual((datepart_t)182, datetime("2019-07-01").day_of_year(), L"DOY 2019.7.1");
+            Assert::AreEqual((datepart_t)212, datetime("2019-07-31").day_of_year(), L"DOY 2019.7.2");
+            Assert::AreEqual((datepart_t)213, datetime("2019-08-01").day_of_year(), L"DOY 2019.8.1");
+            Assert::AreEqual((datepart_t)243, datetime("2019-08-31").day_of_year(), L"DOY 2019.8.2");
+            Assert::AreEqual((datepart_t)244, datetime("2019-09-01").day_of_year(), L"DOY 2019.9.1");
+            Assert::AreEqual((datepart_t)273, datetime("2019-09-30").day_of_year(), L"DOY 2019.9.2");
+            Assert::AreEqual((datepart_t)274, datetime("2019-10-01").day_of_year(), L"DOY 2019.10.1");
+            Assert::AreEqual((datepart_t)304, datetime("2019-10-31").day_of_year(), L"DOY 2019.10.2");
+            Assert::AreEqual((datepart_t)305, datetime("2019-11-01").day_of_year(), L"DOY 2019.11.1");
+            Assert::AreEqual((datepart_t)334, datetime("2019-11-30").day_of_year(), L"DOY 2019.11.2");
+            Assert::AreEqual((datepart_t)335, datetime("2019-12-01").day_of_year(), L"DOY 2019.12.1");
+            Assert::AreEqual((datepart_t)365, datetime("2019-12-31").day_of_year(), L"DOY 2019.12.2");
         }
 
         TEST_METHOD(TestDateDiff)
         {
-            Assert::AreEqual(366, (int)datetime("2012-01-01").diff(datetime_unit_t::days, datetime("2013-01-01")), L"Diff 1.1");
+            // Years
+            Assert::AreEqual(0, (int)datetime("2012-01-01").diff(datetime_unit_t::years, datetime("2012-01-31")), L"Diff YY 1.1");
+            Assert::AreEqual(1, (int)datetime("2012-01-01").diff(datetime_unit_t::years, datetime("2013-01-01")), L"Diff YY 1.2");
+            Assert::AreEqual(1, (int)datetime("2012-12-31").diff(datetime_unit_t::years, datetime("2013-01-01")), L"Diff YY 1.3");
+            Assert::AreEqual(1, (int)datetime("2012-01-01").diff(datetime_unit_t::years, datetime("2013-12-31")), L"Diff YY 1.4");
+            Assert::AreEqual(4712, (int)datetime(-4712, 1, 01).diff(datetime_unit_t::years, datetime(1, 1, 1)), L"Diff YY 2.1");
+            Assert::AreEqual(-4712, (int)datetime(1, 1, 1).diff(datetime_unit_t::years, datetime(-4712, 1, 01)), L"Diff YY 2.2");
+            Assert::AreEqual(3712, (int)datetime(-4712, 1, 01).diff(datetime_unit_t::years, datetime(-1000, 1, 1)), L"Diff YY 2.3");
+            Assert::AreEqual(2000, (int)datetime(1, 1, 1).diff(datetime_unit_t::years, datetime(2001, 7, 20)), L"Diff YY 2.4");
+            // Months
+            Assert::AreEqual(0, (int)datetime("2012-01-01").diff(datetime_unit_t::months, datetime("2012-01-31")), L"Diff MM 1.1");
+            Assert::AreEqual(1, (int)datetime("2012-01-01").diff(datetime_unit_t::months, datetime("2012-02-01")), L"Diff MM 1.2");
+            Assert::AreEqual(1, (int)datetime("2012-01-31").diff(datetime_unit_t::months, datetime("2012-02-01")), L"Diff MM 1.3");
+            Assert::AreEqual(1207, (int)datetime("1900-10-31").diff(datetime_unit_t::months, datetime("2001-05-01")), L"Diff MM 2.1");
+            // Days
+            Assert::AreEqual(0, (int)datetime(2001, 1, 1).diff(datetime_unit_t::days, datetime(2001, 1, 1)), L"Diff DD 1.1");
+            Assert::AreEqual(0, (int)datetime(2001, 1, 1, 23, 59, 59, 999).diff(datetime_unit_t::days, datetime(2001, 1, 1, 0, 0, 0, 0)), L"Diff DD 1.2");
+            Assert::AreEqual(0, (int)datetime(-4712, 1, 2, 11, 59, 59, 0).diff(datetime_unit_t::days, datetime(-4712, 1, 2, 12, 0, 0, 0)), L"Diff DD 1.3");
+            Assert::AreEqual(1, (int)datetime(-4712, 1, 1, 23, 59, 59, 0).diff(datetime_unit_t::days, datetime(-4712, 1, 2, 0, 0, 0, 0)), L"Diff DD 1.3");
+            Assert::AreEqual(1, (int)datetime(2001, 1, 1, 23, 59, 59, 0).diff(datetime_unit_t::days, datetime(2001, 1, 2, 0, 0, 0, 0)), L"Diff DD 2.1");
+            Assert::AreEqual(365, (int)datetime(2011, 1, 1).diff(datetime_unit_t::days, datetime(2012, 1, 1)), L"Diff DD 3.1");
+            Assert::AreEqual(366, (int)datetime(2012, 1, 1).diff(datetime_unit_t::days, datetime(2013, 1, 1)), L"Diff DD 3.2");
+            Assert::AreEqual(730487, (int)datetime(1, 1, 1).diff(datetime_unit_t::days, datetime(2001, 1, 1)), L"Diff DD 3.3.1");
+            Assert::AreEqual(-730487, (int)datetime(2001, 1, 1).diff(datetime_unit_t::days, datetime(1, 1, 1)), L"Diff DD 3.3.2");
+            // Hours
+            Assert::AreEqual(0, (int)datetime(2001, 1, 1, 0, 0, 0, 0).diff(datetime_unit_t::hours, datetime(2001, 1, 1, 0, 0, 0, 0)), L"Diff HH 1.1");
+            Assert::AreEqual(0, (int)datetime(-4712, 1, 1, 12, 0, 0, 0).diff(datetime_unit_t::hours, datetime(-4712, 1, 1, 12, 59, 59, 999)), L"Diff HH 1.2");
+            Assert::AreEqual(0, (int)datetime(2001, 1, 1, 0, 59, 59, 999).diff(datetime_unit_t::hours, datetime(2001, 1, 1, 1, 0, 0, 0)), L"Diff HH 1.3");
+            Assert::AreEqual(0, (int)datetime(2001, 1, 1, 0, 59, 59, 999).diff(datetime_unit_t::hours, datetime(2001, 1, 1, 1, 59, 59, 0)), L"Diff HH 1.4");
+            Assert::AreEqual(1, (int)datetime(2001, 1, 1, 0, 59, 59, 999).diff(datetime_unit_t::hours, datetime(2001, 1, 1, 1, 59, 59, 999)), L"Diff HH 2.1");
         }
 
     };

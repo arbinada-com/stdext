@@ -110,6 +110,8 @@ namespace stdext
                  const datepart_t hour, const datepart_t minute, const datepart_t second,
                  const datepart_t millisecond,
                  const calendar_t cal = calendar_t::date_default);
+        datetime(const datepart_t year, const datepart_t month, const datepart_t day,
+                 const calendar_t cal = calendar_t::date_default);
 
         /*
          Initializes the object with the values taken from the ISO-formatted string like:
@@ -213,12 +215,7 @@ namespace stdext
         /*
          Julian date (JD) and day number (JDN) calculations
          */
-        //static jdn_t gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
-        //static jdn_t julian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day);
-        //static jd_t gregorian_to_jd(const data_t& dt);
-        //static jd_t julian_to_jd(const data_t& dt);
         static jd_t calendar_to_jd(const calendar_t cal, const data_t& dt);
-        //static data_t jdn_to_calendar(const calendar_t cal, const jdn_t jdn);
         static data_t jd_to_calendar(const calendar_t cal, const jd_t jd);
         static inline jd_t jd_to_mjd(const jd_t jd) { return jd - 2400000.5; }
         static data_t hh_to_hms(const double hh);
