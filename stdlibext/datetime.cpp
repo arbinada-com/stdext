@@ -190,49 +190,6 @@ datetime::jd_t datetime::calendar_to_jd(const calendar_t cal, const data_t& dt)
 }
 
 
-/*
-datetime::jdn_t datetime::gregorian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day)
-{
-    return jd_to_jdn(
-        (1461 * (year + 4800 + (month - 14) / 12.0)) / 4.0 + 
-        (367 * (month - 2 - 12 * ((month - 14) / 12.0))) / 12.0 - 
-        (3 * ((year + 4900 + (month - 14) / 12) / 100.0)) / 4.0 + 
-        day - 32075
-    );
-}
-
-datetime::jdn_t datetime::julian_to_jdn(const datepart_t year, const datepart_t month, const datepart_t day)
-{
-    return 
-        367 * year - 
-        div(7 * (year + 5001 + div(month - 9, 7).quot), 4).quot +
-        div(275 * month, 9).quot + day + 1729777;
-}
-
-datetime::jd_t datetime::gregorian_to_jd(const data_t& dt)
-{
-    return jdn_to_jd(gregorian_to_jdn(dt.year, dt.month, dt.day), dt.hour, dt.min, dt.sec, dt.msec);
-}
-
-datetime::jd_t datetime::julian_to_jd(const data_t& dt)
-{
-    return jdn_to_jd(julian_to_jdn(dt.year, dt.month, dt.day), dt.hour, dt.min, dt.sec, dt.msec);
-}
-
-datetime::jd_t datetime::jdn_to_jd(const jdn_t jdn,
-                                   const datepart_t hour, const datepart_t minute, const datepart_t second,
-                                   const datepart_t millisecond)
-{
-    data_t dt(0, 0, 0, hour, minute, second, millisecond);
-    return jdn + hms_to_hh(dt);
-}
-
-datetime::jdn_t datetime::jd_to_jdn(const jd_t jd)
-{
-    return (jdn_t)trunc(jd);
-}
-*/
-
 datetime::data_t datetime::jd_to_calendar(const calendar_t cal, const jd_t jd)
 {
     
@@ -393,71 +350,14 @@ datepart_t datetime::get_quarter_of_month(datepart_t month)
 }
 
 
-void datetime::increment(int offset, datetime_unit unit)
+bool datetime::is_valid(jd_t jd)
 {
-    throw datetime_exception(datetime_exception::kind::not_implemented);
-    /*datepart_t seconds = get_value(datetime_unit::seconds);
-	switch (unit)
-	{
-	case datetime_unit::seconds:
-		seconds += offset;
-		break;
-	case datetime_unit::minutes:
-		seconds += offset * SECONDS_IN_MINUTE;
-		break;
-	case datetime_unit::hours:
-		seconds += offset * SECONDS_IN_HOUR;
-		break;
-	case datetime_unit::days:
-		seconds += offset * SECONDS_IN_DAY;
-		break;
-	case datetime_unit::months:
-    {
-        int month = m_data.month + offset;
-        if (month > 1)
-        {
-            m_data.year += month / MONTHS_IN_YEAR;
-            m_data.month = month % MONTHS_IN_YEAR;
-        }
-        else if (month == 0)
-        {
-            m_data.year--;
-            m_data.month = MONTHS_IN_YEAR;
-        }
-        else  // month < 0
-        {
-            m_data.year -= abs(month) / MONTHS_IN_YEAR + 1;
-            m_data.month = (MONTHS_IN_YEAR + month) % MONTHS_IN_YEAR;
-        }
-        if (m_data.day > days_in_month(m_data.month, m_data.year))
-            m_data.day = days_in_month(m_data.month, m_data.year);
-        is_valid();
-        return;
-    }
-	case datetime_unit::years:
-		m_data.year += offset;
-		is_valid();
-		return;
-	default:
-        throw datetime_exception(datetime_exception::kind::invalid_time_unit, (int)unit);
-	}
-    datepart_t days = seconds / SECONDS_IN_DAY;
-	m_data = getDateFromMJD(days).m_data;
-	if (seconds < 0)
-	{
-		seconds = ((-seconds / SECONDS_IN_DAY + 1) * SECONDS_IN_DAY + seconds) % SECONDS_IN_DAY;
-	}
-	m_data.sec = seconds % SECONDS_IN_MINUTE;
-	m_data.min = seconds / SECONDS_IN_MINUTE % MINUTES_IN_HOUR;
-	m_data.hour = seconds / SECONDS_IN_HOUR % HOURS_IN_DAY;
-	is_valid();
-    */
+    return jd >= 0;
 }
-
 
 bool datetime::is_valid()
 {
-    return m_jd >= 0;
+    return is_valid(m_jd);
 }
 
 
@@ -488,38 +388,42 @@ datepart_t datetime::day_of_year() const
 }
 
 
-datetime::jd_t jd_diff_dd(const datetime::jd_t jd1, const datetime::jd_t jd2)
+long datetime::diff(const datetime_unit unit, const datetime& dt_then) const
 {
-    return (trunc(jd2 + 0.5) - trunc(jd1 + 0.5));
-    //return (round(jd2) - round(jd2));
-}
-
-long datetime::diff(const datetime_unit unit, const datetime& dt_then)
-{
-    data_t d1 = jd_to_calendar(m_cal, m_jd);
-    data_t d2 = jd_to_calendar(dt_then.calendar(), dt_then.jd());
     switch (unit)
     {
-    case datetime_unit::years:
+    case dtunit_t::years:
+    case dtunit_t::months:
     {
+        data_t d1 = jd_to_calendar(m_cal, m_jd);
+        data_t d2 = jd_to_calendar(dt_then.calendar(), dt_then.jd());
         long d = d2.year - d1.year;
-        if (d1.year < 0 && d2.year > 0)
-            d--;
-        else if (d1.year > 0 && d2.year < 0)
-            d++;
-        return d;
-    }
-    case datetime_unit::months:
+        if (unit == dtunit_t::years)
+        {
+            if (d1.year < 0 && d2.year > 0)
+                d--;
+            else if (d1.year > 0 && d2.year < 0)
+                d++;
+            return d;
+        }
         return (d2.year - d1.year) * 12 + (d2.month - d1.month);
-    case datetime_unit::days:
-        return (long)jd_diff_dd(jd(), dt_then.jd());
-    case datetime_unit_t::hours:
+    }
+    case dtunit_t::days:
+        return (long)(trunc(dt_then.jd() + 0.5) - trunc(jd() + 0.5));
+    case dtunit_t::hours:
+    case dtunit_t::minutes:
+    case dtunit_t::seconds:
     {
-        double hh;
-        double fpart = modf(dt_then.jd() - jd(), &hh);
+        double dd;
+        double hh = modf(dt_then.jd() - jd(), &dd);
         data_t hms = hh_to_hms(hh);
-        return trunc(fpart * HOURS_IN_DAY) + hms.hour;
-        //return (long)jd_diff_dd(jd(), dt_then.jd()) * HOURS_IN_DAY + (d2.hour - d1.hour);
+        long result = (long)(trunc(dd * HOURS_IN_DAY)) + hms.hour;
+        if (unit == dtunit_t::hours)
+            return result;
+        result = result * MINUTES_IN_HOUR + hms.min;
+        if (unit == dtunit_t::minutes)
+            return result;
+        return result * SECONDS_IN_MINUTE + hms.sec;
     }
     default:
         throw datetime_exception(datetime_exception::kind::not_implemented);
@@ -527,11 +431,119 @@ long datetime::diff(const datetime_unit unit, const datetime& dt_then)
 }
 
 
+datetime& datetime::inc(const dtunit_t unit, const int offset)
+{
+    jd_t jd = 0.0;
+    switch (unit)
+    {
+    case dtunit_t::years:
+    case dtunit_t::months:
+    {
+        data_t dt = jd_to_calendar(m_cal, m_jd);
+        if (unit == dtunit_t::years)
+            dt.year += offset;
+        else // unit == dtunit_t::months
+        {
+            int month = dt.month + offset;
+            if (month > 0)
+            {
+                if (month > 12)
+                {
+                    dt.year += div(month, MONTHS_IN_YEAR).quot;
+                    dt.month = div(month, MONTHS_IN_YEAR).rem;
+                }
+                else
+                    dt.month = month;
+            }
+            else if (month == 0)
+            {
+                dt.year--;
+                dt.month = MONTHS_IN_YEAR;
+            }
+            else if (month < 0)
+            {
+                dt.year -= div(abs(month), MONTHS_IN_YEAR).quot + 1;
+                dt.month = MONTHS_IN_YEAR - div(abs(month), MONTHS_IN_YEAR).rem;
+            }
+        }
+        if (dt.day > days_in_month(dt.month, dt.year))
+            dt.day = days_in_month(dt.month, dt.year);
+        jd = calendar_to_jd(m_cal, dt);
+        break;
+    }
+    case dtunit_t::days:
+        jd = m_jd + offset;
+        break;
+    default:
+        throw datetime_exception(datetime_exception::kind::not_implemented);
+    }
+    if (!is_valid(jd))
+        throw datetime_exception(datetime_exception::kind::invalid_datetime_value);
+    m_jd = jd;
+    return *this;
+    /*datepart_t seconds = get_value(datetime_unit::seconds);
+    switch (unit)
+    {
+    case datetime_unit::seconds:
+        seconds += offset;
+        break;
+    case datetime_unit::minutes:
+        seconds += offset * SECONDS_IN_MINUTE;
+        break;
+    case datetime_unit::hours:
+        seconds += offset * SECONDS_IN_HOUR;
+        break;
+    case datetime_unit::days:
+        seconds += offset * SECONDS_IN_DAY;
+        break;
+    case datetime_unit::months:
+    {
+        int month = m_data.month + offset;
+        if (month > 1)
+        {
+            m_data.year += month / MONTHS_IN_YEAR;
+            m_data.month = month % MONTHS_IN_YEAR;
+        }
+        else if (month == 0)
+        {
+            m_data.year--;
+            m_data.month = MONTHS_IN_YEAR;
+        }
+        else  // month < 0
+        {
+            m_data.year -= abs(month) / MONTHS_IN_YEAR + 1;
+            m_data.month = (MONTHS_IN_YEAR + month) % MONTHS_IN_YEAR;
+        }
+        if (m_data.day > days_in_month(m_data.month, m_data.year))
+            m_data.day = days_in_month(m_data.month, m_data.year);
+        is_valid();
+        return;
+    }
+    case datetime_unit::years:
+        m_data.year += offset;
+        is_valid();
+        return;
+    default:
+        throw datetime_exception(datetime_exception::kind::invalid_time_unit, (int)unit);
+    }
+    datepart_t days = seconds / SECONDS_IN_DAY;
+    m_data = getDateFromMJD(days).m_data;
+    if (seconds < 0)
+    {
+        seconds = ((-seconds / SECONDS_IN_DAY + 1) * SECONDS_IN_DAY + seconds) % SECONDS_IN_DAY;
+    }
+    m_data.sec = seconds % SECONDS_IN_MINUTE;
+    m_data.min = seconds / SECONDS_IN_MINUTE % MINUTES_IN_HOUR;
+    m_data.hour = seconds / SECONDS_IN_HOUR % HOURS_IN_DAY;
+    */
+}
+
+
 datepart_t datetime::days_in_month(datepart_t month, datepart_t year)
 {
 	static datepart_t days[MONTHS_IN_YEAR] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	if (month < 0 || month > MONTHS_IN_YEAR)
-        throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)datetime_unit_t::months);
+        throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)dtunit_t::months);
 	if (month == 2 && is_leap_year(year))
 		return 29;
 	return days[month - 1];

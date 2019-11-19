@@ -31,7 +31,7 @@ namespace stdext
         days,
         months,
         years
-    } datetime_unit_t;
+    } dtunit_t;
 
     class datetime_exception : public std::exception
     {
@@ -186,14 +186,14 @@ namespace stdext
          Increments the date/time value. 
          The offset is specified in the date/time units
          */
-        void increment(int offset, datetime_unit unit);
+        datetime& inc(const dtunit_t unit, const int offset) noexcept(false);
 
         /*
          Returns the absolute value between two dates in specified time units
          Warning: only days, months and years units are accepted
          otherwise throw exception
          */
-        long diff(const datetime_unit unit, const datetime& dt_then) noexcept(false);
+        long diff(const datetime_unit unit, const datetime& dt_then) const noexcept(false);
 
         /*
          Returns true if the specified year is a leap year
@@ -205,7 +205,7 @@ namespace stdext
         /*
          Returns the number of days in the specified month/year
          */
-        static datepart_t days_in_month(datepart_t month, datepart_t year);
+        static datepart_t days_in_month(datepart_t month, datepart_t year) noexcept(false);
 
         /*
          Returns current date and time
@@ -239,6 +239,7 @@ namespace stdext
          Validates stored date/time value
          */
         bool is_valid();
+        static bool is_valid(jd_t jd);
     private:
         jd_t       m_jd = 0.0;
         calendar_t m_cal = calendar_t::julian;
