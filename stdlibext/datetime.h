@@ -235,6 +235,9 @@ namespace stdext
                   const calendar_t cal = calendar_t::date_default);
         void parse(const char* str) noexcept(false);
 
+        static void trunc_to_jd_grain(jd_t& jd);
+        static jd_t jd_grain();
+
         /*
          Validates stored date/time value
          */

@@ -1,15 +1,17 @@
 /**
  * Log: datetime.cpp
  *
- * Revision 1.0.2 / 2001-01-05
- * - initial revision generalized from production code
- * Revision 2.0.0 / 2019-10-31
- * - refactoring to use C++11 features and safe functions
+ * Revision 1.0.2 / Jan 2001
+ * - initial revision
+ * Revision 2.0.0 / Nov 2019
+ * - refactored to use C++11 features and safe functions
  * - changed naming convention (STL compliance)
+ * - added unit tests
  *
  * Implementations are based on following sources:
  * 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition, 
  *    Cambridge University Press, 1988
+ * 2. Julian date (Wikipedia)
  */
 
 
@@ -474,68 +476,62 @@ datetime& datetime::inc(const dtunit_t unit, const int offset)
     case dtunit_t::days:
         jd = m_jd + offset;
         break;
+    case dtunit_t::hours:
+    case dtunit_t::minutes:
+    case dtunit_t::seconds:
+    {
+        data_t dt;
+        if (unit == dtunit_t::hours)
+        {
+            div_t days = div(abs(offset), HOURS_IN_DAY);
+            jd = m_jd + days.quot;
+            dt.hour = days.rem;
+        }
+        else if (unit == dtunit_t::minutes)
+        {
+            div_t days = div(abs(offset), MINUTES_IN_DAY);
+            jd = m_jd + days.quot;
+            dt.hour = div(days.rem, MINUTES_IN_HOUR).quot;
+            dt.min = div(days.rem, MINUTES_IN_HOUR).rem;
+        }
+        else if (unit == dtunit_t::seconds)
+        {
+            div_t days = div(abs(offset), SECONDS_IN_DAY);
+            jd = m_jd + days.quot;
+            div_t hours = div(days.rem, SECONDS_IN_HOUR);
+            dt.hour = hours.quot;
+            dt.min = div(hours.rem, SECONDS_IN_HOUR).quot;
+            dt.sec = div(hours.rem, SECONDS_IN_HOUR).rem;
+        }
+        jd += hms_to_hh(dt) * (offset < 0 ? -1 : 1);
+        break;
+    }
     default:
         throw datetime_exception(datetime_exception::kind::not_implemented);
     }
+    if (jd < 0)
+        trunc_to_jd_grain(jd);
     if (!is_valid(jd))
         throw datetime_exception(datetime_exception::kind::invalid_datetime_value);
     m_jd = jd;
     return *this;
-    /*datepart_t seconds = get_value(datetime_unit::seconds);
-    switch (unit)
-    {
-    case datetime_unit::seconds:
-        seconds += offset;
-        break;
-    case datetime_unit::minutes:
-        seconds += offset * SECONDS_IN_MINUTE;
-        break;
-    case datetime_unit::hours:
-        seconds += offset * SECONDS_IN_HOUR;
-        break;
-    case datetime_unit::days:
-        seconds += offset * SECONDS_IN_DAY;
-        break;
-    case datetime_unit::months:
-    {
-        int month = m_data.month + offset;
-        if (month > 1)
-        {
-            m_data.year += month / MONTHS_IN_YEAR;
-            m_data.month = month % MONTHS_IN_YEAR;
-        }
-        else if (month == 0)
-        {
-            m_data.year--;
-            m_data.month = MONTHS_IN_YEAR;
-        }
-        else  // month < 0
-        {
-            m_data.year -= abs(month) / MONTHS_IN_YEAR + 1;
-            m_data.month = (MONTHS_IN_YEAR + month) % MONTHS_IN_YEAR;
-        }
-        if (m_data.day > days_in_month(m_data.month, m_data.year))
-            m_data.day = days_in_month(m_data.month, m_data.year);
-        is_valid();
-        return;
-    }
-    case datetime_unit::years:
-        m_data.year += offset;
-        is_valid();
-        return;
-    default:
-        throw datetime_exception(datetime_exception::kind::invalid_time_unit, (int)unit);
-    }
-    datepart_t days = seconds / SECONDS_IN_DAY;
-    m_data = getDateFromMJD(days).m_data;
-    if (seconds < 0)
-    {
-        seconds = ((-seconds / SECONDS_IN_DAY + 1) * SECONDS_IN_DAY + seconds) % SECONDS_IN_DAY;
-    }
-    m_data.sec = seconds % SECONDS_IN_MINUTE;
-    m_data.min = seconds / SECONDS_IN_MINUTE % MINUTES_IN_HOUR;
-    m_data.hour = seconds / SECONDS_IN_HOUR % HOURS_IN_DAY;
+}
+
+datetime::jd_t datetime::jd_grain()
+{
+    // Code to get grain value:
+    /*
+    data_t dt0; 
+    dt0.msec = 1;
+    double grain = hms_to_hh(dt0);
     */
+    return 1.16E-08; // 1 millisecond converted to JD
+}
+
+void datetime::trunc_to_jd_grain(jd_t& jd)
+{
+    if (abs(jd) < jd_grain())
+        jd = 0.0;
 }
 
 

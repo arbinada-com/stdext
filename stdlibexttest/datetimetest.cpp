@@ -437,10 +437,33 @@ public:
         CompareDates(datetime(-4712, 1, 2, 12, 0, 0, 0), datetime().inc(dtunit_t::days, 1), L"Inc DD 1.2");
         CompareDates(datetime(-4712, 2, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::days, 31), L"Inc DD 2.1");
         CompareDates(datetime(-4712, 7, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::days, 182), L"Inc DD 2.2");
-        CompareDates(datetime(2000, 2, 29), datetime(2000, 1, 1).inc(dtunit_t::days, 59), L"Inc MM 3.3.1");
-        CompareDates(datetime(2000, 1, 1), datetime(2000, 2, 29).inc(dtunit_t::days, -59), L"Inc MM 3.3.2");
-        CompareDates(datetime(2001, 3, 1), datetime(2001, 1, 1).inc(dtunit_t::days, 59), L"Inc MM 3.3.3");
-        CompareDates(datetime(2001, 1, 1), datetime(2001, 3, 1).inc(dtunit_t::days, -59), L"Inc MM 3.3.4");
+        CompareDates(datetime(2000, 2, 29), datetime(2000, 1, 1).inc(dtunit_t::days, 59), L"Inc DD 3.3.1");
+        CompareDates(datetime(2000, 1, 1), datetime(2000, 2, 29).inc(dtunit_t::days, -59), L"Inc DD 3.3.2");
+        CompareDates(datetime(2001, 3, 1), datetime(2001, 1, 1).inc(dtunit_t::days, 59), L"Inc DD 3.3.3");
+        CompareDates(datetime(2001, 1, 1), datetime(2001, 3, 1).inc(dtunit_t::days, -59), L"Inc DD 3.3.4");
+        // Hours
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::hours, 0), L"Inc HH 1.1");
+        CompareDates(datetime(-4712, 1, 1, 13, 0, 0, 0), datetime().inc(dtunit_t::hours, 1), L"Inc HH 1.2");
+        CompareDates(datetime(-4712, 1, 2, 3, 0, 0, 0), datetime().inc(dtunit_t::hours, 15), L"Inc HH 1.3.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 2, 3, 0, 0, 0).inc(dtunit_t::hours, -15), L"Inc HH 1.3.2");
+        CompareDates(datetime(2000, 2, 29, 0, 0, 0, 0), datetime(2000, 2, 28, 23, 0, 0, 0).inc(dtunit_t::hours, 1), L"Inc HH 3.3.1");
+        CompareDates(datetime(2000, 2, 28, 23, 0, 0, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::hours, -1), L"Inc HH 3.3.2");
+        // Minutes
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::minutes, 0), L"Inc MI 1.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 1, 0, 0), datetime().inc(dtunit_t::minutes, 1), L"Inc MI 1.2.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 1, 0, 0).inc(dtunit_t::minutes, -1), L"Inc MI 1.2.2");
+        CompareDates(datetime(-4712, 1, 1, 12, 59, 0, 0), datetime().inc(dtunit_t::minutes, 59), L"Inc MI 1.3.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 59, 0, 0).inc(dtunit_t::minutes, -59), L"Inc MI 1.3.2");
+        CompareDates(datetime(2000, 2, 29, 0, 0, 0, 0), datetime(2000, 2, 28, 23, 59, 0, 0).inc(dtunit_t::minutes, 1), L"Inc MI 3.3.1");
+        CompareDates(datetime(2000, 2, 28, 23, 59, 0, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::minutes, -1), L"Inc MI 3.3.2");
+        // Seconds
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::seconds, 0), L"Inc SS 1.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 1, 0), datetime().inc(dtunit_t::seconds, 1), L"Inc SS 1.2.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 0, 1, 0).inc(dtunit_t::seconds, -1), L"Inc SS 1.2.2");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 59, 0), datetime().inc(dtunit_t::seconds, 59), L"Inc SS 1.3.1");
+        CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 0, 59, 0).inc(dtunit_t::seconds, -59), L"Inc SS 1.3.2");
+        CompareDates(datetime(2000, 2, 29, 0, 0, 0, 0), datetime(2000, 2, 28, 23, 59, 59, 0).inc(dtunit_t::seconds, 1), L"Inc SS 3.3.1");
+        CompareDates(datetime(2000, 2, 28, 23, 59, 59, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::seconds, -1), L"Inc SS 3.3.2");
     }
 
 };
