@@ -25,6 +25,7 @@
   <ItemGroup>
     <ClInclude Include="datetime.h" />
     <ClInclude Include="strutils.h" />
+    <ClInclude Include="trees.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="license.txt" />

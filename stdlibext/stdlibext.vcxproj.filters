@@ -29,6 +29,9 @@
     <ClInclude Include="strutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="trees.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="license.txt" />

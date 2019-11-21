@@ -168,6 +168,7 @@
     </ClCompile>
     <ClCompile Include="datetimetest.cpp" />
     <ClCompile Include="strutilstest.cpp" />
+    <ClCompile Include="treestest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\stdlibext\stdlibext.vcxproj">
