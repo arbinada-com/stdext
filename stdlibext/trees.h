@@ -1,3 +1,9 @@
+/*
+ C++ standard library extensions
+ (c) 2001-2019 Serguei Tarassov (see license.txt)
+
+ A generic tree implementation
+ */
 #pragma once
 
 #include <memory>

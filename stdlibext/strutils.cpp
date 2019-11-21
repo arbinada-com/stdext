@@ -16,7 +16,12 @@ string strutils::format(const string fmt, ...)
     {
         s.resize(size);
         va_start(ap, fmt);
-        int n = vsnprintf_s((char*)s.data(), s.size(), size - 1, fmt.c_str(), ap);
+        int n =
+#if defined(__BCPLUSPLUS__)
+            vsnprintf_s((char*)s.data(), s.size(), fmt.c_str(), ap);
+#else
+            vsnprintf_s((char*)s.data(), s.size(), size - 1, fmt.c_str(), ap);
+#endif
         va_end(ap);
         if (n > -1 && (size_t)n < size)
         {
@@ -40,7 +45,12 @@ wstring strutils::format(const wstring fmt, ...)
     {
         s.resize(size);
         va_start(ap, fmt);
-        int n = _vsnwprintf_s((wchar_t *)s.data(), s.size(), size - 1, fmt.c_str(), ap);
+        int n =
+#if defined(__BCPLUSPLUS__)
+            vsnwprintf_s((wchar_t *)s.data(), s.size(), fmt.c_str(), ap);
+#else
+            _vsnwprintf_s((wchar_t *)s.data(), s.size(), size - 1, fmt.c_str(), ap);
+#endif
         va_end(ap);
         if (n > -1 && (size_t)n < size)
         {
@@ -51,6 +61,17 @@ wstring strutils::format(const wstring fmt, ...)
             size = n + 1;
         else
             size *= 2;
+    }
+    return s;
+}
+
+std::wstring strutils::replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl)
+{
+    size_t pos = 0;
+    while ((pos = s.find(match, pos)) != std::string::npos)
+    {
+        s.replace(pos, match.length(), repl);
+        pos += repl.length();
     }
     return s;
 }

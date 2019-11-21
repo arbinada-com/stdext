@@ -1,10 +1,8 @@
 /*
- * C++ standard library extensions
- * The datetime class helps to manipulate date and time values
- *
- * (c) 2001-2019 Serguei TARASSOV
- * www.arbinada.com
- * st@arbinada.com
+ C++ standard library extensions
+ (c) 2001-2019 Serguei Tarassov (see license.txt)
+
+ The datetime class helps to manipulate date and time values
  */
 
 #pragma once

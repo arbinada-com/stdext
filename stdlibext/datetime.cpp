@@ -1,17 +1,8 @@
-/**
- * Log: datetime.cpp
- *
- * Revision 1.0.2 / Jan 2001
- * - initial revision
- * Revision 2.0.0 / Nov 2019
- * - refactored to use C++11 features and safe functions
- * - changed naming convention (STL compliance)
- * - added unit tests
- *
- * Implementations are based on following sources:
- * 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition, 
- *    Cambridge University Press, 1988
- * 2. Julian date (Wikipedia)
+/*
+ Implementations are based on following sources:
+ 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition, 
+    Cambridge University Press, 1988
+ 2. Julian date (Wikipedia)
  */
 
 
@@ -27,6 +18,15 @@
 using namespace std;
 using namespace stdext;
 
+#if defined(__BCPLUSPLUS__) && defined(__clang__)
+double trunc2(const double n)
+{
+    double ipart;
+    double fpart = modf(n, &ipart);
+    return ipart;
+}
+#define trunc(n) trunc2(n)
+#endif
 
 /**
  * datetime_exception class
@@ -262,7 +262,11 @@ datetime datetime::now()
     time_t cur_time;
     time(&cur_time);
     struct tm t;
+#if defined(__BCPLUSPLUS__)
+    localtime_s(&cur_time, &t);
+#else
     localtime_s(&t, &cur_time);
+#endif
     return datetime(t);
 }
 

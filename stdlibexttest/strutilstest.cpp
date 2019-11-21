@@ -31,5 +31,12 @@ namespace stdexttest
             Assert::AreEqual("Aa?E", strutils::to_string(ws).c_str());
         }
 
+        TEST_METHOD(TestReplace)
+        {
+            wstring ws = L"123-456-789-456-789";
+            Assert::AreEqual(L"123--789--789", strutils::replace_all(ws, L"456", L"").c_str(), L"Replace all 1");
+            Assert::AreEqual(L"123-xx-789-xx-789", strutils::replace_all(ws, L"456", L"xx").c_str(), L"Replace all 2");
+        }
+
     };
 }
