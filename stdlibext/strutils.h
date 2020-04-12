@@ -28,6 +28,7 @@ namespace stdext
         std::string trim_chars(const std::string& s, const std::string& chars);
         std::wstring trim_chars(const std::wstring& s, const std::wstring& chars);
 
+        std::string replace_all(std::string s, const std::string& match, const std::string& repl);
         std::wstring replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl);
         std::string to_string(const std::wstring& ws);
     }
