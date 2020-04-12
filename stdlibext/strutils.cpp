@@ -146,26 +146,54 @@ std::wstring strutils::trim_chars(const std::wstring& s, const std::wstring& cha
 
 
 template<class StringT>
-StringT basic_replace_all(StringT& s, const StringT& match, const StringT& repl)
+StringT basic_replace(
+    StringT& s, 
+    const StringT& match, 
+    const StringT& repl, 
+    const size_t from_pos, 
+    const bool all)
 {
-    size_t pos = 0;
+    size_t pos = from_pos;
     while ((pos = s.find(match, pos)) != StringT::npos)
     {
         s.replace(pos, match.length(), repl);
+        if (!all)
+            break;
         pos += repl.length();
     }
     return s;
 }
 
+std::string strutils::replace(
+    std::string s, 
+    const std::string& match, 
+    const std::string& repl, 
+    const std::size_t from_pos,
+    const bool all)
+{
+    return basic_replace<std::string>(s, match, repl, from_pos, all);
+}
+
+std::wstring strutils::replace(
+    std::wstring s,
+    const std::wstring& match,
+    const std::wstring& repl,
+    const std::size_t from_pos,
+    const bool all)
+{
+    return basic_replace<std::wstring>(s, match, repl, from_pos, all);
+}
+
 std::string strutils::replace_all(std::string s, const std::string& match, const std::string& repl)
 {
-    return basic_replace_all<std::string>(s, match, repl);
+    return basic_replace<std::string>(s, match, repl, 0, true);
 }
 
 std::wstring strutils::replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl)
 {
-    return basic_replace_all<std::wstring>(s, match, repl);
+    return basic_replace<std::wstring>(s, match, repl, 0, true);
 }
+
 
 string strutils::to_string(const wstring& ws)
 {

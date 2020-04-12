@@ -31,9 +31,29 @@ public:
 
     TEST_METHOD(TestReplace)
     {
+        Assert::AreEqual("", strutils::replace("", "", "", 0, false).c_str(), L"Replace 0");
+        string s = "123-456-789-456-789";
+        Assert::AreEqual("123--789-456-789", strutils::replace(s, "456", "", 0, false).c_str(), L"Replace 1");
+        Assert::AreEqual("123--789-456-789", strutils::replace(s, "456", "").c_str(), L"Replace 2");
+        Assert::AreEqual("123--789-456-789", strutils::replace(s, "456", "", 0, false).c_str(), L"Replace 3");
+        Assert::AreEqual("123-456-789--789", strutils::replace(s, "456", "", 7, false).c_str(), L"Replace 4");
+        s = "\"123\"";
+        Assert::AreEqual("123\"", strutils::replace(s, "\"", "").c_str(), L"Replace 5.1");
+        Assert::AreEqual("\"123", strutils::replace(s, "\"", "", s.length() - 1).c_str(), L"Replace 5.2");
+        wstring ws = L"123-456-789-456-789";
+        Assert::AreEqual(L"123--789-456-789", strutils::replace(ws, L"456", L"", 0, false).c_str(), L"WReplace 1");
+        Assert::AreEqual(L"123--789-456-789", strutils::replace(ws, L"456", L"").c_str(), L"WReplace 2");
+        Assert::AreEqual(L"123--789-456-789", strutils::replace(ws, L"456", L"", 0, false).c_str(), L"WReplace 3");
+        Assert::AreEqual(L"123-456-789--789", strutils::replace(ws, L"456", L"", 7, false).c_str(), L"WReplace 4");
+    }
+
+    TEST_METHOD(TestReplaceAll)
+    {
         string s = "123-456-789-456-789";
         Assert::AreEqual("123--789--789", strutils::replace_all(s, "456", "").c_str(), L"Replace all 1");
         Assert::AreEqual("123-xx-789-xx-789", strutils::replace_all(s, "456", "xx").c_str(), L"Replace all 2");
+        Assert::AreEqual("abbc", strutils::replace_all("abbbc", "bb", "b").c_str(), L"Replace all 3.1");
+        Assert::AreEqual("\"\"", strutils::replace_all("\"\"\"", "\"\"", "\"").c_str(), L"Replace all 3.2");
         wstring ws = L"123-456-789-456-789";
         Assert::AreEqual(L"123--789--789", strutils::replace_all(ws, L"456", L"").c_str(), L"WReplace all 1");
         Assert::AreEqual(L"123-xx-789-xx-789", strutils::replace_all(ws, L"456", L"xx").c_str(), L"WReplace all 2");

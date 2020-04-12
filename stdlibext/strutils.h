@@ -28,8 +28,21 @@ namespace stdext
         std::string trim_chars(const std::string& s, const std::string& chars);
         std::wstring trim_chars(const std::wstring& s, const std::wstring& chars);
 
+        std::string replace(
+            std::string s,
+            const std::string& match,
+            const std::string& repl,
+            const std::size_t from_pos = 0,
+            const bool all = false);
+        std::wstring replace(
+            std::wstring s,
+            const std::wstring& match,
+            const std::wstring& repl,
+            const std::size_t from_pos = 0,
+            const bool all = false);
         std::string replace_all(std::string s, const std::string& match, const std::string& repl);
         std::wstring replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl);
+
         std::string to_string(const std::wstring& ws);
     }
 }
