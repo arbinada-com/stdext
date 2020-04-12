@@ -38,5 +38,24 @@ namespace stdexttest
             Assert::AreEqual(L"123-xx-789-xx-789", strutils::replace_all(ws, L"456", L"xx").c_str(), L"Replace all 2");
         }
 
+        TEST_METHOD(TestTrim)
+        {
+            Assert::AreEqual("123 456\t ", strutils::ltrim("\t 123 456\t ").c_str(), L"LTrim 1");
+            Assert::AreEqual(L"123 456\t ", strutils::ltrim(L"\t 123 456\t ").c_str(), L"WLTrim 1");
+            Assert::AreEqual("123 456abc", strutils::ltrim_chars("abc123 456abc", "abc").c_str(), L"LTrimChars 1");
+            Assert::AreEqual(L"123 456abc", strutils::ltrim_chars(L"abc123 456abc", L"abc").c_str(), L"WLTrimChars 1");
+
+            Assert::AreEqual("\t 123 456", strutils::rtrim("\t 123 456\t ").c_str(), L"RTrim 1");
+            Assert::AreEqual(L"\t 123 456", strutils::rtrim(L"\t 123 456\t ").c_str(), L"WRTrim 1");
+            Assert::AreEqual("abc123 456", strutils::rtrim_chars("abc123 456abc", "abc").c_str(), L"RTrimChars 1");
+            Assert::AreEqual(L"abc123 456", strutils::rtrim_chars(L"abc123 456abc", L"abc").c_str(), L"WRTrimChars 1");
+
+            Assert::AreEqual("123 456", strutils::trim("\t 123 456\t ").c_str(), L"Trim 1");
+            Assert::AreEqual(L"123 456", strutils::trim(L"\t 123 456\t ").c_str(), L"WTrim 1");
+            Assert::AreEqual("123 456", strutils::trim_chars("abc123 456abc", "abc").c_str(), L"TrimChars 1");
+            Assert::AreEqual(L"123 456", strutils::trim_chars(L"abc123 456abc", L"abc").c_str(), L"WTrimChars 1");
+        }
+
+
     };
 }
