@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="csvtools.cpp" />
     <ClCompile Include="datetime.cpp" />
     <ClCompile Include="strutils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="csvtools.h" />
     <ClInclude Include="datetime.h" />
     <ClInclude Include="strutils.h" />
     <ClInclude Include="trees.h" />

@@ -1,6 +1,6 @@
 MIT license
 
-Copyright 2001-2019 Serguei Tarassov (st@arbinada.com)
+Copyright 2001-2020 Serguei Tarassov (st@arbinada.com)
 
 Permission is hereby granted, free of charge, to any person 
 obtaining a copy of this software and associated documentation 

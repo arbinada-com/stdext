@@ -21,6 +21,9 @@
     <ClCompile Include="strutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="csvtools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
@@ -30,6 +33,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="trees.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="csvtools.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
