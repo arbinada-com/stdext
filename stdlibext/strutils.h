@@ -43,6 +43,11 @@ namespace stdext
         std::string replace_all(std::string s, const std::string& match, const std::string& repl);
         std::wstring replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl);
 
+        std::string quoted(std::string s);
+        std::wstring quoted(std::wstring s);
+        std::string double_quoted(std::string s);
+        std::wstring double_quoted(std::wstring s);
+
         std::string to_string(const std::wstring& ws);
     }
 }

@@ -194,6 +194,24 @@ std::wstring strutils::replace_all(std::wstring s, const std::wstring& match, co
     return basic_replace<std::wstring>(s, match, repl, 0, true);
 }
 
+std::string strutils::quoted(std::string s)
+{
+    return "'" + s + "'";
+}
+std::wstring strutils::quoted(std::wstring s)
+{
+    return L"'" + s + L"'";
+}
+std::string strutils::double_quoted(std::string s)
+{
+    return "\"" + s + "\"";
+}
+std::wstring strutils::double_quoted(std::wstring s)
+{
+    return L"\"" + s + L"\"";
+}
+
+
 
 string strutils::to_string(const wstring& ws)
 {

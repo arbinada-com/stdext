@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "CppUnitTest.h"
 #include "strutils.h"
 
@@ -77,5 +76,14 @@ public:
         Assert::AreEqual(L"123 456", strutils::trim_chars(L"abc123 456abc", L"abc").c_str(), L"WTrimChars 1");
     }
 
+    TEST_METHOD(TestQuoted)
+    {
+        Assert::AreEqual("''", strutils::quoted("").c_str(), L"Quoted 1.1");
+        Assert::AreEqual("'123'", strutils::quoted("123").c_str(), L"Quoted 1.2");
+        Assert::AreEqual(L"'123'", strutils::quoted(L"123").c_str(), L"Quoted 1.3");
+        Assert::AreEqual("\"\"", strutils::double_quoted("").c_str(), L"DQuoted 2.1");
+        Assert::AreEqual("\"123\"", strutils::double_quoted("123").c_str(), L"DQuoted 2.2");
+        Assert::AreEqual(L"\"123\"", strutils::double_quoted(L"123").c_str(), L"DQuoted 2.3");
+    }
 
 };
