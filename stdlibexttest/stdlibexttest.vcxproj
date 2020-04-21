@@ -171,8 +171,10 @@
   <ItemGroup>
     <ClCompile Include="csvtoolstest.cpp" />
     <ClCompile Include="datetimetest.cpp" />
+    <ClCompile Include="memchecker.cpp" />
     <ClCompile Include="strutilstest.cpp" />
     <ClCompile Include="treestest.cpp" />
+    <ClCompile Include="variantstest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="data\test01-utf16-be.csv">
@@ -197,6 +199,9 @@
     <CopyFileToFolders Include="data\test01-ansi-1252.csv">
       <FileType>Document</FileType>
     </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="memchecker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

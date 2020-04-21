@@ -24,6 +24,12 @@
     <ClCompile Include="csvtools.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jsondom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="variants.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
@@ -36,6 +42,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="csvtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jsondom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="variants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -13,6 +13,12 @@
     <ClCompile Include="treestest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="variantstest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memchecker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -46,5 +52,10 @@
     <CopyFileToFolders Include="data\test01-ansi-1252.csv">
       <Filter>Data</Filter>
     </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="memchecker.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
