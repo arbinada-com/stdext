@@ -215,8 +215,6 @@ std::wstring strutils::double_quoted(std::wstring s)
 
 string strutils::to_string(const wstring& ws)
 {
-    string s;
-    for (char wc : ws)
-        s += wc; // implicit char conversion
+    string s(ws.begin(), ws.end());
     return s;
 }
