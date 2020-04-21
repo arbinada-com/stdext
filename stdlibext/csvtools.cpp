@@ -1,3 +1,7 @@
+/*
+ C++ standard library extensions
+ (c) 2001-2020 Serguei Tarassov (see license.txt)
+ */
 #include "csvtools.h"
 
 #include <fstream>
