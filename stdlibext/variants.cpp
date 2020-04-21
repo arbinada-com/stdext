@@ -8,16 +8,17 @@ using namespace variants;
 
 std::string variants::to_string(const value_type vtype)
 {
+#define CASE_VTYPE_STR(name) case value_type::name: return #name
     switch (vtype)
     {
-    case value_type::vt_bool: return "vt_bool";
-    case value_type::vt_double: return "vt_double";
-    case value_type::vt_int: return "vt_int";
-    case value_type::vt_long: return "vt_long";
-    case value_type::vt_object: return "vt_object";
-    case value_type::vt_string: return "vt_string";
-    case value_type::vt_wstring: return "vt_wstring";
-    case value_type::vt_unknown: return "vt_unknown";
+        CASE_VTYPE_STR(vt_bool);
+        CASE_VTYPE_STR(vt_double);
+        CASE_VTYPE_STR(vt_int);
+        CASE_VTYPE_STR(vt_long);
+        CASE_VTYPE_STR(vt_object);
+        CASE_VTYPE_STR(vt_string);
+        CASE_VTYPE_STR(vt_wstring);
+        CASE_VTYPE_STR(vt_unknown);
     default:
         return "unsupported";
     }
@@ -25,12 +26,24 @@ std::string variants::to_string(const value_type vtype)
 
 std::string variants::to_string(const operation op)
 {
+#define CASE_OP_STR(name) case operation::name: return #name
     switch (op)
     {
-    case operation::add: return "add";
-    case operation::divide: return "divide";
-    case operation::multiply: return "multiply";
-    case operation::subtract: return "subtract";
+        CASE_OP_STR(unknown);
+        CASE_OP_STR(add);
+        CASE_OP_STR(divide);
+        CASE_OP_STR(multiply);
+        CASE_OP_STR(subtract);
+        CASE_OP_STR(cmp_eq);
+        CASE_OP_STR(cmp_neq);
+        CASE_OP_STR(cmp_gt);
+        CASE_OP_STR(cmp_ge);
+        CASE_OP_STR(cmp_lt);
+        CASE_OP_STR(cmp_le);
+        CASE_OP_STR(b_and);
+        CASE_OP_STR(b_or);
+        CASE_OP_STR(b_not);
+        CASE_OP_STR(nop);
     default:
         return "unsupported";
     }

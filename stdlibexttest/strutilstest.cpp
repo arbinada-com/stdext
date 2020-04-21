@@ -26,6 +26,10 @@ public:
         Assert::AreEqual("123 %d %s %i", strutils::to_string(ws).c_str());
         ws = L"Aa""\u263A""E";
         Assert::AreEqual("Aa?E", strutils::to_string(ws).c_str());
+        string s1   =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";
+        wstring ws1 = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";
+        Assert::AreEqual(s1.c_str(), strutils::to_string(ws1).c_str());
+        Assert::AreEqual(ws1.c_str(), strutils::to_wstring(s1).c_str());
     }
 
     TEST_METHOD(TestReplace)

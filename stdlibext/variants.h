@@ -43,19 +43,31 @@ namespace stdext
 
         enum class value_type
         {
+            // Insert new operations after vt_unknown and before vt_object only
             vt_unknown,
             vt_bool,
             vt_double,
             vt_int,
             vt_long,
-            vt_object,
             vt_string,
-            vt_wstring
+            vt_wstring,
+            vt_object
         };
+        const value_type first_value_type = value_type::vt_unknown;
+        const value_type last_value_type = value_type::vt_object;
         std::string to_string(const value_type vtype);
+        inline const value_type to_value_type(bool) { return value_type::vt_bool; }
+        inline const value_type to_value_type(int) { return value_type::vt_int; }
+        inline const value_type to_value_type(long) { return value_type::vt_long; }
+        inline const value_type to_value_type(float) { return value_type::vt_double; }
+        inline const value_type to_value_type(double) { return value_type::vt_double; }
+        inline const value_type to_value_type(std::string) { return value_type::vt_string; }
+        inline const value_type to_value_type(std::wstring) { return value_type::vt_wstring; }
 
         enum class operation
         {
+            // Insert new operations after UNKNOWN and before NOP only
+            unknown,
             add,
             subtract,
             multiply,
@@ -69,41 +81,40 @@ namespace stdext
             b_and,
             b_or,
             b_not,
+            nop
         };
+        const operation first_operation = operation::unknown;
+        const operation last_operation = operation::nop;
         std::string to_string(const operation op);
 
-#define DECLARE_COMPARISION_OPERATORS_LH(type) \
-    friend bool operator==(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_eq); } \
-    friend bool operator!=(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_neq); } \
-    friend bool operator>(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_gt); } \
-    friend bool operator>=(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_ge); } \
-    friend bool operator<(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_lt); } \
-    friend bool operator<=(const variant& v1, const type v2) { return do_operation_cmp(v1, v2, operation::cmp_le); } \
-    bool equal(const type& value) const noexcept(false) { return do_operation_cmp(*this, value, operation::cmp_eq); } \
-// end
-#define DECLARE_COMPARISION_OPERATORS_RH(type) \
-    friend bool operator==(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_eq); } \
-    friend bool operator!=(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_neq); } \
-    friend bool operator>(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_gt); } \
-    friend bool operator>=(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_ge); } \
-    friend bool operator<(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_lt); } \
-    friend bool operator<=(const type& v1, const variant& v2) { return do_operation_cmp(v1, v2, operation::cmp_le); } \
-// end
-#define DECLARE_COMPARISION_OPERATORS(type) \
-    DECLARE_COMPARISION_OPERATORS_LH(type)\
-    DECLARE_COMPARISION_OPERATORS_RH(type)
 
-#define DECLARE_ARITHMETIC_OPERATORS_LH(type) \
-    friend variant operator+(const variant& v1, const type& v2) { return do_operation(v1, v2, operation::add); } \
-    friend variant operator-(const variant& v1, const type& v2) { return do_operation(v1, v2, operation::subtract); } \
-// end
-#define DECLARE_ARITHMETIC_OPERATORS_RH(type) \
-    friend variant operator+(const type& v1, const variant& v2) { return do_operation(v1, v2, operation::add); } \
-    friend variant operator-(const type& v1, const variant& v2) { return do_operation(v1, v2, operation::subtract); } \
-// end
-#define DECLARE_ARITHMETIC_OPERATORS(type) \
-    DECLARE_ARITHMETIC_OPERATORS_LH(type)\
-    DECLARE_ARITHMETIC_OPERATORS_RH(type)
+#define DECLARE_OPERATOR(type1, type2, rettype, opname, optype) \
+    friend rettype operator opname(const type1& v1, const type2& v2) { return do_operation(v1, v2, optype); }
+#define DECLARE_OPERATOR_CMP(type1, type2, rettype, opname, optype) \
+    friend rettype operator opname(const type1& v1, const type2& v2) { return do_operation_cmp(v1, v2, optype); }
+#define DECLARE_EQUAL_FUNC(type) \
+    bool equal(const type& value) const noexcept(false) { return do_operation_cmp(*this, value, operation::cmp_eq); }
+
+#define DECLARE_OPERATORS_COMPARISION(type1, type2) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, ==, operation::cmp_eq) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, !=, operation::cmp_neq) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, >, operation::cmp_gt) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, >=, operation::cmp_ge) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, <, operation::cmp_lt) \
+    DECLARE_OPERATOR_CMP(type1, type2, bool, <=, operation::cmp_le)
+#define DECLARE_OPERATORS_COMPARISION_FULL(type) \
+    DECLARE_OPERATORS_COMPARISION(variant, type) \
+    DECLARE_OPERATORS_COMPARISION(type, variant) \
+    DECLARE_EQUAL_FUNC(type)
+
+#define DECLARE_OPERATORS_ARITHMETIC(type1, type2) \
+    DECLARE_OPERATOR(type1, type2, variant, +, operation::add) \
+    DECLARE_OPERATOR(type1, type2, variant, -, operation::subtract) \
+    DECLARE_OPERATOR(type1, type2, variant, *, operation::multiply) \
+    DECLARE_OPERATOR(type1, type2, variant, /, operation::divide)
+#define DECLARE_OPERATORS_ARITHMETIC_FULL(type) \
+    DECLARE_OPERATORS_ARITHMETIC(variant, type)\
+    DECLARE_OPERATORS_ARITHMETIC(type, variant)
 
         class variant
         {
@@ -136,18 +147,19 @@ namespace stdext
             double to_double() const noexcept(false);
         public:
             // Comparison operations
-            DECLARE_COMPARISION_OPERATORS_LH(variant)
-            DECLARE_COMPARISION_OPERATORS(bool)
-            DECLARE_COMPARISION_OPERATORS(int)
-            DECLARE_COMPARISION_OPERATORS(long)
+            DECLARE_OPERATORS_COMPARISION(variant, variant)
+            DECLARE_EQUAL_FUNC(variant)
+            DECLARE_OPERATORS_COMPARISION_FULL(bool)
+            DECLARE_OPERATORS_COMPARISION_FULL(int)
+            DECLARE_OPERATORS_COMPARISION_FULL(long)
             // Arithmetic operations
-            DECLARE_ARITHMETIC_OPERATORS_LH(variant)
-            DECLARE_ARITHMETIC_OPERATORS(int)
-            DECLARE_ARITHMETIC_OPERATORS(long)
+            DECLARE_OPERATORS_ARITHMETIC(variant, variant)
+            DECLARE_OPERATORS_ARITHMETIC_FULL(int)
+            DECLARE_OPERATORS_ARITHMETIC_FULL(long)
 
         public:
             void clear();
-            value_type vtype() const { return m_vtype; }
+            value_type vtype() const noexcept { return m_vtype; }
             inline bool is_integer_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_long }); }
             inline bool is_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_long, value_type::vt_double }); }
             inline bool is_string() const noexcept { return is_vtype({ value_type::vt_string, value_type::vt_wstring }); }

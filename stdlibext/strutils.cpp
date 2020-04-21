@@ -218,3 +218,9 @@ string strutils::to_string(const wstring& ws)
     string s(ws.begin(), ws.end());
     return s;
 }
+
+wstring strutils::to_wstring(const string& s)
+{
+    wstring ws(s.begin(), s.end());
+    return ws;
+}
