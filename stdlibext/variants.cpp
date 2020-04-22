@@ -14,7 +14,7 @@ std::string variants::to_string(const value_type vtype)
         CASE_VTYPE_STR(vt_bool);
         CASE_VTYPE_STR(vt_double);
         CASE_VTYPE_STR(vt_int);
-        CASE_VTYPE_STR(vt_long);
+        CASE_VTYPE_STR(vt_int64);
         CASE_VTYPE_STR(vt_object);
         CASE_VTYPE_STR(vt_string);
         CASE_VTYPE_STR(vt_wstring);
@@ -70,8 +70,8 @@ variant& variant::operator=(const variants::variant& source)
     case value_type::vt_int:
         *this = source.to_int();
         break;
-    case value_type::vt_long:
-        *this = source.to_long();
+    case value_type::vt_int64:
+        *this = source.to_int64();
         break;
     case value_type::vt_double:
         *this = source.to_double();
@@ -112,11 +112,11 @@ variant& variant::operator=(const int source)
     return *this;
 }
 
-variant::variant(const long val) { *this = val; }
-variant& variant::operator=(const long source)
+variant::variant(const int64_t val) { *this = val; }
+variant& variant::operator=(const int64_t source)
 {
-    m_vtype = value_type::vt_long;
-    m_value = new long(source);
+    m_vtype = value_type::vt_int64;
+    m_value = new int64_t(source);
     return *this;
 }
 
@@ -145,8 +145,8 @@ void variant::clear()
         case value_type::vt_int:
             delete (int*)m_value;
             break;
-        case value_type::vt_long:
-            delete (long*)m_value;
+        case value_type::vt_int64:
+            delete (int64_t*)m_value;
             break;
         default:
             delete m_value;
@@ -276,8 +276,8 @@ bool variant::do_operation_cmp(const variant& v1, const variant& v2, const opera
     {
         if (v1.is_vtype(value_type::vt_double) || v2.is_vtype(value_type::vt_double))
             return internal_do_binary_op_comparision<double>(v1, v2, op);
-        else if (v1.is_vtype(value_type::vt_long) || v2.is_vtype(value_type::vt_long))
-            return internal_do_binary_op_comparision<long>(v1, v2, op);
+        else if (v1.is_vtype(value_type::vt_int64) || v2.is_vtype(value_type::vt_int64))
+            return internal_do_binary_op_comparision<int64_t>(v1, v2, op);
         else
             return internal_do_binary_op_comparision<int>(v1, v2, op);
     }
@@ -295,8 +295,8 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
     {
         if (v1.is_vtype(value_type::vt_double) || v2.is_vtype(value_type::vt_double))
             return internal_do_binary_op_arithmetic<double>(v1, v2, op);
-        else if (v1.is_vtype(value_type::vt_long) || v2.is_vtype(value_type::vt_long))
-            return internal_do_binary_op_arithmetic<long>(v1, v2, op);
+        else if (v1.is_vtype(value_type::vt_int64) || v2.is_vtype(value_type::vt_int64))
+            return internal_do_binary_op_arithmetic<int64_t>(v1, v2, op);
         else
             return internal_do_binary_op_arithmetic<int>(v1, v2, op);
     }
@@ -344,9 +344,9 @@ int variant::to_int() const noexcept(false)
     {
     case value_type::vt_int:
         return static_cast<int>(*((int*)m_value));
-    case value_type::vt_long:
+    case value_type::vt_int64:
     {
-        long n = *((long*)m_value);
+        int64_t n = *((int64_t*)m_value);
         if (n > std::numeric_limits<int>::max() || n < std::numeric_limits<int>::min())
             throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
         return static_cast<int>(n);
@@ -356,18 +356,19 @@ int variant::to_int() const noexcept(false)
     }
 }
 
-long variant::to_long() const noexcept(false)
+int64_t variant::to_int64() const noexcept(false)
 {
     switch (m_vtype)
-    { 
+    {
     case value_type::vt_int:
-        return static_cast<long>(*((int*)m_value));
-    case value_type::vt_long:
-        return *((long*)m_value);
+        return static_cast<int64_t>(*((int*)m_value));
+    case value_type::vt_int64:
+        return *((int64_t*)m_value);
     default:
-        throw variant_exception(err_msg_convertion_failed(m_vtype, "long"), variant_error::conversion_failed);
+        throw variant_exception(err_msg_convertion_failed(m_vtype, "int64"), variant_error::conversion_failed);
     }
 }
+
 
 double variant::to_double() const noexcept(false)
 {
@@ -375,8 +376,8 @@ double variant::to_double() const noexcept(false)
     {
     case value_type::vt_int:
         return static_cast<double>(*((int*)m_value));
-    case value_type::vt_long:
-        return static_cast<double>(*((long*)m_value));
+    case value_type::vt_int64:
+        return static_cast<double>(*((int64_t*)m_value));
     case value_type::vt_double:
         return *((double*)m_value);
     default:

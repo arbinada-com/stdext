@@ -8,6 +8,7 @@
 
 #include <exception>
 #include <string>
+#include <cstdint>
 
 namespace stdext
 {
@@ -48,7 +49,7 @@ namespace stdext
             vt_bool,
             vt_double,
             vt_int,
-            vt_long,
+            vt_int64,
             vt_string,
             vt_wstring,
             vt_object
@@ -58,7 +59,7 @@ namespace stdext
         std::string to_string(const value_type vtype);
         inline const value_type to_value_type(bool) { return value_type::vt_bool; }
         inline const value_type to_value_type(int) { return value_type::vt_int; }
-        inline const value_type to_value_type(long) { return value_type::vt_long; }
+        inline const value_type to_value_type(int64_t) { return value_type::vt_int64; }
         inline const value_type to_value_type(float) { return value_type::vt_double; }
         inline const value_type to_value_type(double) { return value_type::vt_double; }
         inline const value_type to_value_type(std::string) { return value_type::vt_string; }
@@ -128,8 +129,8 @@ namespace stdext
             variant& operator=(const bool source);
             variant(const int val);
             variant& operator=(const int source);
-            variant(const long val);
-            variant& operator=(const long source);
+            variant(const int64_t val);
+            variant& operator=(const int64_t source);
             variant(const double val);
             variant& operator=(const double source);
             virtual ~variant() noexcept;
@@ -137,13 +138,13 @@ namespace stdext
             // cast operators
             operator bool() const { return to_bool(); }
             operator int() const { return to_int(); }
-            operator long() const { return to_long(); }
+            operator int64_t() const { return to_int64(); }
             operator double() const { return to_double(); }
         public:
             // convertion functions
             bool to_bool() const noexcept(false);
             int to_int() const noexcept(false);
-            long to_long() const noexcept(false);
+            int64_t to_int64() const noexcept(false);
             double to_double() const noexcept(false);
         public:
             // Comparison operations
@@ -151,17 +152,17 @@ namespace stdext
             DECLARE_EQUAL_FUNC(variant)
             DECLARE_OPERATORS_COMPARISION_FULL(bool)
             DECLARE_OPERATORS_COMPARISION_FULL(int)
-            DECLARE_OPERATORS_COMPARISION_FULL(long)
+            DECLARE_OPERATORS_COMPARISION_FULL(int64_t)
             // Arithmetic operations
             DECLARE_OPERATORS_ARITHMETIC(variant, variant)
             DECLARE_OPERATORS_ARITHMETIC_FULL(int)
-            DECLARE_OPERATORS_ARITHMETIC_FULL(long)
+            DECLARE_OPERATORS_ARITHMETIC_FULL(int64_t)
 
         public:
             void clear();
             value_type vtype() const noexcept { return m_vtype; }
-            inline bool is_integer_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_long }); }
-            inline bool is_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_long, value_type::vt_double }); }
+            inline bool is_integer_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_int64 }); }
+            inline bool is_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_int64, value_type::vt_double }); }
             inline bool is_string() const noexcept { return is_vtype({ value_type::vt_string, value_type::vt_wstring }); }
         protected:
             inline bool is_vtype(const value_type vtype) const noexcept;
