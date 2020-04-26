@@ -1,3 +1,8 @@
+/*
+ C++ standard library extensions
+ (c) 2001-2020 Serguei Tarassov (see license.txt)
+ */
+
 #include "variants.h"
 #include <limits>
 #include "strutils.h"
@@ -49,6 +54,26 @@ std::string variants::to_string(const operation op)
     }
 }
 
+bool variants::is_comparision(variants::operation op)
+{
+    return
+        op == operation::cmp_eq ||
+        op == operation::cmp_ge ||
+        op == operation::cmp_gt ||
+        op == operation::cmp_le ||
+        op == operation::cmp_lt ||
+        op == operation::cmp_neq;
+}
+
+bool variants::is_logical_op(variants::operation op)
+{
+    return
+        op == operation::b_and ||
+        op == operation::b_not ||
+        op == operation::b_or;
+}
+
+
 /*
  * Initializations
  */
@@ -76,9 +101,15 @@ variant& variant::operator=(const variants::variant& source)
     case value_type::vt_double:
         *this = source.to_double();
         break;
+    case value_type::vt_string:
+        *this = source.to_string();
+        break;
+    case value_type::vt_wstring:
+        *this = source.to_wstring();
+        break;
     default:
         throw variant_exception(
-            strutils::format("Unsupported type %s (%d)", to_string(source.m_vtype).c_str(), static_cast<int>(source.m_vtype)),
+            strutils::format("Unsupported type %s (%d)", variants::to_string(source.m_vtype).c_str(), static_cast<int>(source.m_vtype)),
             variant_error::conversion_failed);
     }
     return *this;
@@ -128,6 +159,42 @@ variant& variant::operator=(const double source)
     return *this;
 }
 
+variant::variant(const std::string val) { *this = val; }
+variant& variant::operator=(const std::string source)
+{
+    m_vtype = value_type::vt_string;
+    m_value = new std::string(source);
+    return *this;
+}
+
+variant::variant(const char* val) 
+    : variant(std::string(val))
+{ }
+variant& variant::operator=(const char* source)
+{
+    m_vtype = value_type::vt_string;
+    m_value = new std::string(source);
+    return *this;
+}
+
+variant::variant(const std::wstring val) { *this = val; }
+variant& variant::operator=(const std::wstring source)
+{
+    m_vtype = value_type::vt_wstring;
+    m_value = new std::wstring(source);
+    return *this;
+}
+
+variant::variant(const wchar_t* val)
+    : variant(std::wstring(val))
+{ }
+variant& variant::operator=(const wchar_t* source)
+{
+    m_vtype = value_type::vt_wstring;
+    m_value = new std::wstring(source);
+    return *this;
+}
+
 variant::~variant()
 {
     clear();
@@ -148,6 +215,15 @@ void variant::clear()
         case value_type::vt_int64:
             delete (int64_t*)m_value;
             break;
+        case value_type::vt_double:
+            delete (double*)m_value;
+            break;
+        case value_type::vt_string:
+            delete (std::string*)m_value;
+            break;
+        case value_type::vt_wstring:
+            delete (std::wstring*)m_value;
+            break;
         default:
             delete m_value;
             break;
@@ -158,148 +234,192 @@ void variant::clear()
 }
 
 
-/*
- * Comparison functions
- */
-std::string err_msg_unsupported_comparision(const value_type vtype1, const value_type vtype2) noexcept
+std::string err_msg_unsupported_comparision(const operation op, const value_type vtype1, const value_type vtype2) noexcept
 {
     return strutils::format(
-        "Unsupported comparision betweent type %s (%d) and %s (%d)",
-        to_string(vtype1).c_str(),
+        "Unsupported comparision %s between type %s (%d) and %s (%d)",
+        variants::to_string(op).c_str(),
+        variants::to_string(vtype1).c_str(),
         static_cast<int>(vtype1),
-        to_string(vtype2).c_str(),
+        variants::to_string(vtype2).c_str(),
         static_cast<int>(vtype2)
     );
-}
-
-/*
- * Arithmetic operations
- */
-bool is_comparision(variants::operation op)
-{
-    return 
-        op == operation::cmp_eq || 
-        op == operation::cmp_ge || 
-        op == operation::cmp_gt || 
-        op == operation::cmp_le || 
-        op == operation::cmp_lt || 
-        op == operation::cmp_neq;
-}
-
-bool is_logical_op(variants::operation op)
-{
-    return
-        op == operation::b_and ||
-        op == operation::b_not ||
-        op == operation::b_or ;
-
 }
 
 string err_msg_unsupported_operation(const operation op, const value_type vtype1, const value_type vtype2) noexcept
 {
     return strutils::format(
-        "Unsupported operation %s betweent type %s (%d) and %s (%d)",
-        to_string(op).c_str(),
-        to_string(vtype1).c_str(),
+        "Unsupported operation %s between type %s (%d) and %s (%d)",
+        variants::to_string(op).c_str(),
+        variants::to_string(vtype1).c_str(),
         static_cast<int>(vtype1),
-        to_string(vtype2).c_str(),
+        variants::to_string(vtype2).c_str(),
         static_cast<int>(vtype2)
     );
 }
 
-template <class VType>
-VType internal_do_binary_op_arithmetic(const VType& v1, const VType& v2, operation op)
+value_type deduce_compatible_type(const value_type t1, const value_type t2) noexcept
 {
-    switch (op)
+    switch (t1)
     {
-    case operation::add:
-        return v1 + v2;
-    case operation::subtract:
-        return v1 - v2;
-    case operation::multiply:
-        return v1 * v2;
-    case operation::divide:
-        return v1 / v2;
-    default:
-        throw variant_exception(
-            strutils::format("Unsupported arithmetic operation '%s'", to_string(op).c_str()),
-            variant_error::operation_failed_binary);
+    case value_type::vt_bool:
+        if (t2 == value_type::vt_bool)
+            return t2;
+        break;
+    case value_type::vt_int:
+        if (t2 == value_type::vt_int || t2 == value_type::vt_int64 || t2 == value_type::vt_double)
+            return t2;
+        break;
+    case value_type::vt_int64:
+        switch (t2)
+        {
+        case value_type::vt_int:
+        case value_type::vt_int64:
+            return value_type::vt_int64;
+        case value_type::vt_double:
+            return value_type::vt_double;
+        }
+        break;
+    case value_type::vt_double:
+        if (t2 == value_type::vt_int || t2 == value_type::vt_int64 || t2 == value_type::vt_double)
+            return value_type::vt_double;
+        break;
+    case value_type::vt_string:
+        if (t2 == value_type::vt_string)
+            return t2;
+        break;
+    case value_type::vt_wstring:
+        if (t2 == value_type::vt_wstring)
+            return t2;
+        break;
     }
+    return value_type::vt_unknown;
 }
 
-template <class VType>
-bool internal_do_binary_op_comparision(const VType& v1, const VType& v2, operation op)
+value_type deduce_compatible_type(const variant& v1, const variant& v2) noexcept
 {
-    switch (op)
-    {
-    case operation::cmp_eq:
-        return v1 == v2;
-    case operation::cmp_ge:
-        return v1 >= v2;
-    case operation::cmp_gt:
-        return v1 > v2;
-    case operation::cmp_le:
-        return v1 <= v2;
-    case operation::cmp_lt:
-        return v1 < v2;
-    case operation::cmp_neq:
-        return v1 != v2;
-    default:
-        throw variant_exception(
-            strutils::format("Unsupported comparision operation '%s'", to_string(op).c_str()),
-            variant_error::operation_failed_binary);
-    }
-}
-
-bool internal_do_binary_op_boolean(const bool v1, const bool v2, operation op)
-{
-    switch (op)
-    {
-    case operation::b_and:
-        return v1 && v2;
-    case operation::b_or:
-        return v1 || v2;
-    default:
-        throw variant_exception(
-            strutils::format("Unsupported boolean operation '%s'", to_string(op).c_str()),
-            variant_error::operation_failed_binary);
-    }
-}
-
-bool variant::do_operation_cmp(const variant& v1, const variant& v2, const operation op) noexcept(false)
-{
-    if (v1.is_vtype(value_type::vt_bool) && v2.is_vtype(value_type::vt_bool))
-    {
-        return internal_do_binary_op_comparision<bool>(v1, v2, op);
-    }
-    else if (v1.is_numeric() && v2.is_numeric())
-    {
-        if (v1.is_vtype(value_type::vt_double) || v2.is_vtype(value_type::vt_double))
-            return internal_do_binary_op_comparision<double>(v1, v2, op);
-        else if (v1.is_vtype(value_type::vt_int64) || v2.is_vtype(value_type::vt_int64))
-            return internal_do_binary_op_comparision<int64_t>(v1, v2, op);
-        else
-            return internal_do_binary_op_comparision<int>(v1, v2, op);
-    }
-    throw variant_exception(err_msg_unsupported_operation(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);
+    return deduce_compatible_type(v1.vtype(), v2.vtype());
 }
 
 variant variant::do_operation(const variant& v1, const variant& v2, const operation op) noexcept(false)
 {
-    if (v1.is_vtype(value_type::vt_bool) && v2.is_vtype(value_type::vt_bool))
+    switch (op)
     {
-        if (is_logical_op(op))
-            return internal_do_binary_op_boolean(v1, v2, op);
+    // Math
+    case operation::add:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_int: return v1.to_int() + v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() + v2.to_int64();
+        case value_type::vt_double: return v1.to_double() + v2.to_double();
+        case value_type::vt_string: return v1.to_string() + v2.to_string();
+        case value_type::vt_wstring: return v1.to_string() + v2.to_string();
+        }
+        break;
+    case operation::divide:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_int: return v1.to_int() / v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() / v2.to_int64();
+        case value_type::vt_double: return v1.to_double() / v2.to_double();
+        }
+        break;
+    case operation::multiply:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_int: return v1.to_int() * v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() * v2.to_int64();
+        case value_type::vt_double: return v1.to_double() * v2.to_double();
+        }
+        break;
+    case operation::subtract:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_int: return v1.to_int() - v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() - v2.to_int64();
+        case value_type::vt_double: return v1.to_double() - v2.to_double();
+        }
+        break;
+     // Logical
+    case operation::b_and:
+        if (deduce_compatible_type(v1, v2) == value_type::vt_bool)
+            return v1.to_bool() && v2.to_bool();
+        break;
+    case operation::b_or:
+        if (deduce_compatible_type(v1, v2) == value_type::vt_bool)
+            return v1.to_bool() || v2.to_bool();
+        break;
+    // Comparisions
+    case operation::cmp_eq:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() == v2.to_bool();
+        case value_type::vt_int: return v1.to_int() == v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() == v2.to_int64();
+        case value_type::vt_double: return v1.to_double() == v2.to_double();
+        case value_type::vt_string: return v1.to_string() == v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() == v2.to_wstring();
+        }
+        break;
+    case operation::cmp_neq:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() != v2.to_bool();
+        case value_type::vt_int: return v1.to_int() != v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() != v2.to_int64();
+        case value_type::vt_double: return v1.to_double() != v2.to_double();
+        case value_type::vt_string: return v1.to_string() != v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() != v2.to_wstring();
+        }
+        break;
+    case operation::cmp_gt:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() > v2.to_bool();
+        case value_type::vt_int: return v1.to_int() > v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() > v2.to_int64();
+        case value_type::vt_double: return v1.to_double() > v2.to_double();
+        case value_type::vt_string: return v1.to_string() > v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() > v2.to_wstring();
+        }
+        break;
+    case operation::cmp_ge:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() >= v2.to_bool();
+        case value_type::vt_int: return v1.to_int() >= v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() >= v2.to_int64();
+        case value_type::vt_double: return v1.to_double() >= v2.to_double();
+        case value_type::vt_string: return v1.to_string() >= v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() >= v2.to_wstring();
+        }
+        break;
+    case operation::cmp_lt:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() < v2.to_bool();
+        case value_type::vt_int: return v1.to_int() < v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() < v2.to_int64();
+        case value_type::vt_double: return v1.to_double() < v2.to_double();
+        case value_type::vt_string: return v1.to_string() < v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() < v2.to_wstring();
+        }
+        break;
+    case operation::cmp_le:
+        switch (deduce_compatible_type(v1, v2))
+        {
+        case value_type::vt_bool: return v1.to_bool() <= v2.to_bool();
+        case value_type::vt_int: return v1.to_int() <= v2.to_int();
+        case value_type::vt_int64: return v1.to_int64() <= v2.to_int64();
+        case value_type::vt_double: return v1.to_double() <= v2.to_double();
+        case value_type::vt_string: return v1.to_string() <= v2.to_string();
+        case value_type::vt_wstring: return v1.to_wstring() <= v2.to_wstring();
+        }
+        break;
+
     }
-    else if (v1.is_numeric() && v2.is_numeric())
-    {
-        if (v1.is_vtype(value_type::vt_double) || v2.is_vtype(value_type::vt_double))
-            return internal_do_binary_op_arithmetic<double>(v1, v2, op);
-        else if (v1.is_vtype(value_type::vt_int64) || v2.is_vtype(value_type::vt_int64))
-            return internal_do_binary_op_arithmetic<int64_t>(v1, v2, op);
-        else
-            return internal_do_binary_op_arithmetic<int>(v1, v2, op);
-    }
+    if (is_comparision(op))
+        throw variant_exception(err_msg_unsupported_comparision(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);
     throw variant_exception(err_msg_unsupported_operation(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);
 }
 
@@ -310,7 +430,7 @@ string err_msg_convertion_failed(const value_type vtype, const char* to_type_nam
 {
     return strutils::format(
         "Conversion failed from type %s (%d) to '%s'", 
-        to_string(vtype).c_str(),
+        variants::to_string(vtype).c_str(),
         static_cast<int>(vtype),
         to_type_name
     );
@@ -331,7 +451,7 @@ bool variant::is_vtype(const std::initializer_list<value_type> vtypes) const noe
     return false;
 }
 
-bool variant::to_bool() const
+bool variant::to_bool() const noexcept(false)
 {
     if (!is_vtype(value_type::vt_bool))
         throw variant_exception(err_msg_convertion_failed(m_vtype, "bool"), variant_error::conversion_failed);
@@ -351,6 +471,14 @@ int variant::to_int() const noexcept(false)
             throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
         return static_cast<int>(n);
     }
+    case value_type::vt_double:
+    {
+        double ipart;
+        double fpart = modf(*((double*)m_value), &ipart);
+        if (ipart > std::numeric_limits<int>::max() || ipart < std::numeric_limits<int>::min())
+            throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
+        return static_cast<int>(ipart);
+    }
     default:
         throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed);
     }
@@ -364,11 +492,18 @@ int64_t variant::to_int64() const noexcept(false)
         return static_cast<int64_t>(*((int*)m_value));
     case value_type::vt_int64:
         return *((int64_t*)m_value);
+    case value_type::vt_double:
+    {
+        double ipart;
+        double fpart = modf(*((double*)m_value), &ipart);
+        if (ipart > std::numeric_limits<int64_t>::max() || ipart < std::numeric_limits<int64_t>::min())
+            throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
+        return static_cast<int64_t>(ipart);
+    }
     default:
         throw variant_exception(err_msg_convertion_failed(m_vtype, "int64"), variant_error::conversion_failed);
     }
 }
-
 
 double variant::to_double() const noexcept(false)
 {
@@ -382,5 +517,47 @@ double variant::to_double() const noexcept(false)
         return *((double*)m_value);
     default:
         throw variant_exception(err_msg_convertion_failed(m_vtype, "double"), variant_error::conversion_failed);
+    }
+}
+
+std::string variant::to_string() const noexcept(false)
+{
+    switch (m_vtype)
+    {
+    case value_type::vt_bool: 
+        return std::to_string(to_bool());
+    case value_type::vt_double: 
+        return std::to_string(to_double());
+    case value_type::vt_int:
+        return std::to_string(to_int());
+    case value_type::vt_int64:
+        return std::to_string(to_int64());
+    case value_type::vt_string:
+        return *((std::string*)m_value);
+    case value_type::vt_wstring:
+        return strutils::to_string(*((std::wstring*)m_value));
+    default:
+        throw variant_exception(err_msg_convertion_failed(m_vtype, "std::string"), variant_error::conversion_failed);
+    }
+}
+
+std::wstring variant::to_wstring() const noexcept(false)
+{
+    switch (m_vtype)
+    {
+    case value_type::vt_bool:
+        return std::to_wstring(to_bool());
+    case value_type::vt_double:
+        return std::to_wstring(to_double());
+    case value_type::vt_int:
+        return std::to_wstring(to_int());
+    case value_type::vt_int64:
+        return std::to_wstring(to_int64());
+    case value_type::vt_string:
+        return strutils::to_wstring(*((std::string*)m_value));
+    case value_type::vt_wstring:
+        return *((std::wstring*)m_value);
+    default:
+        throw variant_exception(err_msg_convertion_failed(m_vtype, "std::wstring"), variant_error::conversion_failed);
     }
 }

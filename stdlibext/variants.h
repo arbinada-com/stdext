@@ -87,35 +87,9 @@ namespace stdext
         const operation first_operation = operation::unknown;
         const operation last_operation = operation::nop;
         std::string to_string(const operation op);
+        bool is_comparision(variants::operation op);
+        bool is_logical_op(variants::operation op);
 
-
-#define DECLARE_OPERATOR(type1, type2, rettype, opname, optype) \
-    friend rettype operator opname(const type1& v1, const type2& v2) { return do_operation(v1, v2, optype); }
-#define DECLARE_OPERATOR_CMP(type1, type2, rettype, opname, optype) \
-    friend rettype operator opname(const type1& v1, const type2& v2) { return do_operation_cmp(v1, v2, optype); }
-#define DECLARE_EQUAL_FUNC(type) \
-    bool equal(const type& value) const noexcept(false) { return do_operation_cmp(*this, value, operation::cmp_eq); }
-
-#define DECLARE_OPERATORS_COMPARISION(type1, type2) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, ==, operation::cmp_eq) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, !=, operation::cmp_neq) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, >, operation::cmp_gt) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, >=, operation::cmp_ge) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, <, operation::cmp_lt) \
-    DECLARE_OPERATOR_CMP(type1, type2, bool, <=, operation::cmp_le)
-#define DECLARE_OPERATORS_COMPARISION_FULL(type) \
-    DECLARE_OPERATORS_COMPARISION(variant, type) \
-    DECLARE_OPERATORS_COMPARISION(type, variant) \
-    DECLARE_EQUAL_FUNC(type)
-
-#define DECLARE_OPERATORS_ARITHMETIC(type1, type2) \
-    DECLARE_OPERATOR(type1, type2, variant, +, operation::add) \
-    DECLARE_OPERATOR(type1, type2, variant, -, operation::subtract) \
-    DECLARE_OPERATOR(type1, type2, variant, *, operation::multiply) \
-    DECLARE_OPERATOR(type1, type2, variant, /, operation::divide)
-#define DECLARE_OPERATORS_ARITHMETIC_FULL(type) \
-    DECLARE_OPERATORS_ARITHMETIC(variant, type)\
-    DECLARE_OPERATORS_ARITHMETIC(type, variant)
 
         class variant
         {
@@ -133,6 +107,14 @@ namespace stdext
             variant& operator=(const int64_t source);
             variant(const double val);
             variant& operator=(const double source);
+            variant(const std::string val);
+            variant& operator=(const std::string source);
+            variant(const char* val);
+            variant& operator=(const char* source);
+            variant(const std::wstring val);
+            variant& operator=(const std::wstring source);
+            variant(const wchar_t* val);
+            variant& operator=(const wchar_t* source);
             virtual ~variant() noexcept;
         public: 
             // cast operators
@@ -140,24 +122,172 @@ namespace stdext
             operator int() const { return to_int(); }
             operator int64_t() const { return to_int64(); }
             operator double() const { return to_double(); }
+            operator std::string() const { return to_string(); }
+            operator std::wstring() const { return to_wstring(); }
         public:
             // convertion functions
             bool to_bool() const noexcept(false);
             int to_int() const noexcept(false);
             int64_t to_int64() const noexcept(false);
             double to_double() const noexcept(false);
+            std::string to_string() const noexcept(false);
+            std::wstring to_wstring() const noexcept(false);
         public:
-            // Comparison operations
-            DECLARE_OPERATORS_COMPARISION(variant, variant)
-            DECLARE_EQUAL_FUNC(variant)
-            DECLARE_OPERATORS_COMPARISION_FULL(bool)
-            DECLARE_OPERATORS_COMPARISION_FULL(int)
-            DECLARE_OPERATORS_COMPARISION_FULL(int64_t)
-            // Arithmetic operations
-            DECLARE_OPERATORS_ARITHMETIC(variant, variant)
-            DECLARE_OPERATORS_ARITHMETIC_FULL(int)
-            DECLARE_OPERATORS_ARITHMETIC_FULL(int64_t)
-
+            // Operations
+            // variant
+            friend bool operator ==(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_eq); } 
+            friend bool operator !=(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_neq); } 
+            friend bool operator >(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_gt); } 
+            friend bool operator >=(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_ge); } 
+            friend bool operator <(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_lt); } 
+            friend bool operator <=(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::cmp_le); }
+            bool equal(const variant& value) const noexcept(false) { return do_operation(*this, value, operation::cmp_eq); }
+            friend variant operator +(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::add); }
+            friend variant operator -(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::subtract); }
+            friend variant operator *(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::multiply); }
+            friend variant operator /(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::divide); }
+            friend variant operator &&(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::b_and); }
+            friend variant operator ||(const variant& v1, const variant& v2) { return do_operation(v1, v2, operation::b_or); }
+            // bool
+            friend bool operator ==(const variant& v1, bool v2) { return v1.to_bool() == v2; }
+            friend bool operator !=(const variant& v1, bool v2) { return v1.to_bool() != v2; }
+            friend bool operator ==(const bool v1, const variant& v2) { return v1 == v2.to_bool(); }
+            friend bool operator !=(const bool v1, const variant& v2) { return v1 != v2.to_bool(); }
+            bool equal(const bool value) const noexcept(false) { return to_bool() == value; }
+            friend bool operator &&(const variant& v1, bool v2) { return v1.to_bool() && v2; }
+            friend bool operator &&(const bool v1, const variant& v2) { return v1 && v2.to_bool(); }
+            friend bool operator ||(const variant& v1, bool v2) { return v1.to_bool() || v2; }
+            friend bool operator ||(const bool v1, const variant& v2) { return v1 || v2.to_bool(); }
+            // int
+            friend bool operator ==(const variant& v1, const int v2) { return v1.to_int64() == v2; } 
+            friend bool operator !=(const variant& v1, const int v2) { return v1.to_int64() != v2; }
+            friend bool operator >(const variant& v1, const int v2) { return v1.to_int64() > v2; }
+            friend bool operator >=(const variant& v1, const int v2) { return v1.to_int64() >= v2; }
+            friend bool operator <(const variant& v1, const int v2) { return v1.to_int64() < v2; }
+            friend bool operator <=(const variant& v1, const int v2) { return v1.to_int64() <= v2; }
+            friend bool operator ==(const int v1, const variant& v2) { return v1 == v2.to_int64(); }
+            friend bool operator !=(const int v1, const variant& v2) { return v1 != v2.to_int64(); }
+            friend bool operator >(const int v1, const variant& v2) { return v1 > v2.to_int64(); }
+            friend bool operator >=(const int v1, const variant& v2) { return v1 >= v2.to_int64(); }
+            friend bool operator <(const int v1, const variant& v2) { return v1 < v2.to_int64(); }
+            friend bool operator <=(const int v1, const variant& v2) { return v1 <= v2.to_int64(); }
+            bool equal(const int value) const noexcept(false) { return to_int64() == value; }
+            friend variant operator +(const variant& v1, const int v2) { return do_operation(v1, v2, operation::add); }
+            friend variant operator -(const variant& v1, const int v2) { return do_operation(v1, v2, operation::subtract); }
+            friend variant operator *(const variant& v1, const int v2) { return do_operation(v1, v2, operation::multiply); }
+            friend variant operator /(const variant& v1, const int v2) { return do_operation(v1, v2, operation::divide); }
+            friend variant operator +(const int v1, const variant& v2) { return do_operation(v1, v2, operation::add); }
+            friend variant operator -(const int v1, const variant& v2) { return do_operation(v1, v2, operation::subtract); }
+            friend variant operator *(const int v1, const variant& v2) { return do_operation(v1, v2, operation::multiply); }
+            friend variant operator /(const int v1, const variant& v2) { return do_operation(v1, v2, operation::divide); }
+            // int64
+            friend bool operator ==(const variant& v1, const int64_t v2) { return v1.to_int64() == v2; }
+            friend bool operator !=(const variant& v1, const int64_t v2) { return v1.to_int64() != v2; }
+            friend bool operator >(const variant& v1, const int64_t v2) { return v1.to_int64() > v2; }
+            friend bool operator >=(const variant& v1, const int64_t v2) { return v1.to_int64() >= v2; }
+            friend bool operator <(const variant& v1, const int64_t v2) { return v1.to_int64() < v2; }
+            friend bool operator <=(const variant& v1, const int64_t v2) { return v1.to_int64() <= v2; }
+            friend bool operator ==(const int64_t v1, const variant& v2) { return v1 == v2.to_int64(); }
+            friend bool operator !=(const int64_t v1, const variant& v2) { return v1 != v2.to_int64(); }
+            friend bool operator >(const int64_t v1, const variant& v2) { return v1 > v2.to_int64(); }
+            friend bool operator >=(const int64_t v1, const variant& v2) { return v1 >= v2.to_int64(); }
+            friend bool operator <(const int64_t v1, const variant& v2) { return v1 < v2.to_int64(); }
+            friend bool operator <=(const int64_t v1, const variant& v2) { return v1 <= v2.to_int64(); }
+            bool equal(const int64_t value) const noexcept(false) { return to_int64() == value; }
+            friend variant operator +(const variant v1, const int64_t v2) { return do_operation(v1, v2, operation::add); }
+            friend variant operator -(const variant v1, const int64_t v2) { return do_operation(v1, v2, operation::subtract); }
+            friend variant operator *(const variant v1, const int64_t v2) { return do_operation(v1, v2, operation::multiply); }
+            friend variant operator /(const variant v1, const int64_t v2) { return do_operation(v1, v2, operation::divide); }
+            friend variant operator +(const int64_t v1, const variant v2) { return do_operation(v1, v2, operation::add); }
+            friend variant operator -(const int64_t v1, const variant v2) { return do_operation(v1, v2, operation::subtract); }
+            friend variant operator *(const int64_t v1, const variant v2) { return do_operation(v1, v2, operation::multiply); }
+            friend variant operator /(const int64_t v1, const variant v2) { return do_operation(v1, v2, operation::divide); }
+            // double
+            friend bool operator ==(const variant& v1, const double v2) { return v1.to_double() == v2; }
+            friend bool operator !=(const variant& v1, const double v2) { return v1.to_double() != v2; }
+            friend bool operator >(const variant& v1, const double v2) { return v1.to_double() > v2; }
+            friend bool operator >=(const variant& v1, const double v2) { return v1.to_double() >= v2; }
+            friend bool operator <(const variant& v1, const double v2) { return v1.to_double() < v2; }
+            friend bool operator <=(const variant& v1, const double v2) { return v1.to_double() <= v2; }
+            friend bool operator ==(const double v1, const variant& v2) { return v1 == v2.to_double(); }
+            friend bool operator !=(const double v1, const variant& v2) { return v1 != v2.to_double(); }
+            friend bool operator >(const double v1, const variant& v2) { return v1 > v2.to_double(); }
+            friend bool operator >=(const double v1, const variant& v2) { return v1 >= v2.to_double(); }
+            friend bool operator <(const double v1, const variant& v2) { return v1 < v2.to_double(); }
+            friend bool operator <=(const double v1, const variant& v2) { return v1 <= v2.to_double(); }
+            bool equal(const double value) const noexcept(false) { return to_double() == value; }
+            friend double operator +(const variant v1, const double v2) { return v1.to_double() + v2; }
+            friend double operator -(const variant v1, const double v2) { return v1.to_double() - v2; }
+            friend double operator *(const variant v1, const double v2) { return v1.to_double() * v2; }
+            friend double operator /(const variant v1, const double v2) { return v1.to_double() / v2; }
+            friend double operator +(const double v1, const variant v2) { return v1 + v2.to_double(); }
+            friend double operator -(const double v1, const variant v2) { return v1 - v2.to_double(); }
+            friend double operator *(const double v1, const variant v2) { return v1 * v2.to_double(); }
+            friend double operator /(const double v1, const variant v2) { return v1 / v2.to_double(); }
+            // string
+            friend bool operator ==(const variant& v1, const std::string& v2) { return v1.to_string() == v2; }
+            friend bool operator !=(const variant& v1, const std::string& v2) { return v1.to_string() != v2; }
+            friend bool operator >(const variant& v1, const std::string& v2) { return v1.to_string() > v2; }
+            friend bool operator >=(const variant& v1, const std::string& v2) { return v1.to_string() >= v2; }
+            friend bool operator <(const variant& v1, const std::string& v2) { return v1.to_string() < v2; }
+            friend bool operator <=(const variant& v1, const std::string& v2) { return v1.to_string() <= v2; }
+            friend bool operator ==(const std::string& v1, const variant& v2) { return v1 == v2.to_string(); }
+            friend bool operator !=(const std::string& v1, const variant& v2) { return v1 != v2.to_string(); }
+            friend bool operator >(const std::string& v1, const variant& v2) { return v1 > v2.to_string(); }
+            friend bool operator >=(const std::string& v1, const variant& v2) { return v1 >= v2.to_string(); }
+            friend bool operator <(const std::string& v1, const variant& v2) { return v1 < v2.to_string(); }
+            friend bool operator <=(const std::string& v1, const variant& v2) { return v1 <= v2.to_string(); }
+            bool equal(const std::string& value) const noexcept(false) { return to_string() == value; }
+            friend std::string operator +(const variant& v1, const std::string& v2) { return v1.to_string() + v2; }
+            friend std::string operator +(const std::string& v1, const variant& v2) { return v1 + v2.to_string(); }
+            // char*
+            friend bool operator ==(const variant& v1, const char* v2) { return v1.to_string() == v2; }
+            friend bool operator !=(const variant& v1, const char* v2) { return v1.to_string() != v2; }
+            friend bool operator >(const variant& v1, const char* v2) { return v1.to_string() > v2; }
+            friend bool operator >=(const variant& v1, const char* v2) { return v1.to_string() >= v2; }
+            friend bool operator <(const variant& v1, const char* v2) { return v1.to_string() < v2; }
+            friend bool operator <=(const variant& v1, const char* v2) { return v1.to_string() <= v2; }
+            friend bool operator ==(const char* v1, const variant& v2) { return v1 == v2.to_string(); }
+            friend bool operator !=(const char* v1, const variant& v2) { return v1 != v2.to_string(); }
+            friend bool operator >(const char* v1, const variant& v2) { return v1 > v2.to_string(); }
+            friend bool operator >=(const char* v1, const variant& v2) { return v1 >= v2.to_string(); }
+            friend bool operator <(const char* v1, const variant& v2) { return v1 < v2.to_string(); }
+            friend bool operator <=(const char* v1, const variant& v2) { return v1 <= v2.to_string(); }
+            bool equal(const char* value) const noexcept(false) { return to_string() == value; }
+            friend std::string operator +(const variant& v1, const char* v2) { return v1.to_string() + v2; }
+            friend std::string operator +(const char* v1, const variant& v2) { return v1 + v2.to_string(); }
+            // wstring
+            friend bool operator ==(const variant& v1, const std::wstring& v2) { return v1.to_wstring() == v2; }
+            friend bool operator !=(const variant& v1, const std::wstring& v2) { return v1.to_wstring() != v2; }
+            friend bool operator >(const variant& v1, const std::wstring& v2) { return v1.to_wstring() > v2; }
+            friend bool operator >=(const variant& v1, const std::wstring& v2) { return v1.to_wstring() >= v2; }
+            friend bool operator <(const variant& v1, const std::wstring& v2) { return v1.to_wstring() < v2; }
+            friend bool operator <=(const variant& v1, const std::wstring& v2) { return v1.to_wstring() <= v2; }
+            friend bool operator ==(const std::wstring& v1, const variant& v2) { return v1 == v2.to_wstring(); }
+            friend bool operator !=(const std::wstring& v1, const variant& v2) { return v1 != v2.to_wstring(); }
+            friend bool operator >(const std::wstring& v1, const variant& v2) { return v1 > v2.to_wstring(); }
+            friend bool operator >=(const std::wstring& v1, const variant& v2) { return v1 >= v2.to_wstring(); }
+            friend bool operator <(const std::wstring& v1, const variant& v2) { return v1 < v2.to_wstring(); }
+            friend bool operator <=(const std::wstring& v1, const variant& v2) { return v1 <= v2.to_wstring(); }
+            bool equal(const std::wstring& value) const noexcept(false) { return to_wstring() == value; }
+            friend std::wstring operator +(const variant& v1, const std::wstring& v2) { return v1.to_wstring() + v2; }
+            friend std::wstring operator +(const std::wstring& v1, const variant& v2) { return v1 + v2.to_wstring(); }
+            // wchar_t*
+            friend bool operator ==(const variant& v1, const wchar_t* v2) { return v1.to_wstring() == v2; }
+            friend bool operator !=(const variant& v1, const wchar_t* v2) { return v1.to_wstring() != v2; }
+            friend bool operator >(const variant& v1, const wchar_t* v2) { return v1.to_wstring() > v2; }
+            friend bool operator >=(const variant& v1, const wchar_t* v2) { return v1.to_wstring() >= v2; }
+            friend bool operator <(const variant& v1, const wchar_t* v2) { return v1.to_wstring() < v2; }
+            friend bool operator <=(const variant& v1, const wchar_t* v2) { return v1.to_wstring() <= v2; }
+            friend bool operator ==(const wchar_t* v1, const variant& v2) { return v1 == v2.to_wstring(); }
+            friend bool operator !=(const wchar_t* v1, const variant& v2) { return v1 != v2.to_wstring(); }
+            friend bool operator >(const wchar_t* v1, const variant& v2) { return v1 > v2.to_wstring(); }
+            friend bool operator >=(const wchar_t* v1, const variant& v2) { return v1 >= v2.to_wstring(); }
+            friend bool operator <(const wchar_t* v1, const variant& v2) { return v1 < v2.to_wstring(); }
+            friend bool operator <=(const wchar_t* v1, const variant& v2) { return v1 <= v2.to_wstring(); }
+            bool equal(const wchar_t* value) const noexcept(false) { return to_wstring() == value; }
+            friend std::wstring operator +(const variant& v1, const wchar_t* v2) { return v1.to_wstring() + v2; }
+            friend std::wstring operator +(const wchar_t* v1, const variant& v2) { return v1 + v2.to_wstring(); }
         public:
             void clear();
             value_type vtype() const noexcept { return m_vtype; }
@@ -167,7 +297,6 @@ namespace stdext
         protected:
             inline bool is_vtype(const value_type vtype) const noexcept;
             bool is_vtype(const std::initializer_list<value_type> vtypes) const noexcept;
-            static bool do_operation_cmp(const variant& v1, const variant& v2, const operation op) noexcept(false);
             static variant do_operation(const variant& v1, const variant& v2, const operation op) noexcept(false);
         protected:
             void* m_value = nullptr;

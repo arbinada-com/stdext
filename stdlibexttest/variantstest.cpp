@@ -57,6 +57,29 @@ private:
     variant vresult = test.result(); \
     Type1 n1 = v1; \
     Type2 n2 = v2;
+//
+#define DECLARE_BIN_OP_TESTS(TypeR, op, opname) \
+    variant v3 = v1 op v2; \
+    variant v4 = n1 op v2; \
+    variant v5 = v1 op n2; \
+    Assert::AreEqual<TypeR>(test.result(), v1 op v2, make_title(test, L#opname"_1").c_str()); \
+    Assert::AreEqual<TypeR>(test.result(), n1 op v2, make_title(test, L#opname"_2").c_str()); \
+    Assert::AreEqual<TypeR>(test.result(), v1 op n2, make_title(test, L#opname"_3").c_str()); \
+    Assert::AreEqual<TypeR>(test.result(), v3, make_title(test, L#opname"_4").c_str()); \
+    Assert::AreEqual<TypeR>(test.result(), v4, make_title(test, L#opname"_5").c_str()); \
+    Assert::AreEqual<TypeR>(test.result(), v5, make_title(test, L#opname"_6").c_str()); \
+//
+#define DECLARE_BIN_OP_FLOAT_TESTS(TypeR, op, opname) \
+    variant v3 = v1 op v2; \
+    variant v4 = n1 op v2; \
+    variant v5 = v1 op n2; \
+    Assert::IsTrue((test.result() - (v1 op v2)) < 1E-5, make_title(test, L#opname"_1").c_str()); \
+    Assert::IsTrue((test.result() - (n1 op v2)) < 1E-5, make_title(test, L#opname"_2").c_str()); \
+    Assert::IsTrue((test.result() - (v1 op n2)) < 1E-5, make_title(test, L#opname"_3").c_str()); \
+    Assert::IsTrue((test.result() - v3) < 1E-5, make_title(test, L#opname"_4").c_str()); \
+    Assert::IsTrue((test.result() - v4) < 1E-5, make_title(test, L#opname"_5").c_str()); \
+    Assert::IsTrue((test.result() - v5) < 1E-5, make_title(test, L#opname"_6").c_str()); \
+//
 
 template <class Type1, class Type2, class TypeR>
 class test_runner abstract
@@ -141,72 +164,106 @@ protected:
     virtual void test_assignments(test_data_t& test)
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::IsTrue(v1.vtype() == to_value_type(test.v1()), L"v1 type");
-        Assert::IsTrue(v2.vtype() == to_value_type(test.v2()), L"v2 type");
-        Assert::IsTrue(vresult.vtype() == to_value_type(test.result()), L"vresult type");
-        Assert::AreEqual<Type1>(test.v1(), v1, L"v1 value");
-        Assert::AreEqual<Type2>(test.v2(), v2, L"v2 value");
-        Assert::AreEqual<TypeR>(test.result(), vresult, L"vresult value");
-        Assert::AreEqual<Type1>(n1, v1, L"v1 value");
-        Assert::AreEqual<Type2>(n2, v2, L"v2 value");
+        Assert::IsTrue(v1.vtype() == to_value_type(test.v1()), make_title(test, L"v1 type").c_str());
+        Assert::IsTrue(v2.vtype() == to_value_type(test.v2()), make_title(test, L"v2 type").c_str());
+        Assert::IsTrue(vresult.vtype() == to_value_type(test.result()), make_title(test, L"vresult type").c_str());
+        Assert::AreEqual<Type1>(test.v1(), v1, make_title(test, L"v1 value").c_str());
+        Assert::AreEqual<Type2>(test.v2(), v2, make_title(test, L"v2 value").c_str());
+        Assert::AreEqual<TypeR>(test.result(), vresult, make_title(test, L"vresult value").c_str());
+        Assert::AreEqual<Type1>(n1, v1, make_title(test, L"v1 value").c_str());
+        Assert::AreEqual<Type2>(n2, v2, make_title(test, L"v2 value").c_str());
+        variant v3 = std::move(v1);
+        Assert::IsTrue(v3.vtype() == to_value_type(test.v1()), make_title(test, L"v3 type").c_str());
+        Assert::AreEqual<Type1>(test.v1(), v3, make_title(test, L"v3 value").c_str());
     }
-    virtual void test_cmp_eq(test_data_t& test)
+    virtual void test_cmp_eq(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_cmp_neq(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_cmp_gt(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_cmp_ge(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_cmp_lt(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_cmp_le(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_add(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_subtract(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_multiply(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_divide(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_b_and(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_b_or(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+    virtual void test_b_not(test_data_t& test) { Assert::Fail(L"Not implemented"); }
+
+private:
+    test_data_set_t m_tests;
+};
+
+
+template <class Type1, class Type2>
+class test_runner_cmp : public test_runner<Type1, Type2, bool>
+{
+public:
+    test_runner_cmp(std::wstring title)
+        : test_runner(title)
+    { }
+protected:
+    virtual void test_cmp_eq(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 == v2, make_title(test, L"EQ 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 == n2, make_title(test, L"EQ 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 == v2, make_title(test, L"EQ 3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 == n2, make_title(test, L"EQ 4").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1.equal(v2), make_title(test, L"EQ 5.1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v2.equal(v1), make_title(test, L"EQ 5.2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1.equal(n2), make_title(test, L"EQ 5.3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v2.equal(n1), make_title(test, L"EQ 5.4").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 == v2, make_title(test, L"EQ 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 == n2, make_title(test, L"EQ 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 == v2, make_title(test, L"EQ 3").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 == n2, make_title(test, L"EQ 4").c_str());
+        Assert::AreEqual<bool>(test.result(), v1.equal(v2), make_title(test, L"EQ 5.1").c_str());
+        Assert::AreEqual<bool>(test.result(), v2.equal(v1), make_title(test, L"EQ 5.2").c_str());
+        Assert::AreEqual<bool>(test.result(), v1.equal(n2), make_title(test, L"EQ 5.3").c_str());
+        Assert::AreEqual<bool>(test.result(), v2.equal(n1), make_title(test, L"EQ 5.4").c_str());
     }
     virtual void test_cmp_neq(test_data_t& test)
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 != v2, make_title(test, L"NEQ 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 != n2, make_title(test, L"NEQ 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 != v2, make_title(test, L"NEQ 3").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 != v2, make_title(test, L"NEQ 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 != n2, make_title(test, L"NEQ 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 != v2, make_title(test, L"NEQ 3").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 != n2, make_title(test, L"NEQ 4").c_str());
     }
-    virtual void test_cmp_gt(test_data_t& test)
-    {
-        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 > v2, make_title(test, L"GT 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 > n2, make_title(test, L"GT 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 > v2, make_title(test, L"GT 3").c_str());
-    }
-    virtual void test_cmp_ge(test_data_t& test)
-    {
-        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 >= v2, make_title(test, L"GE 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 >= n2, make_title(test, L"GE 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 >= v2, make_title(test, L"GE 3").c_str());
-    }
-    virtual void test_cmp_lt(test_data_t& test)
-    {
-        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 < v2, make_title(test, L"LT 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 < n2, make_title(test, L"LT 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 < v2, make_title(test, L"LT 3").c_str());
-    }
-    virtual void test_cmp_le(test_data_t& test)
-    {
-        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        Assert::AreEqual<TypeR>(test.result(), v1 <= v2, make_title(test, L"LE 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 <= n2, make_title(test, L"LE 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 <= v2, make_title(test, L"LE 3").c_str());
-    }
-    virtual void test_add(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_subtract(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_multiply(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_divide(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_b_and(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_b_or(test_data_t& test) { throw exception("Not implemented"); }
-    virtual void test_b_not(test_data_t& test) { throw exception("Not implemented"); }
+};
 
-private:
-    test_data_set_t m_tests;
+/*
+ * test_runner for numeric types
+ */
+template <class Type1, class Type2>
+class test_runner_cmp_num : public test_runner_cmp<Type1, Type2>
+{
+public:
+    test_runner_cmp_num(std::wstring title)
+        : test_runner_cmp(title)
+    { }
+protected:
+    virtual void test_cmp_gt(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 > v2, make_title(test, L"GT 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 > n2, make_title(test, L"GT 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 > v2, make_title(test, L"GT 3").c_str());
+    }
+    virtual void test_cmp_ge(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 >= v2, make_title(test, L"GE 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 >= n2, make_title(test, L"GE 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 >= v2, make_title(test, L"GE 3").c_str());
+    }
+    virtual void test_cmp_lt(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 < v2, make_title(test, L"LT 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 < n2, make_title(test, L"LT 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 < v2, make_title(test, L"LT 3").c_str());
+    }
+    virtual void test_cmp_le(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 <= v2, make_title(test, L"LE 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 <= n2, make_title(test, L"LE 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 <= v2, make_title(test, L"LE 3").c_str());
+    }
 };
 
 template <class Type1, class Type2, class TypeR>
@@ -220,55 +277,65 @@ protected:
     virtual void test_add(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        variant v3 = v1 + v2;
-        variant v4 = n1 + v2;
-        variant v5 = v1 + n2;
-        Assert::AreEqual<TypeR>(test.result(), v1 + v2, make_title(test, L"ADD 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 + v2, make_title(test, L"ADD 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 + n2, make_title(test, L"ADD 3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v3, make_title(test, L"ADD 4").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v4, make_title(test, L"ADD 5").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v5, make_title(test, L"ADD 6").c_str());
+        DECLARE_BIN_OP_TESTS(TypeR, +, ADD)
     }
     virtual void test_subtract(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        variant v3 = v1 - v2;
-        variant v4 = n1 - v2;
-        variant v5 = v1 - n2;
-        Assert::AreEqual<TypeR>(test.result(), v1 - v2, make_title(test, L"SUB 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 - v2, make_title(test, L"SUB 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 - n2, make_title(test, L"SUB 3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v3, make_title(test, L"SUB 4").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v4, make_title(test, L"SUB 5").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v5, make_title(test, L"SUB 6").c_str());
+        DECLARE_BIN_OP_TESTS(TypeR, -, SUB)
     }
     virtual void test_multiply(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        variant v3 = v1 * v2;
-        variant v4 = n1 * v2;
-        variant v5 = v1 * n2;
-        Assert::AreEqual<TypeR>(test.result(), v1 * v2, make_title(test, L"MUL 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 * v2, make_title(test, L"MUL 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 * n2, make_title(test, L"MUL 3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v3, make_title(test, L"MUL 4").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v4, make_title(test, L"MUL 5").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v5, make_title(test, L"MUL 6").c_str());
+        DECLARE_BIN_OP_TESTS(TypeR, *, MUL)
     }
     virtual void test_divide(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(Type1, Type2)
-        variant v3 = v1 / v2;
-        variant v4 = n1 / v2;
-        variant v5 = v1 / n2;
-        Assert::AreEqual<TypeR>(test.result(), v1 / v2, make_title(test, L"DIV 1").c_str());
-        Assert::AreEqual<TypeR>(test.result(), n1 / v2, make_title(test, L"DIV 2").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v1 / n2, make_title(test, L"DIV 3").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v3, make_title(test, L"DIV 4").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v4, make_title(test, L"DIV 5").c_str());
-        Assert::AreEqual<TypeR>(test.result(), v5, make_title(test, L"DIV 6").c_str());
+        DECLARE_BIN_OP_TESTS(TypeR, / , DIV)
     }
+};
+
+template <class Type1, class Type2, class TypeR>
+class test_runner_float : public test_runner<Type1, Type2, TypeR>
+{
+public:
+    test_runner_float(std::wstring title)
+        : test_runner(title)
+    { }
+protected:
+    virtual void test_add(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        DECLARE_BIN_OP_FLOAT_TESTS(TypeR, +, ADD)
+    }
+    virtual void test_subtract(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        DECLARE_BIN_OP_FLOAT_TESTS(TypeR, -, SUB)
+    }
+    virtual void test_multiply(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        DECLARE_BIN_OP_FLOAT_TESTS(TypeR, *, MUL)
+    }
+    virtual void test_divide(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        DECLARE_BIN_OP_FLOAT_TESTS(TypeR, / , DIV)
+    }
+};
+
+/*
+ * test_runner_bool class
+ */
+class test_runner_cmp_bool : public test_runner_cmp<bool, bool>
+{
+public:
+    test_runner_cmp_bool(std::wstring title)
+        : test_runner_cmp(title)
+    { }
+protected:
 };
 
 class test_runner_bool : public test_runner<bool, bool, bool>
@@ -281,28 +348,12 @@ protected:
     virtual void test_b_and(test_data_t& test) override
     { 
         DECLARE_TEST_LOCAL_VARS(bool, bool)
-        variant v3 = v1 && v2;
-        variant v4 = n1 && v2;
-        variant v5 = v1 && n2;
-        Assert::AreEqual<bool>(test.result(), v1 && v2, make_title(test, L"AND 1").c_str());
-        Assert::AreEqual<bool>(test.result(), n1 && v2, make_title(test, L"AND 2").c_str());
-        Assert::AreEqual<bool>(test.result(), v1 && n2, make_title(test, L"AND 3").c_str());
-        Assert::AreEqual<bool>(test.result(), v3, make_title(test, L"AND 4").c_str());
-        Assert::AreEqual<bool>(test.result(), v4, make_title(test, L"AND 5").c_str());
-        Assert::AreEqual<bool>(test.result(), v5, make_title(test, L"AND 6").c_str());
+        DECLARE_BIN_OP_TESTS(bool, &&, AND)
     }
     virtual void test_b_or(test_data_t& test) override
     {
         DECLARE_TEST_LOCAL_VARS(bool, bool)
-        variant v3 = v1 || v2;
-        variant v4 = n1 || v2;
-        variant v5 = v1 || n2;
-        Assert::AreEqual<bool>(test.result(), v1 || v2, make_title(test, L"OR 1").c_str());
-        Assert::AreEqual<bool>(test.result(), n1 || v2, make_title(test, L"OR 2").c_str());
-        Assert::AreEqual<bool>(test.result(), v1 || n2, make_title(test, L"OR 3").c_str());
-        Assert::AreEqual<bool>(test.result(), v3, make_title(test, L"OR 4").c_str());
-        Assert::AreEqual<bool>(test.result(), v4, make_title(test, L"OR 5").c_str());
-        Assert::AreEqual<bool>(test.result(), v5, make_title(test, L"OR 6").c_str());
+        DECLARE_BIN_OP_TESTS(bool, ||, OR)
     }
     virtual void test_b_not(test_data_t& test) override
     {
@@ -315,6 +366,66 @@ protected:
         Assert::AreEqual<bool>(test.result(), v4, make_title(test, L"NOT 4").c_str());
     }
 };
+
+/*
+ * test_runner for string types
+ */
+template <class Type1, class Type2>
+class test_runner_cmp_string : public test_runner_cmp<Type1, Type2>
+{
+public:
+    test_runner_cmp_string(std::wstring title)
+        : test_runner_cmp(title)
+    { }
+protected:
+    virtual void test_cmp_gt(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 > v2, make_title(test, L"GT 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 > n2, make_title(test, L"GT 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 > v2, make_title(test, L"GT 3").c_str());
+    }
+    virtual void test_cmp_ge(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 >= v2, make_title(test, L"GE 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 >= n2, make_title(test, L"GE 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 >= v2, make_title(test, L"GE 3").c_str());
+    }
+    virtual void test_cmp_lt(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 < v2, make_title(test, L"LT 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 < n2, make_title(test, L"LT 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 < v2, make_title(test, L"LT 3").c_str());
+    }
+    virtual void test_cmp_le(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        Assert::AreEqual<bool>(test.result(), v1 <= v2, make_title(test, L"LE 1").c_str());
+        Assert::AreEqual<bool>(test.result(), v1 <= n2, make_title(test, L"LE 2").c_str());
+        Assert::AreEqual<bool>(test.result(), n1 <= v2, make_title(test, L"LE 3").c_str());
+    }
+};
+
+template <class Type1, class Type2, class TypeR>
+class test_runner_string : public test_runner<Type1, Type2, TypeR>
+{
+public:
+    test_runner_string(std::wstring title)
+        : test_runner(title)
+    { }
+protected:
+    virtual void test_add(test_data_t& test) override
+    {
+        DECLARE_TEST_LOCAL_VARS(Type1, Type2)
+        DECLARE_BIN_OP_TESTS(TypeR, +, ADD)
+        Assert::AreEqual<TypeR>(test.result(), v1 + v2, make_title(test, L"ADD 1").c_str());
+        Assert::AreEqual<TypeR>(test.result(), v1 + n2, make_title(test, L"ADD 2").c_str());
+        Assert::AreEqual<TypeR>(test.result(), n1 + v2, make_title(test, L"ADD 3").c_str());
+    }
+};
+
 
 /*
  * Tests class
@@ -343,31 +454,37 @@ public:
 
     TEST_METHOD(TestBool)
     {
-        test_runner_bool r(L"Bool");
-        r.add(operation::cmp_eq, true, true, true);
-        r.add(operation::cmp_eq, false, false, true);
-        r.add(operation::cmp_eq, true, false, false);
-        r.add(operation::cmp_neq, true, false, true);
-        r.add(operation::cmp_neq, true, true, false);
-        r.add(operation::cmp_neq, false, false, false);
-        r.add(operation::b_and, true, false, false);
-        r.add(operation::b_and, false, true, false);
-        r.add(operation::b_and, false, false, false);
-        r.add(operation::b_and, true, true, true);
-        r.add(operation::b_or, true, false, true);
-        r.add(operation::b_or, false, true, true);
-        r.add(operation::b_or, false, false, false);
-        r.add(operation::b_or, true, true, true);
-        r.add(operation::b_not, true, /* not used*/true, false);
-        r.add(operation::b_not, false, true, true);
-        r.run();
+        {
+            test_runner_cmp_bool r(L"Cmp");
+            r.add(operation::cmp_eq, true, true, true);
+            r.add(operation::cmp_eq, false, false, true);
+            r.add(operation::cmp_eq, true, false, false);
+            r.add(operation::cmp_neq, true, false, true);
+            r.add(operation::cmp_neq, true, true, false);
+            r.add(operation::cmp_neq, false, false, false);
+            r.run();
+        }
+        {
+            test_runner_bool r(L"Ops");
+            r.add(operation::b_and, true, false, false);
+            r.add(operation::b_and, false, true, false);
+            r.add(operation::b_and, false, false, false);
+            r.add(operation::b_and, true, true, true);
+            r.add(operation::b_or, true, false, true);
+            r.add(operation::b_or, false, true, true);
+            r.add(operation::b_or, false, false, false);
+            r.add(operation::b_or, true, true, true);
+            r.add(operation::b_not, true, /* not used */true, false);
+            r.add(operation::b_not, false, true, true);
+            r.run();
+        }
     }
 
 
     template <class IntT1, class IntT2>
     void TestComparisionIntegerTypes(wstring test_set_title)
     {
-        test_runner_int<IntT1, IntT2, bool> r(test_set_title);
+        test_runner_cmp_num<IntT1, IntT2> r(test_set_title);
         r.add(operation::cmp_eq, 0, 0, true);
         r.add(operation::cmp_eq, 123, 123, true);
         r.add(operation::cmp_eq, -123, -123, true);
@@ -389,42 +506,6 @@ public:
         r.add(operation::cmp_le, -1, 0, true);
         r.run();
     }
-    TEST_METHOD(TestIntCmp)
-    {
-        TestComparisionIntegerTypes<int, int>(L"Int");
-        test_runner_int<int, int, bool> r(L"Specific");
-        r.add(operation::cmp_eq, numeric_limits<int>::max(), numeric_limits<int>::max(), true);
-        r.add(operation::cmp_eq, numeric_limits<int>::min(), numeric_limits<int>::max(), false);
-        r.add(operation::cmp_neq, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
-        r.add(operation::cmp_neq, numeric_limits<int>::max(), numeric_limits<int>::max(), false);
-        r.add(operation::cmp_gt, numeric_limits<int>::max(), numeric_limits<int>::min(), true);
-        r.add(operation::cmp_ge, numeric_limits<int>::max(), numeric_limits<int>::max(), true);
-        r.add(operation::cmp_ge, numeric_limits<int>::max(), numeric_limits<int>::min(), true);
-        r.add(operation::cmp_lt, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
-        r.add(operation::cmp_le, numeric_limits<int>::min(), numeric_limits<int>::min(), true);
-        r.add(operation::cmp_le, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
-        r.run();
-    }
-    TEST_METHOD(TestInt64Cmp)
-    {
-        TestComparisionIntegerTypes<int64_t, int64_t>(L"Int64");
-        {
-            test_runner_int<int64_t, int64_t, bool> r(L"Specific");
-            r.add(operation::cmp_eq, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), true);
-            r.add(operation::cmp_eq, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), false);
-            r.add(operation::cmp_neq, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
-            r.add(operation::cmp_neq, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), false);
-            r.add(operation::cmp_gt, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::min(), true);
-            r.add(operation::cmp_ge, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), true);
-            r.add(operation::cmp_ge, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::min(), true);
-            r.add(operation::cmp_lt, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
-            r.add(operation::cmp_le, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::min(), true);
-            r.add(operation::cmp_le, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
-            r.run();
-        }
-        TestComparisionIntegerTypes<int64_t, int>(L"Int64Int");
-        TestComparisionIntegerTypes<int, int64_t>(L"IntInt64");
-    }
 
     template <class IntT1, class IntT2, class RetT>
     void TestArithmeticIntegerTypes(wstring test_set_title)
@@ -439,22 +520,57 @@ public:
         r.add(operation::divide, 0, 1, 0);
         r.run();
     }
-    TEST_METHOD(TestIntMath)
+
+    TEST_METHOD(TestInt32)
     {
-        TestArithmeticIntegerTypes<int, int, int>(L"Int");
-        test_runner_int<int, int, int> r(L"Specific");
-        r.add(operation::add, numeric_limits<int>::min(), numeric_limits<int>::max(), -1);
-        r.add(operation::add, numeric_limits<int>::max(), numeric_limits<int>::min(), -1);
-        r.add(operation::subtract, numeric_limits<int>::max(), numeric_limits<int>::max(), 0);
-        r.add(operation::subtract, numeric_limits<int>::min(), numeric_limits<int>::min(), 0);
-        r.add(operation::divide, numeric_limits<int>::max(), numeric_limits<int>::max(), 1);
-        r.run();
-    }
-    TEST_METHOD(TestInt64Math)
-    {
-        TestArithmeticIntegerTypes<int64_t, int64_t, int64_t>(L"Int64");
+        TestComparisionIntegerTypes<int, int>(L"Int");
         {
-            test_runner_int<int64_t, int64_t, int64_t> r(L"Specific 1");
+            test_runner_cmp_num<int, int> r(L"CmpSpecific");
+            r.add(operation::cmp_eq, numeric_limits<int>::max(), numeric_limits<int>::max(), true);
+            r.add(operation::cmp_eq, numeric_limits<int>::min(), numeric_limits<int>::max(), false);
+            r.add(operation::cmp_neq, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
+            r.add(operation::cmp_neq, numeric_limits<int>::max(), numeric_limits<int>::max(), false);
+            r.add(operation::cmp_gt, numeric_limits<int>::max(), numeric_limits<int>::min(), true);
+            r.add(operation::cmp_ge, numeric_limits<int>::max(), numeric_limits<int>::max(), true);
+            r.add(operation::cmp_ge, numeric_limits<int>::max(), numeric_limits<int>::min(), true);
+            r.add(operation::cmp_lt, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
+            r.add(operation::cmp_le, numeric_limits<int>::min(), numeric_limits<int>::min(), true);
+            r.add(operation::cmp_le, numeric_limits<int>::min(), numeric_limits<int>::max(), true);
+            r.run();
+        }
+        TestArithmeticIntegerTypes<int, int, int>(L"Ops");
+        {
+            test_runner_int<int, int, int> r(L"OpsSpecific");
+            r.add(operation::add, numeric_limits<int>::min(), numeric_limits<int>::max(), -1);
+            r.add(operation::add, numeric_limits<int>::max(), numeric_limits<int>::min(), -1);
+            r.add(operation::subtract, numeric_limits<int>::max(), numeric_limits<int>::max(), 0);
+            r.add(operation::subtract, numeric_limits<int>::min(), numeric_limits<int>::min(), 0);
+            r.add(operation::divide, numeric_limits<int>::max(), numeric_limits<int>::max(), 1);
+            r.run();
+        }
+    }
+    TEST_METHOD(TestInt64)
+    {
+        TestComparisionIntegerTypes<int64_t, int64_t>(L"Cmp1");
+        TestComparisionIntegerTypes<int64_t, int>(L"Cmp2");
+        TestComparisionIntegerTypes<int, int64_t>(L"Cmp3");
+        {
+            test_runner_cmp_num<int64_t, int64_t> r(L"CmpSpecific");
+            r.add(operation::cmp_eq, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), true);
+            r.add(operation::cmp_eq, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), false);
+            r.add(operation::cmp_neq, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
+            r.add(operation::cmp_neq, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), false);
+            r.add(operation::cmp_gt, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::min(), true);
+            r.add(operation::cmp_ge, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), true);
+            r.add(operation::cmp_ge, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::min(), true);
+            r.add(operation::cmp_lt, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
+            r.add(operation::cmp_le, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::min(), true);
+            r.add(operation::cmp_le, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), true);
+            r.run();
+        }
+        TestArithmeticIntegerTypes<int64_t, int64_t, int64_t>(L"Ops1");
+        {
+            test_runner_int<int64_t, int64_t, int64_t> r(L"Ops1_Specific");
             r.add(operation::add, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::min(), -1);
             r.add(operation::add, numeric_limits<int64_t>::min(), numeric_limits<int64_t>::max(), -1);
             r.add(operation::subtract, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), 0);
@@ -462,9 +578,9 @@ public:
             r.add(operation::divide, numeric_limits<int64_t>::max(), numeric_limits<int64_t>::max(), 1);
             r.run();
         }
-        TestArithmeticIntegerTypes<int, int64_t, int64_t>(L"Int_Int64");
+        TestArithmeticIntegerTypes<int, int64_t, int64_t>(L"Ops2");
         {
-            test_runner_int<int, int64_t, int64_t> r(L"Specific 2");
+            test_runner_int<int, int64_t, int64_t> r(L"Ops2_Specific");
             r.add(operation::add, numeric_limits<int>::max(), numeric_limits<int>::max(), 4294967294L);
             r.add(operation::add, numeric_limits<int>::min(), numeric_limits<int>::min(), -4294967296L);
             r.add(operation::add, numeric_limits<int>::min(), numeric_limits<int64_t>::max(), 9223372034707292159L);
@@ -472,6 +588,106 @@ public:
         }
         TestArithmeticIntegerTypes<int64_t, int, int64_t>(L"Int64_Int");
     }
+
+    TEST_METHOD(TestDouble)
+    {
+        TestComparisionIntegerTypes<double, double>(L"Cmp1");
+        TestComparisionIntegerTypes<double, int>(L"Cmp2");
+        TestComparisionIntegerTypes<int, double>(L"Cmp3");
+        TestComparisionIntegerTypes<int64_t, double>(L"Cmp4");
+        TestComparisionIntegerTypes<double, int64_t>(L"Cmp5");
+        {
+            test_runner_cmp_num<double, double> r(L"CmpSpecific");
+            r.add(operation::cmp_eq, 123.456, 123.456, true);
+            r.add(operation::cmp_eq, -123.456, -123.456, true);
+            r.add(operation::cmp_eq, 1.23456E3, 1.23456E3, true);
+            r.add(operation::cmp_eq, numeric_limits<double>::max(), numeric_limits<double>::max(), true);
+            r.add(operation::cmp_eq, numeric_limits<double>::min(), numeric_limits<double>::max(), false);
+            r.add(operation::cmp_neq, 123.456, 123.457, true);
+            r.add(operation::cmp_neq, numeric_limits<double>::min(), numeric_limits<double>::max(), true);
+            r.add(operation::cmp_neq, numeric_limits<double>::max(), numeric_limits<double>::max(), false);
+            r.add(operation::cmp_gt, 123.456, 123.4559, true);
+            r.add(operation::cmp_gt, numeric_limits<double>::max(), numeric_limits<double>::min(), true);
+            r.add(operation::cmp_ge, 123.456, 123.456, true);
+            r.add(operation::cmp_ge, 123.4561, 123.456, true);
+            r.add(operation::cmp_ge, numeric_limits<double>::max(), numeric_limits<double>::max(), true);
+            r.add(operation::cmp_ge, numeric_limits<double>::max(), numeric_limits<double>::min(), true);
+            r.add(operation::cmp_lt, 123.456, 123.4561, true);
+            r.add(operation::cmp_lt, numeric_limits<double>::min(), numeric_limits<double>::max(), true);
+            r.add(operation::cmp_le, 123.456, 123.456, true);
+            r.add(operation::cmp_le, 123.456, 123.4561, true);
+            r.add(operation::cmp_le, numeric_limits<double>::min(), numeric_limits<double>::min(), true);
+            r.add(operation::cmp_le, numeric_limits<double>::min(), numeric_limits<double>::max(), true);
+            r.run();
+        }
+        TestArithmeticIntegerTypes<double, double, double>(L"Ops1");
+        TestArithmeticIntegerTypes<int, double, double>(L"Ops2");
+        TestArithmeticIntegerTypes<int64_t, double, double>(L"Ops3");
+        TestArithmeticIntegerTypes<double, int, double>(L"Ops4");
+        TestArithmeticIntegerTypes<double, int64_t, double>(L"Ops5");
+        {
+            test_runner_float<double, double, double> r(L"OpsSpecific1");
+            r.add(operation::add, 123.456, -123.456, 0.0);
+            r.add(operation::add, 123.456, 0.123456E3, 246.912);
+            r.add(operation::subtract, 123.456, 123.456, 0.0);
+            r.add(operation::subtract, -123.456, 0.123456E3, -246.912);
+            r.add(operation::multiply, 123.456, 789.012, 97408.265472);
+            r.add(operation::divide, 97408.265472, 123.456, 789.012);
+            r.run();
+        }
+        {
+            test_runner_float<int, double, double> r(L"OpsSpecific2");
+            r.add(operation::add, 123, -123.456, -0.456);
+            r.add(operation::subtract, 123, 123.456, -0.456);
+            r.add(operation::multiply, 8, 1.25, 10.0);
+            r.add(operation::divide, 10, 8.0, 1.25);
+            r.run();
+        }
+        {
+            test_runner_float<int64_t, double, double> r(L"OpsSpecific3");
+            r.add(operation::add, 123, -123.456, -0.456);
+            r.add(operation::subtract, 123, 123.456, -0.456);
+            r.add(operation::multiply, 8, 1.25, 10.0);
+            r.add(operation::divide, 10, 8.0, 1.25);
+            r.run();
+        }
+    }
+
+    TEST_METHOD(TestString)
+    {
+        {
+            test_runner_cmp_string<std::string, std::string> r(L"Cmp");
+            r.add(operation::cmp_eq, "", "", true);
+            r.add(operation::cmp_eq, "ABC abc", "ABC abc", true);
+            r.add(operation::cmp_eq, "Abc", "Abcd", false);
+            r.add(operation::cmp_neq, "Abc", "", true);
+            r.add(operation::cmp_neq, "ABC abc", "ABC abc", false);
+            r.add(operation::cmp_ge, "abc", "ABC", true);
+            r.add(operation::cmp_le, "Abc", "abc", true);
+            r.run();
+        }
+        {
+            test_runner_string<std::string, std::string, std::string> r(L"Ops");
+            r.add(operation::add, "", "", "");
+            r.run();
+        }
+    }
+
+    TEST_METHOD(TestWString)
+    {
+        {
+            test_runner_cmp_string<std::wstring, std::wstring> r(L"Cmp");
+            r.add(operation::cmp_eq, L"", L"", true);
+            r.add(operation::cmp_eq, L"ABC abc", L"ABC abc", true);
+            r.add(operation::cmp_eq, L"Abc", L"Abcd", false);
+            r.add(operation::cmp_neq, L"Abc", L"", true);
+            r.add(operation::cmp_neq, L"ABC abc", L"ABC abc", false);
+            r.add(operation::cmp_ge, L"abc", L"ABC", true);
+            r.add(operation::cmp_le, L"Abc", L"abc", true);
+            r.run();
+        }
+    }
+
 
     /* 
      * Memory checks
@@ -511,7 +727,7 @@ public:
         chk.checkpoint();
         Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
     }
-    TEST_METHOD(TestIntMemory)
+    TEST_METHOD(TestInt32Memory)
     {
         TestMemoryIntType<int>();
     }
@@ -519,4 +735,27 @@ public:
     {
         TestMemoryIntType<int64_t>();
     }
+    TEST_METHOD(TestDoubleMemory)
+    {
+        TestMemoryIntType<double>();
+    }
+
+    TEST_METHOD(TestStringMemory)
+    {
+        auto func1 = [](variant n1, variant n2)->variant { return n1 + n2; };
+        memchecker chk;
+        {
+            variant v11 = "ABC def";
+            variant v12 = v11;
+            variant v13 = v11 + v12;
+            string b1 = func1(v11, v12);
+            Assert::IsTrue(v13 == b1);
+            variant v14 = std::move(v13);
+            Assert::IsTrue(v14 == b1);
+        }
+        chk.checkpoint();
+        Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
+    }
+
+
 };
