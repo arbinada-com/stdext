@@ -427,6 +427,27 @@ protected:
 };
 
 
+class testobjbase : public variants::objref
+{
+public:
+    testobjbase(std::string value)
+        : objref(), m_value(value)
+    {}
+    virtual std::string value() { return "Base:" + m_value; }
+protected:
+    std::string m_value;
+};
+
+class testobj : public testobjbase
+{
+public:
+    testobj(std::string value)
+        : testobjbase(value)
+    {}
+    virtual std::string value() override { return "Sub:" + m_value; }
+};
+
+
 /*
  * Tests class
  */
@@ -689,6 +710,24 @@ public:
     }
 
 
+    TEST_METHOD(TestObjref)
+    {
+        variant v1 = new testobjbase("Obj1");
+        Assert::IsTrue(v1.vtype() == value_type::vt_object, L"Type 1");
+        variant v2 = v1;
+        Assert::IsTrue(v2.vtype() == value_type::vt_object, L"Type 2");
+        Assert::AreEqual<std::string>("Base:Obj1", v1.to_object<testobjbase>()->value(), L"Value 1");
+        Assert::AreEqual<std::string>("Base:Obj1", v2.to_object<testobjbase>()->value(), L"Value 2");
+        variant v3 = new testobj("Obj2");
+        Assert::IsTrue(v3.vtype() == value_type::vt_object, L"Type 3");
+        Assert::AreEqual<std::string>("Sub:Obj2", v3.to_object<testobj>()->value(), L"Value 3.1");
+        Assert::AreEqual<std::string>("Sub:Obj2", v3.to_object<testobjbase>()->value(), L"Value 3.2");
+        variant v4 = std::move(v3);
+        Assert::IsTrue(v4.vtype() == value_type::vt_object, L"Type 4");
+        Assert::AreEqual<std::string>("Sub:Obj2", v4.to_object<testobj>()->value(), L"Value 4.1");
+        Assert::AreEqual<std::string>("Sub:Obj2", v4.to_object<testobjbase>()->value(), L"Value 4.2");
+    }
+
     /* 
      * Memory checks
      */
@@ -757,5 +796,21 @@ public:
         Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
     }
 
+    TEST_METHOD(TestObjrefMemory)
+    {
+        auto func1 = [](variant n1, variant n2)->variant { return n1.to_object<testobj>()->value() + n2.to_object<testobj>()->value(); };
+        memchecker chk;
+        {
+            variant v11 = new testobj("Obj1");
+            variant v12 = v11;
+            string b1 = func1(v11, v12);
+            Assert::IsTrue("Sub:Obj1Sub:Obj1" == b1);
+            variant v13 = new testobj("Obj1");
+            variant v14 = std::move(v13);
+            Assert::IsTrue(v14.vtype() == value_type::vt_object);
+        }
+        chk.checkpoint();
+        Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
+    }
 
 };

@@ -107,6 +107,11 @@ variant& variant::operator=(const variants::variant& source)
     case value_type::vt_wstring:
         *this = source.to_wstring();
         break;
+    case value_type::vt_object:
+        m_vtype = source.m_vtype;
+        m_value = source.m_value;
+        static_cast<objref*>(m_value)->add_ref();
+        break;
     default:
         throw variant_exception(
             strutils::format("Unsupported type %s (%d)", variants::to_string(source.m_vtype).c_str(), static_cast<int>(source.m_vtype)),
@@ -195,9 +200,28 @@ variant& variant::operator=(const wchar_t* source)
     return *this;
 }
 
+variant::variant(objref* const val) { *this = val; }
+variant& variant::operator=(objref* const source)
+{
+    m_vtype = value_type::vt_object;
+    m_value = static_cast<void*>(source);
+    return *this;
+}
+
 variant::~variant()
 {
     clear();
+}
+
+template <class T> 
+void variant::clear()
+{
+    if (value_type::vt_object)
+        static_cast<objref*>(m_value)->release();
+    else 
+        delete static_cast<T*>(m_value);
+    m_value = nullptr;
+    m_vtype = value_type::vt_unknown;
 }
 
 void variant::clear()
@@ -223,6 +247,9 @@ void variant::clear()
             break;
         case value_type::vt_wstring:
             delete (std::wstring*)m_value;
+            break;
+        case value_type::vt_object:
+            static_cast<objref*>(m_value)->release();
             break;
         default:
             delete m_value;

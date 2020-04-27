@@ -91,6 +91,25 @@ namespace stdext
         bool is_logical_op(variants::operation op);
 
 
+        class objref abstract
+        {
+        public:
+            objref() 
+            {
+                add_ref();
+            }
+            virtual ~objref() {}
+            virtual void add_ref() noexcept { m_refcount++; }
+            virtual void release() noexcept
+            { 
+                if (--m_refcount == 0)
+                    delete this;
+            }
+        protected:
+            int m_refcount = 0;
+        };
+
+
         class variant
         {
         public:
@@ -115,6 +134,8 @@ namespace stdext
             variant& operator=(const std::wstring source);
             variant(const wchar_t* val);
             variant& operator=(const wchar_t* source);
+            variant(objref* const val);
+            variant& operator=(objref* const source);
             virtual ~variant() noexcept;
         public: 
             // cast operators
@@ -132,6 +153,8 @@ namespace stdext
             double to_double() const noexcept(false);
             std::string to_string() const noexcept(false);
             std::wstring to_wstring() const noexcept(false);
+            template <class T>
+            T* to_object() { return static_cast<T*>(m_value); }
         public:
             // Operations
             // variant
@@ -290,6 +313,7 @@ namespace stdext
             friend std::wstring operator +(const wchar_t* v1, const variant& v2) { return v1 + v2.to_wstring(); }
         public:
             void clear();
+            template <class T> void clear();
             value_type vtype() const noexcept { return m_vtype; }
             inline bool is_integer_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_int64 }); }
             inline bool is_numeric() const noexcept { return is_vtype({ value_type::vt_int, value_type::vt_int64, value_type::vt_double }); }
