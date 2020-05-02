@@ -53,6 +53,12 @@
     <ClInclude Include="variants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jsonexceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ptr_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="license.txt" />

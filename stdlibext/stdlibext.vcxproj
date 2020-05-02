@@ -30,6 +30,8 @@
     <ClInclude Include="datetime.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="jsondom.h" />
+    <ClInclude Include="jsonexceptions.h" />
+    <ClInclude Include="ptr_vector.h" />
     <ClInclude Include="strutils.h" />
     <ClInclude Include="trees.h" />
     <ClInclude Include="variants.h" />

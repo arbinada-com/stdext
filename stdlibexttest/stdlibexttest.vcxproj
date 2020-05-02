@@ -169,8 +169,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="containerstest.cpp" />
     <ClCompile Include="csvtoolstest.cpp" />
     <ClCompile Include="datetimetest.cpp" />
+    <ClCompile Include="jsondomtest.cpp" />
     <ClCompile Include="memchecker.cpp" />
     <ClCompile Include="strutilstest.cpp" />
     <ClCompile Include="treestest.cpp" />
