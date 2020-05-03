@@ -84,8 +84,8 @@ public:
         csv::row r;
         Assert::IsFalse(rd.next_row(r));
         Assert::IsFalse(rd.has_error());
-        Assert::AreEqual((long)0, rd.row_count(), L"Row row");
-        Assert::AreEqual((std::size_t)0, r.field_count(), L"Field row");
+        Assert::AreEqual<long>(0, rd.row_count(), L"Row row");
+        Assert::AreEqual<std::size_t>(0, r.field_count(), L"Field row");
     }
 
     TEST_METHOD(TestStringStream)
@@ -134,7 +134,7 @@ public:
             expected.push_back(csv_row_values_t({ L"1", L"2.345" }));
             expected.push_back(csv_row_values_t({ L"Non-ASCII текст", L"слово" }));
             expected.push_back(csv_row_values_t({ L"67,89", L"Multi line строка\nстрока 2\nстрока 3" }));
-            csv::reader rd(L"test01-ansi-1251.csv", csv::file_encoding::ansi, ".1251");
+            csv::reader rd(L"test01-ansi-1251.csv", ioutils::file_encoding::ansi, ".1251");
             rd.separator(L',');
             CheckStreamReading(L"File ANSI 1251", rd, expected);
         }
@@ -143,7 +143,7 @@ public:
             expected.push_back(csv_row_values_t({ L"1", L"2.345" }));
             expected.push_back(csv_row_values_t({ L"Non-ASCII déjà", L"élève" }));
             expected.push_back(csv_row_values_t({ L"67,89", L"Multi line à côté\ncôté 2\ncôté 3" }));
-            csv::reader rd(L"test01-ansi-1252.csv", csv::file_encoding::ansi, ".1252");
+            csv::reader rd(L"test01-ansi-1252.csv", ioutils::file_encoding::ansi, ".1252");
             rd.separator(L',');
             CheckStreamReading(L"File ANSI 1252", rd, expected);
         }
@@ -153,25 +153,25 @@ public:
         expected.push_back(csv_row_values_t({ L"67,89", L"Multi line текст\nстрока 2\ndéjà 3" }));
         {
             // UTF8 without BOM
-            csv::reader rd(L"test01-utf8.csv", csv::file_encoding::utf8);
+            csv::reader rd(L"test01-utf8.csv", ioutils::file_encoding::utf8);
             rd.separator(L',');
             CheckStreamReading(L"File UTF8", rd, expected);
         }
         {
             // UTF8 with BOM
-            csv::reader rd(L"test01-utf8-bom.csv", csv::file_encoding::utf8);
+            csv::reader rd(L"test01-utf8-bom.csv", ioutils::file_encoding::utf8);
             rd.separator(L',');
             CheckStreamReading(L"File UTF8 BOM", rd, expected);
         }
         {
             // UTF16 Big Endian
-            csv::reader rd(L"test01-utf16-be.csv", csv::file_encoding::utf16);
+            csv::reader rd(L"test01-utf16-be.csv", ioutils::file_encoding::utf16);
             rd.separator(L',');
             CheckStreamReading(L"File UTF16 BE", rd, expected);
         }
         {
             // UTF16 Little Endian
-            csv::reader rd(L"test01-utf16-le.csv", csv::file_encoding::utf16);
+            csv::reader rd(L"test01-utf16-le.csv", ioutils::file_encoding::utf16);
             rd.separator(L',');
             CheckStreamReading(L"File UTF16 LE", rd, expected);
         }

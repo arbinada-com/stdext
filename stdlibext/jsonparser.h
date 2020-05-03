@@ -8,12 +8,17 @@
 #pragma once
 
 #include "jsonexceptions.h"
+#include "jsonlexer.h"
 #include "jsondom.h"
-#include "jsonparser.h"
 
 namespace stdext
 {
     namespace json
     {
+
+        class parser
+        {
+        };
     }
 }
+

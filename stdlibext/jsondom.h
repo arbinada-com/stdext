@@ -2,7 +2,7 @@
  C++ standard library extensions
  (c) 2001-2020 Serguei Tarassov (see license.txt)
 
- JSON (JavaScrip Object Noration) tools
+ JSON (JavaScript Object Notation) tools
  Based on RFC 8259 (https://tools.ietf.org/html/rfc8259)
  */
 #pragma once
@@ -96,10 +96,10 @@ namespace stdext
         public:
             dom_value(dom_document* const doc, const dom_value_type type);
             dom_value() = delete;
-            dom_value(const dom_value& source) = delete;
-            dom_value& operator =(const dom_value& source) = delete;
-            dom_value(dom_value&& source) = delete;
-            dom_value& operator =(dom_value&& source) = delete;
+            dom_value(const dom_value&) = delete;
+            dom_value& operator =(const dom_value&) = delete;
+            dom_value(dom_value&&) = delete;
+            dom_value& operator =(dom_value&&) = delete;
             virtual ~dom_value();
         public:
             void assert_same_doc(dom_document* doc) const noexcept(false);
@@ -148,10 +148,10 @@ namespace stdext
         public:
             dom_object_member(dom_object_members* const owner, const name_t name, dom_value* const value);
             dom_object_member() = delete;
-            dom_object_member(const dom_object_member& source) = delete;
-            dom_object_member& operator =(const dom_object_member& source) = delete;
-            dom_object_member(dom_object_member&& source) = delete;
-            dom_object_member& operator =(dom_object_member&& source) = delete;
+            dom_object_member(const dom_object_member&) = delete;
+            dom_object_member& operator =(const dom_object_member&) = delete;
+            dom_object_member(dom_object_member&&) = delete;
+            dom_object_member& operator =(dom_object_member&&) = delete;
             ~dom_object_member();
         public:
             name_t name() const noexcept { return m_name; }
@@ -177,8 +177,8 @@ namespace stdext
             dom_object_members() = delete;
             dom_object_members(const dom_object_members&) = delete;
             dom_object_members& operator =(const dom_object_members&) = delete;
-            dom_object_members(dom_object_members&& source) = delete;
-            dom_object_members& operator =(dom_object_members&& source) = delete;
+            dom_object_members(dom_object_members&&) = delete;
+            dom_object_members& operator =(dom_object_members&&) = delete;
             ~dom_object_members() { }
         protected:
             dom_object_members(dom_object* const owner);

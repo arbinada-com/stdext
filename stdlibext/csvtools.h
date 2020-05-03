@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "ioutils.h"
 
 namespace stdext
 {
@@ -94,43 +95,39 @@ namespace stdext
         class reader
         {
         public:
-            typedef std::wistream stream_t;
-        public:
-            reader(stream_t& stream);
-            reader(stream_t* const stream);
-            reader(const std::wstring filename, const file_encoding enc, const char* locale_name = nullptr);
+            reader() = delete;
+            reader(ioutils::text_reader* const rd);
+            reader(ioutils::text_reader::stream_t& stream);
+            reader(ioutils::text_reader::stream_t* const stream);
+            reader(const std::wstring file_name, const ioutils::file_encoding enc, const char* locale_name = nullptr);
             reader(const reader&) = delete;
-            reader& operator=(const reader&) = delete;
+            reader& operator =(const reader&) = delete;
             reader(reader&&) = delete;
-            reader& operator=(reader&&) = delete;
+            reader& operator =(reader&&) = delete;
             ~reader();
         public:
             bool next_row(csv::row& r);
+            inline long col_num() const { return m_col_num; }
+            inline long line_num() const { return m_line_num; }
             bool read_header();
             bool has_error() const { return m_error != csv::reader_error::none; }
             csv::reader_error error() const { return m_error; }
             const csv::header& header() { m_header; }
             bool has_header() { return m_header.field_count() > 0; }
-            long col_num() const { return m_col_num; }
-            long line_num() const { return m_line_num; }
             long row_count() const { return m_row_num; }
-            wchar_t separator() const { return m_separator; }
-            void separator(const wchar_t value) { m_separator = value; }
-        protected:
-            wchar_t next_char();
-            inline bool is_next_char(wchar_t c) const { return m_stream->peek() == c; }
-            bool is_next_char(std::initializer_list<wchar_t> chars) const;
-            inline bool eof() const { return m_stream->eof(); }
-            inline bool good() const { return m_stream->good(); }
+            inline ioutils::text_reader::char_type separator() const { return m_separator; }
+            void separator(const ioutils::text_reader::char_type value) { m_separator = value; }
         private:
-            stream_t* m_stream = nullptr;
-            bool m_owns_stream = false;
-            wchar_t m_separator = ',';
+            ioutils::text_reader::char_type next_char();
+        private:
+            ioutils::text_reader::char_type m_separator = ',';
             long m_col_num = 0;
             long m_line_num = 0;
             long m_row_num = 0;
             reader_error m_error = reader_error::none;
             csv::header m_header;
+            ioutils::text_reader* m_reader = nullptr;
+            bool m_owns_reader = false;
         };
     }
 }

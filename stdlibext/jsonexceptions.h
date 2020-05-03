@@ -2,7 +2,7 @@
  C++ standard library extensions
  (c) 2001-2020 Serguei Tarassov (see license.txt)
 
- JSON (JavaScrip Object Noration) tools
+ JSON (JavaScript Object Notation) tools
  Based on RFC 8259 (https://tools.ietf.org/html/rfc8259)
  */
 

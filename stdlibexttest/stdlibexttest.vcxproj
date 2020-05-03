@@ -173,6 +173,7 @@
     <ClCompile Include="csvtoolstest.cpp" />
     <ClCompile Include="datetimetest.cpp" />
     <ClCompile Include="jsondomtest.cpp" />
+    <ClCompile Include="jsonlexertest.cpp" />
     <ClCompile Include="memchecker.cpp" />
     <ClCompile Include="strutilstest.cpp" />
     <ClCompile Include="treestest.cpp" />

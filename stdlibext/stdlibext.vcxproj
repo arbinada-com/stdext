@@ -21,16 +21,21 @@
   <ItemGroup>
     <ClCompile Include="csvtools.cpp" />
     <ClCompile Include="datetime.cpp" />
+    <ClCompile Include="ioutils.cpp" />
     <ClCompile Include="jsondom.cpp" />
+    <ClCompile Include="jsonlexer.cpp" />
     <ClCompile Include="strutils.cpp" />
     <ClCompile Include="variants.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="csvtools.h" />
     <ClInclude Include="datetime.h" />
+    <ClInclude Include="ioutils.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="jsondom.h" />
     <ClInclude Include="jsonexceptions.h" />
+    <ClInclude Include="jsonlexer.h" />
+    <ClInclude Include="jsonparser.h" />
     <ClInclude Include="ptr_vector.h" />
     <ClInclude Include="strutils.h" />
     <ClInclude Include="trees.h" />
