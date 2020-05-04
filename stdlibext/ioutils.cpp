@@ -11,15 +11,16 @@ using namespace std;
 using namespace stdext;
 using namespace ioutils;
 
-text_reader::text_reader(stream_t& stream)
+text_reader::text_reader(std::wistream& stream)
     : m_stream(&stream)
 { }
 
-text_reader::text_reader(stream_t* const stream)
+text_reader::text_reader(std::wistream* const stream)
     : m_stream(stream)
 { }
 
 text_reader::text_reader(const std::wstring file_name, const file_encoding enc, const char* locale_name)
+    :m_file_name(file_name)
 {
     m_owns_stream = true;
     m_stream = new wifstream(file_name, std::ios::binary);
@@ -44,15 +45,15 @@ text_reader::~text_reader()
         delete m_stream;
 }
 
-bool ioutils::text_reader::next_char(char_type& c)
+bool ioutils::text_reader::next_char(wchar_t& c)
 {
     c = m_stream->get();
     return m_stream->good();
 }
 
-bool text_reader::is_next_char(std::initializer_list<char_type> chars) const
+bool text_reader::is_next_char(std::initializer_list<wchar_t> chars) const
 {
-    for (char_type c : chars)
+    for (wchar_t c : chars)
     {
         if (m_stream->peek() == c)
             return true;

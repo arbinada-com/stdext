@@ -61,8 +61,11 @@ private:
         title += L". ";
         long row = 0;
         csv::row r;
+        Assert::IsTrue(parsers::textpos() == rd.pos(), (title + L"Initial pos").c_str());
         while (rd.next_row(r))
         {
+            if (!rd.eof())
+                Assert::AreEqual(1, rd.pos().col(), (title + L"Col after read row").c_str());
             row++;
             Assert::AreEqual(row, rd.row_count(), (title + L"Row row").c_str());
             csv_row_values_t expected_row = expected[row - 1];
@@ -72,8 +75,11 @@ private:
                 Assert::AreEqual(expected_row[col], r[col].value(), (title + strutils::format(L"Unexpected value. Row: %d, field: %d", row, col + 1)).c_str());
             }
         }
-        Assert::IsTrue(rd.error() == csv::reader_error::none,
-            (title + strutils::format(L"Unexpected error occurred: %d", (int)rd.error())).c_str());
+        if (rd.has_error())
+        {
+            csv::reader::message_t* err = rd.errors()[0];
+            Assert::Fail((title + strutils::format(L"Unexpected error occurred: %s", rd.errors()[0]->to_wstring().c_str())).c_str());
+        }
         Assert::IsTrue(row > 0, (title + L"No rows processed").c_str());
     }
 public:
@@ -112,19 +118,37 @@ public:
         csv::row r;
         Assert::IsFalse(rd.next_row(r), L"Read row");
         Assert::IsTrue(rd.has_error(), L"No error");
-        Assert::IsTrue(rd.error() == csv::reader_error::rowFieldCountIsDifferentFromHeader, L"Wrong error");
+        csv::reader::message_t* err = rd.errors()[0];
+        Assert::IsTrue(err->kind() == csv::reader_msg_kind::row_field_count_different_from_header, L"Wrong error");
+        Assert::IsTrue(parsers::textpos(2, 9) == err->pos(), (L"Error pos: " + err->to_wstring()).c_str());
     }
 
     TEST_METHOD(TestErrorExpectedSeparator)
     {
-        wstringstream ss;
-        ss << L"\"Col 1\"x" << endl;
-        csv::reader rd(ss);
-        rd.separator(L',');
-        csv::row r;
-        Assert::IsFalse(rd.next_row(r), L"Read row");
-        Assert::IsTrue(rd.has_error(), L"No error");
-        Assert::IsTrue(rd.error() == csv::reader_error::expectedSeparator, L"Wrong error");
+        {
+            wstringstream ss;
+            ss << L"\"Col 1\"x\n";
+            csv::reader rd(ss);
+            rd.separator(L',');
+            csv::row r;
+            Assert::IsFalse(rd.next_row(r), L"Read row 1");
+            Assert::IsTrue(rd.has_error(), L"No error 1");
+            csv::reader::message_t* err = rd.errors()[0];
+            Assert::IsTrue(err->kind() == csv::reader_msg_kind::expected_separator, L"Wrong error 1");
+            Assert::IsTrue(parsers::textpos(1, 8) == err->pos(), (L"Error pos 1 " + rd.pos().to_wstring()).c_str());
+        }
+        {
+            wstringstream ss;
+            ss << L"\"Col\r\n123\"x";
+            csv::reader rd(ss);
+            rd.separator(L',');
+            csv::row r;
+            Assert::IsFalse(rd.next_row(r), L"Read row 2");
+            Assert::IsTrue(rd.has_error(), L"No error 2");
+            csv::reader::message_t* err = rd.errors()[0];
+            Assert::IsTrue(err->kind() == csv::reader_msg_kind::expected_separator, L"Wrong error 2");
+            Assert::IsTrue(parsers::textpos(2, 5) == err->pos(), (L"Error pos 2 " + rd.pos().to_wstring()).c_str());
+        }
     }
 
     TEST_METHOD(TestFiles)

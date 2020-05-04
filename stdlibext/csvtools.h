@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include "ioutils.h"
+#include "parsers.h"
 
 namespace stdext
 {
@@ -19,56 +20,41 @@ namespace stdext
         class field
         {
         public:
-            typedef typename std::wstring value_t;
-        public:
-            field(value_t value)
+            field(std::wstring value)
                 : m_value(value)
-            { }
-            field(const field& source) { *this = source; };
-            field& operator=(const field& source)
-            {
-                m_value = source.m_value;
-                return *this;
-            }
-            field(field&& source)
-            {
-                m_value = std::move(source.m_value);
-            }
-            field& operator=(field&& source)
-            {
-                m_value = std::move(source.m_value);
-                return *this;
-            }
-            value_t value() const { return m_value; }
+            {}
+            field(const field& source) = default;
+            field& operator=(const field& source) = default;
+            field(field&& source) = default;
+            field& operator=(field&& source) = default;
+        public:
+            std::wstring value() const { return m_value; }
         private:
-            value_t m_value;
+            std::wstring m_value;
         };
 
         class row
         {
         public:
-            typedef typename csv::field::value_t value_t;
             typedef typename std::vector<csv::field> row_data_t;
             typedef typename row_data_t::size_type size_type;
         public:
             row() {}
-            row(const row&) = delete;
-            row& operator=(const row&) = delete;
-            row(row&& source) { *this = std::move(source); }
-            row& operator=(row&& source)
-            {
-                m_row = std::move(source.m_row);
-            }
+            row(const row&) = default;
+            row& operator=(const row&) = default;
+            row(row&& source) = default;
+            row& operator=(row&& source) = default;
+            virtual ~row() {}
         public:
             csv::field& operator[](const size_type pos) { return field(pos); }
             csv::field& field(const size_type pos) { return m_row.at(pos); }
-            void append_value(const value_t& value)
+            void append_value(const std::wstring& value)
             {
                 m_row.push_back(csv::field(value));
             }
             void clear() { m_row.clear(); }
             size_type field_count() const { return m_row.size(); }
-            value_t value(const size_type pos) { return m_row.at(pos).value(); }
+            std::wstring value(const size_type pos) { return m_row.at(pos).value(); }
         private:
             row_data_t m_row;
         };
@@ -77,28 +63,23 @@ namespace stdext
         {};
 
 
-        enum class reader_error
+        enum class reader_msg_kind
         {
-            none = 0,
-            IOError = 100,
-            expectedSeparator = 200,
-            rowFieldCountIsDifferentFromHeader = 300
-        };
-
-        enum class file_encoding
-        {
-            ansi,
-            utf8,
-            utf16
+            io_error = 101,
+            expected_separator = 201,
+            row_field_count_different_from_header = 301
         };
 
         class reader
         {
         public:
+            typedef parsers::msg_collector<reader_msg_kind> msg_collector_t;
+            typedef msg_collector_t::message_t message_t;
+        public:
             reader() = delete;
             reader(ioutils::text_reader* const rd);
-            reader(ioutils::text_reader::stream_t& stream);
-            reader(ioutils::text_reader::stream_t* const stream);
+            reader(std::wistream& stream);
+            reader(std::wistream* const stream);
             reader(const std::wstring file_name, const ioutils::file_encoding enc, const char* locale_name = nullptr);
             reader(const reader&) = delete;
             reader& operator =(const reader&) = delete;
@@ -107,27 +88,29 @@ namespace stdext
             ~reader();
         public:
             bool next_row(csv::row& r);
-            inline long col_num() const { return m_col_num; }
-            inline long line_num() const { return m_line_num; }
             bool read_header();
-            bool has_error() const { return m_error != csv::reader_error::none; }
-            csv::reader_error error() const { return m_error; }
+            inline bool eof() const noexcept { return m_reader->eof(); }
+            bool has_error() const { return m_messages.has_errors(); }
             const csv::header& header() { m_header; }
             bool has_header() { return m_header.field_count() > 0; }
+            const parsers::textpos pos() const noexcept { return m_pos; }
             long row_count() const { return m_row_num; }
-            inline ioutils::text_reader::char_type separator() const { return m_separator; }
-            void separator(const ioutils::text_reader::char_type value) { m_separator = value; }
+            inline wchar_t separator() const { return m_separator; }
+            void separator(const wchar_t value) { m_separator = value; }
+            const msg_collector_t& messages() const { return m_messages; }
+            const msg_collector_t::errors_t& errors() const { return m_messages.errors(); }
         private:
-            ioutils::text_reader::char_type next_char();
+            wchar_t next_char();
+            void add_error(const reader_msg_kind kind, const std::wstring text);
+            void add_error(const reader_msg_kind kind, parsers::textpos pos, const std::wstring text);
         private:
-            ioutils::text_reader::char_type m_separator = ',';
-            long m_col_num = 0;
-            long m_line_num = 0;
+            wchar_t m_separator = ',';
+            parsers::textpos m_pos;
             long m_row_num = 0;
-            reader_error m_error = reader_error::none;
             csv::header m_header;
             ioutils::text_reader* m_reader = nullptr;
             bool m_owns_reader = false;
+            msg_collector_t m_messages;
         };
     }
 }

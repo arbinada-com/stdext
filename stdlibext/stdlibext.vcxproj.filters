@@ -36,6 +36,9 @@
     <ClCompile Include="jsonlexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="parsers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="jsonlexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

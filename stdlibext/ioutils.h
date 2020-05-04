@@ -21,18 +21,15 @@ namespace stdext
 
         /*
          * text_reader adapter class 
-         * Designed to be used in lexer/parser
+         * Designed for use in lexer/parser
          * Reads wide chars sequentely from text streams or from text files (both ANSI and unicode)
          */
         class text_reader
         {
         public:
-            typedef std::wistream stream_t;
-            typedef stream_t::char_type char_type;
-        public:
             text_reader() = delete;
-            text_reader(stream_t& stream);
-            text_reader(stream_t* const stream);
+            text_reader(std::wistream& stream);
+            text_reader(std::wistream* const stream);
             text_reader(const std::wstring file_name, const file_encoding enc, const char* locale_name = nullptr);
             text_reader(const text_reader&) = delete;
             text_reader& operator=(const text_reader&) = delete;
@@ -40,18 +37,20 @@ namespace stdext
             text_reader& operator=(text_reader&&) = delete;
             ~text_reader();
         public:
-            bool next_char(char_type& c);
-            inline char_type next_char() { return m_stream->get(); }
+            bool next_char(wchar_t& c);
+            inline wchar_t next_char() { return m_stream->get(); }
             inline std::streamsize count() const { return m_stream->gcount(); }
             inline bool eof() const { return m_stream->eof(); }
+            std::wstring file_name() const noexcept { return m_file_name; }
             inline bool good() const { return m_stream->good(); }
             inline int rdstate() const { return m_stream->rdstate(); }
-            inline bool is_next_char(char_type c) const { return m_stream->peek() == c; }
-            bool is_next_char(std::initializer_list<char_type> chars) const;
+            inline bool is_next_char(wchar_t c) const { return m_stream->peek() == c; }
+            bool is_next_char(std::initializer_list<wchar_t> chars) const;
         protected:
-            stream_t* m_stream = nullptr;
+            std::wistream* m_stream = nullptr;
             bool m_owns_stream = false;
             long m_char_count = 0;
+            std::wstring m_file_name;
         };
 
     }

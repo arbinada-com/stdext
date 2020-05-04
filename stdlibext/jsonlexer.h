@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#include <string>
+#include "parsers.h"
 #include "ioutils.h"
 #include "jsonexceptions.h"
 
@@ -34,7 +36,22 @@ namespace stdext
 
         class lexeme
         {
-
+        public:
+            lexeme() { }
+            lexeme(const lexeme& source) = default;
+            lexeme& operator =(const lexeme& source) = default;
+            lexeme(lexeme&& source) = default;
+            lexeme& operator =(lexeme&& source) = default;
+            ~lexeme() { }
+            parsers::textpos pos() const noexcept { return m_pos; }
+            void pos(const parsers::textpos& value) noexcept { m_pos = value; }
+            json::token token() const noexcept { return m_token; }
+            std::wstring text() const noexcept { return m_text; }
+            void text(const std::wstring value) noexcept { m_text = value; }
+        private:
+            parsers::textpos m_pos;
+            json::token m_token = token::unknown;
+            std::wstring m_text;
         };
 
         class lexer
@@ -53,7 +70,14 @@ namespace stdext
             bool next_lexeme(lexeme& lex);
             bool has_error();
         private:
+            bool eof();
+            bool is_whitespace(const wchar_t c);
+            bool next_char();
+            void skip_whitespaces();
+        private:
             ioutils::text_reader* m_reader;
+            wchar_t m_c;
+            parsers::textpos m_pos;
         };
     }
 }

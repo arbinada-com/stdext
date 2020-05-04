@@ -24,6 +24,7 @@
     <ClCompile Include="ioutils.cpp" />
     <ClCompile Include="jsondom.cpp" />
     <ClCompile Include="jsonlexer.cpp" />
+    <ClCompile Include="parsers.cpp" />
     <ClCompile Include="strutils.cpp" />
     <ClCompile Include="variants.cpp" />
   </ItemGroup>
@@ -36,6 +37,7 @@
     <ClInclude Include="jsonexceptions.h" />
     <ClInclude Include="jsonlexer.h" />
     <ClInclude Include="jsonparser.h" />
+    <ClInclude Include="parsers.h" />
     <ClInclude Include="ptr_vector.h" />
     <ClInclude Include="strutils.h" />
     <ClInclude Include="trees.h" />
