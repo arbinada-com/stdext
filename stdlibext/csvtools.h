@@ -36,7 +36,7 @@ namespace stdext
         class row
         {
         public:
-            typedef typename std::vector<csv::field> row_data_t;
+            typedef std::vector<csv::field> row_data_t;
             typedef typename row_data_t::size_type size_type;
         public:
             row() {}

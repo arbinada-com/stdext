@@ -13,7 +13,7 @@ namespace stdext
     class ptr_vector
     {
     public:
-        typedef typename std::vector<Type*, Alloc> vector_t;
+        typedef std::vector<Type*, Alloc> vector_t;
         typedef typename vector_t::const_iterator const_iterator;
         typedef typename vector_t::iterator iterator;
         typedef typename vector_t::size_type size_type;

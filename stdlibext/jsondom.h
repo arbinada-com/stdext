@@ -167,12 +167,12 @@ namespace stdext
         {
             friend class dom_object;
         public:
-            typedef dom_object_member::name_t name_t;
-            typedef typename stdext::ptr_vector<dom_object_member> data_t;
-            typedef typename std::map<name_t, dom_object_member*> data_index_t;
-            typedef data_t::size_type size_type;
-            typedef data_t::const_iterator const_iterator;
-            typedef data_t::iterator iterator;
+            typedef typename dom_object_member::name_t name_t;
+            typedef stdext::ptr_vector<dom_object_member> data_t;
+            typedef std::map<name_t, dom_object_member*> data_index_t;
+            typedef typename data_t::size_type size_type;
+            typedef typename data_t::const_iterator const_iterator;
+            typedef typename data_t::iterator iterator;
         public:
             dom_object_members() = delete;
             dom_object_members(const dom_object_members&) = delete;
@@ -225,10 +225,10 @@ namespace stdext
         class dom_array : public dom_value
         {
         public:
-            typedef typename stdext::ptr_vector<dom_value> data_t;
-            typedef data_t::size_type size_type;
-            typedef data_t::const_iterator const_iterator;
-            typedef data_t::iterator iterator;
+            typedef stdext::ptr_vector<dom_value> data_t;
+            typedef typename data_t::size_type size_type;
+            typedef typename data_t::const_iterator const_iterator;
+            typedef typename data_t::iterator iterator;
         public:
             dom_array(dom_document* const doc);
             ~dom_array() override;

@@ -37,6 +37,7 @@ namespace stdext
             void line(const pos_t value) noexcept { m_line = value; }
             pos_t col() const noexcept { return m_col; }
             void col(const pos_t value) noexcept { m_col = value; }
+            void reset() noexcept;
             std::string to_string() const;
             std::wstring to_wstring() const;
         private:
@@ -112,12 +113,12 @@ namespace stdext
         class msg_collector
         {
         public:
-            typedef typename message<MsgEnumT> message_t;
-            typedef typename stdext::ptr_vector<message_t> container_t;
+            typedef message<MsgEnumT> message_t;
+            typedef stdext::ptr_vector<message_t> container_t;
             typedef typename container_t::size_type size_type;
-            typedef typename std::vector<message_t*> errors_t;
-            typedef typename std::vector<message_t*> hints_t;
-            typedef typename std::vector<message_t*> warnings_t;
+            typedef std::vector<message_t*> errors_t;
+            typedef std::vector<message_t*> hints_t;
+            typedef std::vector<message_t*> warnings_t;
             typedef typename container_t::const_iterator const_iterator;
         public:
             msg_collector() { }

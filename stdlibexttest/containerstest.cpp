@@ -34,7 +34,7 @@ private:
     wstring m_str_value;
 };
 
-typedef typename ptr_vector<TestData> TestDataPtrVector;
+typedef ptr_vector<TestData> TestDataPtrVector;
 
 TEST_CLASS(PtrVectorTest)
 {

@@ -47,7 +47,13 @@ void textpos::newline() noexcept
     m_col = 1;
 }
 
-std::string textpos::to_string() const 
+void textpos::reset() noexcept
+{
+    m_line = 1;
+    m_col = 1;
+}
+
+std::string textpos::to_string() const
 {
     return strutils::format("(%d,%d)", m_line, m_col);
 }

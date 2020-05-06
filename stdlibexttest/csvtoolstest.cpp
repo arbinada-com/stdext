@@ -11,8 +11,8 @@ using namespace stdext;
 TEST_CLASS(CsvToolsTest)
 {
 public:
-    typedef typename std::vector<std::wstring> csv_row_values_t;
-    typedef typename std::vector<csv_row_values_t> csv_values_t;
+    typedef std::vector<std::wstring> csv_row_values_t;
+    typedef std::vector<csv_row_values_t> csv_values_t;
 private:
     wstringstream CreateTestStream(csv_values_t csv, const wchar_t separator, const wstring eol)
     {

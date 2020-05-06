@@ -22,6 +22,7 @@
     <ClCompile Include="csvtools.cpp" />
     <ClCompile Include="datetime.cpp" />
     <ClCompile Include="ioutils.cpp" />
+    <ClCompile Include="jsoncommon.cpp" />
     <ClCompile Include="jsondom.cpp" />
     <ClCompile Include="jsonlexer.cpp" />
     <ClCompile Include="parsers.cpp" />
@@ -33,6 +34,7 @@
     <ClInclude Include="datetime.h" />
     <ClInclude Include="ioutils.h" />
     <ClInclude Include="json.h" />
+    <ClInclude Include="jsoncommon.h" />
     <ClInclude Include="jsondom.h" />
     <ClInclude Include="jsonexceptions.h" />
     <ClInclude Include="jsonlexer.h" />

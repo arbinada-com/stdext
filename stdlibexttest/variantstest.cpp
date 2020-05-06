@@ -36,7 +36,7 @@ template <class Type1, class Type2, class TypeR>
 class test_data_set : public std::vector<test_data<Type1, Type2, TypeR> >
 { 
 public:
-    typedef typename test_data<Type1, Type2, TypeR> test_data_t;
+    typedef test_data<Type1, Type2, TypeR> test_data_t;
 public:
     test_data_set(std::wstring title)
         : m_title(title)
@@ -85,7 +85,7 @@ template <class Type1, class Type2, class TypeR>
 class test_runner abstract
 {
 public:
-    typedef typename test_data_set<Type1, Type2, TypeR> test_data_set_t;
+    typedef test_data_set<Type1, Type2, TypeR> test_data_set_t;
     typedef typename test_data_set_t::test_data_t test_data_t;
 public:
     test_runner(std::wstring title)

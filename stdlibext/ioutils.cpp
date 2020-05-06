@@ -12,15 +12,23 @@ using namespace stdext;
 using namespace ioutils;
 
 text_reader::text_reader(std::wistream& stream)
-    : m_stream(&stream)
+    : text_reader(&stream, L"")
+{ }
+
+text_reader::text_reader(std::wistream& stream, const std::wstring source_name)
+    : text_reader(&stream, source_name)
 { }
 
 text_reader::text_reader(std::wistream* const stream)
-    : m_stream(stream)
+    : text_reader(stream, L"")
+{ }
+
+text_reader::text_reader(std::wistream* const stream, const std::wstring source_name)
+    : m_stream(stream), m_source_name(source_name)
 { }
 
 text_reader::text_reader(const std::wstring file_name, const file_encoding enc, const char* locale_name)
-    :m_file_name(file_name)
+    :m_source_name(file_name)
 {
     m_owns_stream = true;
     m_stream = new wifstream(file_name, std::ios::binary);
