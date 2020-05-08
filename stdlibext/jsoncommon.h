@@ -19,12 +19,13 @@ namespace stdext
         {
             // lexer
             err_invalid_literal_fmt = 1010,
+            err_invalid_number = 1012,
             err_reader_io = 1020,
             err_unallowed_char_fmt = 1030,
-            err_unclosed_escaped_char = 1040,
+            err_unallowed_escape_seq = 1040,
             err_unclosed_string = 1050,
             err_unexpected_char_fmt = 1060,
-            err_unknown_escape_fmt = 1070,
+            err_unrecognized_escape_seq_fmt = 1070,
             // parser
             err_unexpected_char = 2010,
         };

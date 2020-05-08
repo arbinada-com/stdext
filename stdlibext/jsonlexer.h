@@ -57,6 +57,7 @@ namespace stdext
             void token(const json::token value) noexcept { m_token = value; }
             std::wstring text() const { return m_text; }
             void text(const std::wstring value) { m_text = value; }
+            void inc_text(const wchar_t c) { m_text += c; }
         private:
             parsers::textpos m_pos;
             json::token m_token = token::unknown;
@@ -67,7 +68,7 @@ namespace stdext
         {
         public:
             lexer() = delete;
-            lexer(ioutils::text_reader* const reader, msg_collector_t* const msgs)
+            lexer(ioutils::text_reader& reader, msg_collector_t& msgs)
                 : m_reader(reader), m_messages(msgs)
             { }
             lexer(const lexer&) = delete;
@@ -78,25 +79,28 @@ namespace stdext
         public:
             bool eof();
             bool next_lexeme(lexeme& lex);
-            bool has_errors() const { return m_messages->has_errors(); }
-            msg_collector_t* const messages() const { return m_messages; }
+            bool has_errors() const { return m_messages.has_errors(); }
+            const msg_collector_t& messages() const { return m_messages; }
+        public:
+            static bool is_digit(const wchar_t c);
+            static bool is_escape(const wchar_t c);
+            static bool is_structural(const wchar_t c);
+            static bool is_unescaped(const wchar_t c);
+            static bool is_whitespace(const wchar_t c);
         private:
             void add_error(const parser_msg_kind kind);
-            void add_error(const parser_msg_kind kind, parsers::textpos pos);
+            void add_error(const parser_msg_kind kind, const parsers::textpos pos);
             void add_error(const parser_msg_kind kind, const std::wstring text);
-            void add_error(const parser_msg_kind kind, parsers::textpos pos, const std::wstring text);
-            bool handle_escaped_char(wchar_t& c);
+            void add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text);
+            bool handle_escaped_char(wchar_t& c, const parsers::textpos start);
             bool handle_literal(lexeme& lex);
+            bool handle_number(lexeme& lex);
             bool handle_string(lexeme& lex);
-            bool is_escape(const wchar_t c);
-            bool is_structural(const wchar_t c);
-            bool is_unescaped(const wchar_t c);
-            bool is_whitespace(const wchar_t c);
             bool next_char();
             void skip_whitespaces();
         private:
-            msg_collector_t* m_messages = nullptr;
-            ioutils::text_reader* m_reader = nullptr;
+            msg_collector_t& m_messages;
+            ioutils::text_reader& m_reader;
             wchar_t m_c = 0;
             bool m_look_ahead = false;
             parsers::textpos m_pos{ 1, 0 };

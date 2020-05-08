@@ -59,7 +59,7 @@ void json::lexer::add_error(const parser_msg_kind kind)
     add_error(kind, m_pos, json::to_wmessage(kind));
 }
 
-void json::lexer::add_error(const parser_msg_kind kind, parsers::textpos pos)
+void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos)
 {
     add_error(kind, pos, json::to_wmessage(kind));
 }
@@ -69,39 +69,30 @@ void json::lexer::add_error(const parser_msg_kind kind, const std::wstring text)
     add_error(kind, m_pos, text);
 }
 
-void json::lexer::add_error(const parser_msg_kind kind, parsers::textpos pos, const std::wstring text)
+void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
 {
-    m_messages->add_error(
+    m_messages.add_error(
         msg_origin::lexer, 
         kind, 
         pos, 
-        m_reader->source_name(), 
+        m_reader.source_name(), 
         text);
 }
 
 bool json::lexer::eof()
 {
-    return m_reader == nullptr || m_reader->eof();
+    return m_reader.eof();
 }
 
-bool json::lexer::handle_escaped_char(wchar_t& c)
+bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
 {
     std::locale loc;
     wstring value;
     for (int i = 0; i < 4; i++)
     {
-        if (!next_char())
+        if (!(next_char() && std::isxdigit(m_c, loc)))
         {
-            add_error(parser_msg_kind::err_unclosed_escaped_char);
-            return false;
-        }
-        if (!std::isxdigit(m_c, loc))
-        {
-            add_error(parser_msg_kind::err_unallowed_char_fmt,
-                strutils::format(
-                    json::to_wmessage(parser_msg_kind::err_unallowed_char_fmt),
-                    m_c, static_cast<unsigned int>(m_c)));
-            add_error(parser_msg_kind::err_unclosed_escaped_char);
+            add_error(parser_msg_kind::err_unallowed_escape_seq, start);
             return false;
         }
         value += m_c;
@@ -134,12 +125,83 @@ bool json::lexer::handle_literal(lexeme& lex)
     else
     {
         add_error(parser_msg_kind::err_invalid_literal_fmt,
+            pos,
             strutils::format(
                 json::to_wmessage(parser_msg_kind::err_invalid_literal_fmt),
-                value.c_str() ));
+                value.c_str()));
         return false;
     }
     return true;
+}
+
+bool json::lexer::handle_number(lexeme& lex)
+{
+    m_look_ahead = true;
+    lex.reset(m_pos, token::number_int, m_c);
+    int int_digit_count = m_c == L'-' ? 0 : 1;
+    wchar_t prev = m_c;
+    while (!eof() && next_char())
+    {
+        if (!is_digit(m_c))
+            break;
+        if (int_digit_count == 1 && prev == L'0' && m_c == L'0')
+        {
+            add_error(parser_msg_kind::err_invalid_number);
+            return false;
+        }
+        int_digit_count++;
+        lex.inc_text(m_c);
+        prev = m_c;
+    }
+    if (int_digit_count == 0)
+    {
+        add_error(parser_msg_kind::err_invalid_number);
+        return false;
+    }
+    if (m_c == L'.')
+    {
+        lex.token(token::number_decimal);
+        lex.inc_text(m_c);
+        int frac_digit_count = 0;
+        while (!eof() && next_char())
+        {
+            if (!is_digit(m_c))
+                break;
+            frac_digit_count++;
+            lex.inc_text(m_c);
+        }
+        if (frac_digit_count == 0)
+        {
+            add_error(parser_msg_kind::err_invalid_number);
+            return false;
+        }
+    }
+    if (m_c == L'e' || m_c == L'E')
+    {
+        lex.token(token::number_float);
+        lex.inc_text(m_c);
+        int exp_digit_count = 0;
+        while (!eof() && next_char())
+        {
+            if (!is_digit(m_c))
+            {
+                if (!(m_c == L'-' && exp_digit_count == 0))
+                    break;
+            }
+            else
+                exp_digit_count++;
+            lex.inc_text(m_c);
+        }
+        if (exp_digit_count == 0)
+        {
+            add_error(parser_msg_kind::err_invalid_number);
+            return false;
+        }
+    }
+    if (eof() || is_whitespace(m_c) || is_structural(m_c))
+        return true;
+    add_error(parser_msg_kind::err_invalid_number);
+    return false;
 }
 
 bool json::lexer::handle_string(lexeme& lex)
@@ -159,6 +221,7 @@ bool json::lexer::handle_string(lexeme& lex)
         }
         else if (is_escape(m_c))
         {
+            textpos pos = m_pos;
             if (!next_char())
                 break;
             switch (m_c)
@@ -185,15 +248,16 @@ bool json::lexer::handle_string(lexeme& lex)
                 break;
             case  L'u':
                 wchar_t c;
-                if (!handle_escaped_char(c))
+                if (!handle_escaped_char(c, pos))
                     return false;
                 value += c;
                 break;
             default:
                 wstring s = L"\\";
                 s += m_c;
-                add_error(parser_msg_kind::err_unknown_escape_fmt,
-                    strutils::format(json::to_wmessage(parser_msg_kind::err_unknown_escape_fmt), s.c_str()));
+                add_error(parser_msg_kind::err_unrecognized_escape_seq_fmt,
+                    pos,
+                    strutils::format(json::to_wmessage(parser_msg_kind::err_unrecognized_escape_seq_fmt), s.c_str()));
                 return false;
             }
         }
@@ -207,6 +271,11 @@ bool json::lexer::handle_string(lexeme& lex)
     }
     add_error(parser_msg_kind::err_unclosed_string);
     return false;
+}
+
+bool json::lexer::is_digit(const wchar_t c)
+{
+    return c >= L'0' && c <= L'9';
 }
 
 bool json::lexer::is_escape(const wchar_t c)
@@ -235,7 +304,7 @@ bool json::lexer::is_whitespace(const wchar_t c)
 bool json::lexer::next_char()
 {
     wchar_t prev = m_c;
-    if (m_reader->next_char(m_c))
+    if (m_reader.next_char(m_c))
     {
         m_pos++;
         if (prev == L'\n')
@@ -245,7 +314,7 @@ bool json::lexer::next_char()
     else
     {
         m_c = 0;
-        if (!m_reader->eof())
+        if (!m_reader.eof())
             add_error(parser_msg_kind::err_reader_io);
     }
     return false;
@@ -258,6 +327,7 @@ bool json::lexer::next_lexeme(lexeme& lex)
         if (!next_char())
             return false;
     }
+    m_look_ahead = false;
     skip_whitespaces();
     if (!eof())
     {
@@ -287,6 +357,18 @@ bool json::lexer::next_lexeme(lexeme& lex)
         case L',':
             lex.reset(m_pos, token::value_separator, m_c);
             return true;
+        case L'-':
+        case L'0':
+        case L'1':
+        case L'2':
+        case L'3':
+        case L'4':
+        case L'5':
+        case L'6':
+        case L'7':
+        case L'8':
+        case L'9':
+            return handle_number(lex);
         default:
             add_error(parser_msg_kind::err_unexpected_char_fmt,
                 strutils::format(
