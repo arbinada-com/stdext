@@ -5,5 +5,6 @@
 - generic tree implementation
 - string utils (format, replace etc)
 - CSV (comma-separated values) format tools (both ANSI and Unicode support)
+- JSON DOM parser (in progress)
 
 Compiled with VC++ 2017 and C++Builder 10.x (clang)
