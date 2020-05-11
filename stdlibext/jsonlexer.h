@@ -34,6 +34,8 @@ namespace stdext
             string,
             value_separator
         };
+        bool is_number_token(const json::token value);
+        bool is_literal_token(const json::token value);
         std::wstring to_wstring(const json::token tok);
 
         class lexeme

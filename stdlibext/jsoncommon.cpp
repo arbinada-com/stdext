@@ -23,6 +23,9 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_unexpected_char_fmt: return L"Unexpected character: %c (0x%x)";
     case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %s";
         // parser
+    case parser_msg_kind::err_expected_literal: return L"Literal expected";
+    case parser_msg_kind::err_unexpected_token_fmt: return L"Unexpected %s";
+    case parser_msg_kind::err_unsupported_dom_value_type_fmt: return L"Unsupported DOM value type: %s";
     default:
         return strutils::format(L"Unsupported message %d", static_cast<int>(kind));
     }

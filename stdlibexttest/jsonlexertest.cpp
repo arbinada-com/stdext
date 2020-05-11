@@ -116,6 +116,8 @@ public:
         CheckLexeme(L"-123.456", json::lexeme(json::token::number_decimal, textpos(1, 1), L"-123.456"), L"Num 2.2");
         CheckLexeme(L"1.23456E10", json::lexeme(json::token::number_float, textpos(1, 1), L"1.23456E10"), L"Num 3.1");
         CheckLexeme(L"1.23456e10", json::lexeme(json::token::number_float, textpos(1, 1), L"1.23456e10"), L"Num 3.2");
+        CheckLexeme(L"1.23456E+10", json::lexeme(json::token::number_float, textpos(1, 1), L"1.23456E+10"), L"Num 3.11");
+        CheckLexeme(L"1.23456e+10", json::lexeme(json::token::number_float, textpos(1, 1), L"1.23456e+10"), L"Num 3.21");
         CheckLexeme(L"-1.23456E10", json::lexeme(json::token::number_float, textpos(1, 1), L"-1.23456E10"), L"Num 3.3");
         CheckLexeme(L"-1.23456e10", json::lexeme(json::token::number_float, textpos(1, 1), L"-1.23456e10"), L"Num 3.4");
         CheckLexeme(L"1.23456E-10", json::lexeme(json::token::number_float, textpos(1, 1), L"1.23456E-10"), L"Num 3.5");

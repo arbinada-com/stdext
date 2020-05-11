@@ -42,6 +42,9 @@
     <ClCompile Include="jsoncommon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jsonparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">

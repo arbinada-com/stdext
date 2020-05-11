@@ -27,7 +27,9 @@ namespace stdext
             err_unexpected_char_fmt = 1060,
             err_unrecognized_escape_seq_fmt = 1070,
             // parser
-            err_unexpected_char = 2010,
+            err_expected_literal = 2100,
+            err_unexpected_token_fmt = 2300,
+            err_unsupported_dom_value_type_fmt = 2400
         };
         std::wstring to_wmessage(const parser_msg_kind kind);
 

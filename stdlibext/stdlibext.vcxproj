@@ -25,6 +25,7 @@
     <ClCompile Include="jsoncommon.cpp" />
     <ClCompile Include="jsondom.cpp" />
     <ClCompile Include="jsonlexer.cpp" />
+    <ClCompile Include="jsonparser.cpp" />
     <ClCompile Include="parsers.cpp" />
     <ClCompile Include="strutils.cpp" />
     <ClCompile Include="variants.cpp" />

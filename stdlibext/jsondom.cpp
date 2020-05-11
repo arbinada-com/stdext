@@ -30,6 +30,44 @@ std::wstring json::to_wstring(const dom_value_type type)
     return strutils::to_wstring(json::to_string(type));
 }
 
+bool json::operator ==(const dom_value& v1, const dom_value& v2)
+{
+    return equal(v1, v2);
+}
+
+bool json::operator !=(const dom_value& v1, const dom_value& v2) 
+{
+    return !equal(v1, v2);
+}
+
+bool json::equal(const dom_value& v1, const dom_value& v2)
+{
+    return
+        v1.type() == v2.type() &&
+        v1.text() == v2.text() &&
+        (
+        (v1.member() == nullptr && v2.member() == nullptr)
+            ||
+            (v1.member() != nullptr && v2.member() != nullptr && v1.member()->name() == v2.member()->name())
+            );
+}
+
+bool json::equal(const dom_document& doc1, const dom_document& doc2)
+{
+    dom_document::const_iterator it1 = doc1.begin();
+    dom_document::const_iterator it1_end = doc1.end();
+    dom_document::const_iterator it2 = doc2.begin();
+    dom_document::const_iterator it2_end = doc2.end();
+    while (it1 != it1_end && it2 != it2_end)
+    {
+        if (!(**it1 == **it2 && it1.path() == it2.path()))
+            return false;
+        ++it1;
+        ++it2;
+    }
+    return it1 == it1_end && it2 == it2_end;
+}
+
 /*
  * dom_value class
  */
@@ -63,7 +101,7 @@ void dom_value::assert_same_doc_no_parent(dom_document* doc) const noexcept(fals
     assert_no_parent();
 }
 
-void dom_value::parent(dom_value* const value) noexcept 
+void dom_value::parent(dom_value* const value) noexcept (false)
 { 
     assert_same_doc(value->document());
     m_parent = value;
@@ -80,7 +118,13 @@ dom_literal::dom_literal(dom_document* const doc, const std::wstring text)
 
 void dom_literal::text(const std::wstring value) noexcept(false)
 {
-    if (!(value == L"true" || value == L"false" || value == L"null"))
+    if (value == L"false")
+        m_subtype = dom_literal_value_type::lvt_false;
+    else if (value == L"null")
+        m_subtype = dom_literal_value_type::lvt_null;
+    else if (value == L"true")
+        m_subtype = dom_literal_value_type::lvt_true;
+    else
         throw dom_exception(strutils::format(L"Invalid literal value '%s'", value.c_str()), dom_error::invalid_literal);
     dom_value::text(value);
 }
@@ -88,10 +132,32 @@ void dom_literal::text(const std::wstring value) noexcept(false)
 /*
  * dom_number class
  */
-dom_number::dom_number(dom_document* const doc, const std::wstring text)
+dom_number::dom_number(dom_document* const doc, const std::wstring text, const dom_number_value_type subtype)
     : dom_value(doc, dom_value_type::vt_number)
 {
     this->text(text);
+    m_subtype = subtype;
+}
+
+dom_number::dom_number(dom_document* const doc, const int32_t value)
+    : dom_value(doc, dom_value_type::vt_number)
+{
+    this->text(std::to_wstring(value));
+    m_subtype = dom_number_value_type::nvt_int;
+}
+
+dom_number::dom_number(dom_document* const doc, const int64_t value)
+    : dom_value(doc, dom_value_type::vt_number)
+{
+    this->text(std::to_wstring(value));
+    m_subtype = dom_number_value_type::nvt_int;
+}
+
+dom_number::dom_number(dom_document* const doc, const double value)
+    : dom_value(doc, dom_value_type::vt_number)
+{
+    this->text(strutils::format(L"%g", value));
+    m_subtype = dom_number_value_type::nvt_float;
 }
 
 /*
@@ -136,6 +202,7 @@ void dom_object_members::append(const name_t name, dom_value* const value) noexc
     check_name(name);
     unique_ptr<dom_object_member> member(new dom_object_member(this, name, value));
     value->parent(m_owner);
+    value->m_member = member.get();
     m_index[member->name()] = member.get();
     m_data.push_back(member.release());
 }
@@ -203,6 +270,19 @@ void dom_array::append(dom_value* const value) noexcept
 /*
  * dom_document class
  */
+dom_document::dom_document(dom_document&& source)
+{
+    *this = std::move(source);
+}
+
+dom_document& dom_document::operator =(dom_document&& source)
+{
+    m_root = source.m_root;
+    source.m_root = nullptr;
+    return *this;
+}
+
+
 dom_document::~dom_document()
 {
     clear();
@@ -215,57 +295,44 @@ void dom_document::clear()
     m_root = nullptr;
 }
 
-dom_value* const dom_document::create_value(const dom_value_type type, const std::wstring text)
-{
-    unique_ptr<dom_value> value;
-    switch (type)
-    {
-    case dom_value_type::vt_array:
-        value.reset(new dom_array(this));
-        break;
-    case dom_value_type::vt_literal:
-        value.reset(new dom_literal(this, text));
-        break;
-    case dom_value_type::vt_number:
-        value.reset(new dom_number(this, text));
-        break;
-    case dom_value_type::vt_object:
-        value.reset(new dom_object(this));
-        break;
-    case dom_value_type::vt_string:
-        value.reset(new dom_string(this, text));
-        break;
-    default:
-        throw dom_exception(
-            strutils::format(L"Unsupported value type: %s (%d)", json::to_wstring(type).c_str(), static_cast<int>(type)), 
-            dom_error::usupported_value_type);
-    }
-    return value.release();
-}
-
 dom_array* const dom_document::create_array()
 {
-    return dynamic_cast<dom_array*>(create_value(dom_value_type::vt_array, L""));
+    return new dom_array(this);
 }
 
 dom_literal* const dom_document::create_literal(const std::wstring text)
 {
-    return dynamic_cast<dom_literal*>(create_value(dom_value_type::vt_literal, text));
+    return new dom_literal(this, text);
 }
 
-dom_number* const dom_document::create_number(const std::wstring text)
+dom_number* const dom_document::create_number(const std::wstring text, const json::dom_number_value_type numtype)
 {
-    return dynamic_cast<dom_number*>(create_value(dom_value_type::vt_number, text));
+    return new dom_number(this, text, numtype);
+}
+
+dom_number* const dom_document::create_number(const int32_t value)
+{
+    return new dom_number(this, value);
+}
+
+dom_number* const dom_document::create_number(const int64_t value)
+{
+    return new dom_number(this, value);
+}
+
+dom_number* const dom_document::create_number(const double value)
+{
+    return new dom_number(this, value);
 }
 
 dom_object* const dom_document::create_object()
 {
-    return dynamic_cast<dom_object*>(create_value(dom_value_type::vt_object, L""));
+    return new dom_object(this);
 }
 
 dom_string* const dom_document::create_string(const std::wstring text)
 {
-    return dynamic_cast<dom_string*>(create_value(dom_value_type::vt_string, text));
+    return new dom_string(this, text);
 }
 
 void dom_document::root(dom_value* const value) noexcept(false)
@@ -274,3 +341,70 @@ void dom_document::root(dom_value* const value) noexcept(false)
     clear();
     m_root = value;
 }
+
+dom_document::iterator dom_document::begin()
+{
+    return iterator(this); 
+}
+dom_document::const_iterator dom_document::begin() const 
+{ 
+    return const_iterator(this); 
+}
+
+dom_document::iterator dom_document::end()
+{
+    iterator it(this);
+    it.m_current = nullptr;
+    return it;
+}
+dom_document::const_iterator dom_document::end() const
+{
+    const_iterator it(this);
+    it.m_current = nullptr;
+    return it;
+}
+
+/*
+* dom_document::iterator class
+*/
+dom_document::const_iterator::const_iterator(const dom_document& doc)
+    : const_iterator(&doc)
+{ }
+
+dom_document::const_iterator::const_iterator(const dom_document* doc)
+    : m_doc(doc)
+{
+    m_current = m_doc->root();
+}
+
+dom_value* dom_document::const_iterator::next()
+{
+    if (m_current != nullptr)
+    {
+        indexer_intf* idx = dynamic_cast<indexer_intf*>(m_current);
+        if (idx != nullptr && idx->value_count() > 0)
+        {
+            m_path.push_back(0);
+            m_current = idx->get_value(0);
+        }
+        else
+        {
+            m_current = m_current->parent();
+            while (m_current != nullptr)
+            {
+                std::size_t next_index = m_path.back() + 1;
+                m_path.pop_back();
+                idx = dynamic_cast<indexer_intf*>(m_current);
+                if (idx != nullptr && next_index < idx->value_count())
+                {
+                    m_path.push_back(next_index);
+                    m_current = idx->get_value(next_index);
+                    break;
+                }
+                m_current = m_current->parent();
+            }
+        }
+    }
+    return m_current;
+}
+

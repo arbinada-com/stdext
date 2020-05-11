@@ -5,10 +5,25 @@
 
 #include "jsonlexer.h"
 #include <locale>
+#include "strutils.h"
 
 using namespace std;
 using namespace stdext;
 using namespace parsers;
+
+bool json::is_number_token(const json::token value)
+{
+    return value == token::number_decimal ||
+        value == token::number_float ||
+        value == token::number_int;
+}
+
+bool json::is_literal_token(const json::token value)
+{
+    return value == token::literal_false ||
+        value == token::literal_null ||
+        value == token::literal_true;
+}
 
 std::wstring json::to_wstring(const json::token tok)
 {
@@ -185,7 +200,7 @@ bool json::lexer::handle_number(lexeme& lex)
         {
             if (!is_digit(m_c))
             {
-                if (!(m_c == L'-' && exp_digit_count == 0))
+                if (!((m_c == L'-' || m_c == L'+') && exp_digit_count == 0))
                     break;
             }
             else
