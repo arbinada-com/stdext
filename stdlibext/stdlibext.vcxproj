@@ -46,9 +46,6 @@
     <ClInclude Include="trees.h" />
     <ClInclude Include="variants.h" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="license.txt" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{067AF364-03A8-4CD2-9184-B4472C06042D}</ProjectGuid>
