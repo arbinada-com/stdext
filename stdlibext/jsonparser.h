@@ -33,9 +33,10 @@ namespace stdext
         private:
             void add_error(const parser_msg_kind kind, const parsers::textpos pos);
             void add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text);
-            bool append_value(json::dom_value_type vtype, json::lexeme& lex);
+            bool append_value(json::dom_value* value);
             bool parse_doc();
             bool parse_literal(json::lexeme& lex);
+            bool parse_number(json::lexeme& lex);
         private:
             json::lexer* m_lexer;
             msg_collector_t& m_messages;

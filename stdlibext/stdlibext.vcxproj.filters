@@ -89,5 +89,8 @@
     <ClInclude Include="jsoncommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="locutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

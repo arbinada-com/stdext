@@ -5,7 +5,11 @@
 
 #include "jsondom.h"
 #include <memory>
+#include <sstream>
+#include <stack>
 #include "strutils.h"
+#include "locutils.h"
+#include "jsoncommon.h"
 
 using namespace std;
 using namespace stdext;
@@ -142,6 +146,7 @@ dom_number::dom_number(dom_document* const doc, const std::wstring text, const d
 dom_number::dom_number(dom_document* const doc, const int32_t value)
     : dom_value(doc, dom_value_type::vt_number)
 {
+    locutils::locale_guard lg(LC_NUMERIC, "C");
     this->text(std::to_wstring(value));
     m_subtype = dom_number_value_type::nvt_int;
 }
@@ -149,6 +154,7 @@ dom_number::dom_number(dom_document* const doc, const int32_t value)
 dom_number::dom_number(dom_document* const doc, const int64_t value)
     : dom_value(doc, dom_value_type::vt_number)
 {
+    locutils::locale_guard lg(LC_NUMERIC, "C");
     this->text(std::to_wstring(value));
     m_subtype = dom_number_value_type::nvt_int;
 }
@@ -156,6 +162,7 @@ dom_number::dom_number(dom_document* const doc, const int64_t value)
 dom_number::dom_number(dom_document* const doc, const double value)
     : dom_value(doc, dom_value_type::vt_number)
 {
+    locutils::locale_guard lg(LC_NUMERIC, "C");
     this->text(strutils::format(L"%g", value));
     m_subtype = dom_number_value_type::nvt_float;
 }
@@ -375,6 +382,13 @@ dom_document::const_iterator::const_iterator(const dom_document* doc)
     : m_doc(doc)
 {
     m_current = m_doc->root();
+    if (m_current != nullptr)
+        m_path.push_back(0);
+}
+
+bool dom_document::const_iterator::has_prev_sibling() const noexcept
+{
+    return !m_path.empty() && m_path.back() > 0;
 }
 
 dom_value* dom_document::const_iterator::next()
@@ -404,7 +418,164 @@ dom_value* dom_document::const_iterator::next()
                 m_current = m_current->parent();
             }
         }
+        if (m_current == nullptr)
+            m_path.clear();
     }
     return m_current;
 }
 
+/*
+ * dom_document_writer class
+ */
+dom_document_writer::dom_document_writer(const json::dom_document& doc)
+    : m_doc(doc)
+{ }
+
+std::wstring dom_document_writer::escape(const std::wstring s) const
+{
+    wstring es;
+    es.reserve(s.length());
+    wchar_t high_surrogate = 0;
+    for (const wchar_t& c : s)
+    {
+        if (high_surrogate != 0)
+        {
+            if (c >= 0xDC00 && c <= 0xDFFF)
+                es += strutils::format(L"\\u%0.4X\\u%0.4X", high_surrogate, c);
+            else
+            {
+                es += high_surrogate;
+                es += c;
+            }
+            high_surrogate = 0;
+            continue;
+        }
+        switch (c)
+        {
+        case L'\"':
+            es += L"\\\"";
+            break;
+        case L'\\':
+            es += L"\\\\";
+            break;
+        //case L'/':
+        //    es += L"\\/";
+        //    break;
+        case L'\b':
+            es += L"\\b";
+            break;
+        case L'\f':
+            es += L"\\f";
+            break;
+        case L'\n':
+            es += L"\\n";
+            break;
+        case L'\r':
+            es += L"\\r";
+            break;
+        case L'\t':
+            es += L"\\t";
+            break;
+        default:
+        {
+            if (json::is_unescaped(c))
+            {
+                if (c >= 0xD800 && c <= 0xDBFF && high_surrogate == 0)
+                    high_surrogate = c;
+                else
+                    es += c;
+            }
+            else
+                es += strutils::format(L"\\u%0.4X", c);
+        }
+        }
+    }
+    if (high_surrogate != 0)
+        es += high_surrogate;
+    return es;
+}
+
+void dom_document_writer::write(ioutils::text_writer& w)
+{
+    auto indent = [](int n) -> wstring
+    {
+        wstring s;
+        if (n > 1)
+            s.insert(s.begin(), n - 1, L'\t');
+        return s;
+    };
+    stack<wstring> endings;
+    dom_document::const_iterator doc_begin = m_doc.begin();
+    dom_document::const_iterator doc_end = m_doc.end();
+    dom_document::const_iterator it = doc_begin;
+    while (it != doc_end)
+    {
+        if (it.has_prev_sibling())
+            w.stream() << L",";
+        if (m_conf.pretty_print() && it != doc_begin)
+            w.stream() << endl;
+        if (m_conf.pretty_print())
+            w.stream() << indent(it.level());
+        const dom_value* v = *it;
+        if (v->member() != nullptr)
+            w.stream() << L"\"" << v->member()->name() << L"\"" << (m_conf.pretty_print() ? L": " : L":");
+        switch (v->type())
+        {
+        case dom_value_type::vt_literal:
+        case dom_value_type::vt_number:
+            w.stream() << v->text();
+            break;
+        case dom_value_type::vt_string:
+            w.stream() << L"\"" << escape(v->text()) << L"\"";
+            break;
+        case dom_value_type::vt_array:
+            w.stream() << L"[";
+            if (dynamic_cast<const json::dom_array*>(v)->empty())
+                w.stream() << L"]";
+            else
+                endings.push(L"]");
+            break;
+        case dom_value_type::vt_object:
+            w.stream() << L"{";
+            if (dynamic_cast<const json::dom_object*>(v)->const_members()->empty())
+                w.stream() << L"}";
+            else
+                endings.push(L"}");
+            break;
+        }
+        dom_document::const_iterator::path_t prev_path = it.path();
+        ++it;
+        int curr_level = it.level();
+        for (int i = prev_path.size(); i > curr_level; i--)
+        {
+            if (!endings.empty())
+            {
+                if (m_conf.pretty_print())
+                        w.stream() << endl << indent(i - 1);
+                w.stream() << endings.top();
+                endings.pop();
+            }
+        }
+    }
+}
+
+void dom_document_writer::write(std::wostream& stream)
+{
+    ioutils::text_writer w(stream);
+    write(w);
+}
+
+void dom_document_writer::write(std::wstring& s)
+{
+    wstringstream ss;
+    write(ss);
+    s = ss.str();
+}
+
+void dom_document_writer::write_to_file(const std::wstring file_name,
+    const ioutils::file_encoding enc,
+    const char* locale_name)
+{
+    ioutils::text_writer w(file_name, enc, locale_name);
+    write(w);
+}

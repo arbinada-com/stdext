@@ -207,6 +207,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="memchecker.h" />
+    <ClInclude Include="parserstest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,6 +18,7 @@ namespace stdext
             utf8,
             utf16
         };
+        void set_imbue(std::wios* stream, const file_encoding enc, const char* locale_name = nullptr);
 
         /*
          * text_reader adapter class 
@@ -46,6 +47,7 @@ namespace stdext
             inline bool good() const { return m_stream->good(); }
             inline int rdstate() const { return m_stream->rdstate(); }
             std::wstring source_name() const noexcept { return m_source_name; }
+            std::wistream& stream() { return *m_stream; }
         public:
             inline bool is_next_char(wchar_t c) const { return m_stream->peek() == c; }
             bool is_next_char(std::initializer_list<wchar_t> chars) const;
@@ -56,5 +58,24 @@ namespace stdext
             std::wstring m_source_name;
         };
 
+        class text_writer
+        {
+        public:
+            text_writer() = delete;
+            text_writer(std::wostream& stream);
+            text_writer(std::wostream* const stream);
+            text_writer(const std::wstring file_name, const file_encoding enc, const char* locale_name = nullptr);
+            text_writer(const text_writer&) = delete;
+            text_writer& operator=(const text_writer&) = delete;
+            text_writer(text_writer&&) = delete;
+            text_writer& operator=(text_writer&&) = delete;
+            ~text_writer();
+        public:
+            text_writer& operator <<(const std::wstring s);
+            std::wostream& stream() { return *m_stream; }
+        protected:
+            std::wostream* m_stream = nullptr;
+            bool m_owns_stream = false;
+        };
     }
 }

@@ -40,6 +40,7 @@
     <ClInclude Include="jsonexceptions.h" />
     <ClInclude Include="jsonlexer.h" />
     <ClInclude Include="jsonparser.h" />
+    <ClInclude Include="locutils.h" />
     <ClInclude Include="parsers.h" />
     <ClInclude Include="ptr_vector.h" />
     <ClInclude Include="strutils.h" />

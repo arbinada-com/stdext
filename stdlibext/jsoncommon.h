@@ -28,7 +28,8 @@ namespace stdext
             err_unrecognized_escape_seq_fmt = 1070,
             // parser
             err_expected_literal = 2100,
-            err_unexpected_token_fmt = 2300,
+            err_expected_number = 2110,
+            err_unexpected_lexeme_fmt = 2300,
             err_unsupported_dom_value_type_fmt = 2400
         };
         std::wstring to_wmessage(const parser_msg_kind kind);
@@ -36,6 +37,6 @@ namespace stdext
         typedef parsers::message<json::parser_msg_kind> message_t;
         typedef parsers::msg_collector<json::parser_msg_kind> msg_collector_t;
 
-
+        bool is_unescaped(const wchar_t c);
     }
 }

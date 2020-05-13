@@ -96,6 +96,7 @@ void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos p
 
 bool json::lexer::eof()
 {
+    m_reader.rdstate();
     return m_reader.eof();
 }
 
@@ -305,10 +306,7 @@ bool json::lexer::is_structural(const wchar_t c)
 
 bool json::lexer::is_unescaped(const wchar_t c)
 {
-    return c == 0x20 || c == 0x21 ||
-        (c >= 0x23 && c <= 0x5B) ||
-        c >= 0x5D; // 0x10FFFF upper limit is for UTF-32
-                   // UTF-16 surrogate pair is encoded as two separated characters
+    return json::is_unescaped(c);
 }
 
 bool json::lexer::is_whitespace(const wchar_t c)

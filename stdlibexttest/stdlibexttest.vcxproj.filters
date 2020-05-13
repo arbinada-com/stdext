@@ -72,5 +72,8 @@
     <ClInclude Include="memchecker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="parserstest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

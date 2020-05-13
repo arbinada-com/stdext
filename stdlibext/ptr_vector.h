@@ -92,6 +92,8 @@ namespace stdext
             m_vector.clear();
         }
 
+        bool empty() const noexcept { return m_vector.empty(); }
+
         iterator erase(iterator position)
         {
             if (position == end())

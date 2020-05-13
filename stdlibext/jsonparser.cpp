@@ -64,42 +64,48 @@ bool json::parser::parse_doc()
         case token::literal_true:
             result = parse_literal(lex);
             break;
+        case token::number_decimal:
         case token::number_float:
         case token::number_int:
+            result = parse_number(lex);
             break;
         case token::string:
             break;
         default:
-            add_error(parser_msg_kind::err_unexpected_token_fmt, lex.pos(),
+            add_error(parser_msg_kind::err_unexpected_lexeme_fmt, lex.pos(),
                 strutils::format(
-                    json::to_wmessage(parser_msg_kind::err_unexpected_token_fmt), 
-                    json::to_wstring(lex.token()) ) );
+                    json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(), 
+                    json::to_wstring(lex.token()).c_str() ) );
+            break;
         }
     }
-    else if (m_lexer->eof())
+    else if (m_lexer->eof() && !has_errors())
         return true;
-    return false;
+    if (result && !m_lexer->eof())
+    {
+        result = !m_lexer->next_lexeme(lex);
+        if (!result)
+        {
+            add_error(parser_msg_kind::err_unexpected_lexeme_fmt, lex.pos(),
+                strutils::format(
+                    json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
+                    json::to_wstring(lex.token()).c_str()));
+        }
+    }
+    return result;
 }
 
-bool json::parser::append_value(json::dom_value_type vtype, json::lexeme& lex)
+bool json::parser::append_value(json::dom_value* value)
 {
-    unique_ptr<json::dom_value> value;
-    switch (vtype)
-    {
-    case dom_value_type::vt_literal:
-        value.reset(m_doc.create_literal(lex.text()));
-        break;
-    default:
-        add_error(parser_msg_kind::err_unsupported_dom_value_type_fmt,
-            lex.pos(),
-            strutils::format(
-                json::to_wmessage(parser_msg_kind::err_unsupported_dom_value_type_fmt), 
-                json::to_wstring(vtype)));
-        return false;
-    }
+        //add_error(parser_msg_kind::err_unsupported_dom_value_type_fmt,
+        //    lex.pos(),
+        //    strutils::format(
+        //        json::to_wmessage(parser_msg_kind::err_unsupported_dom_value_type_fmt), 
+        //        json::to_wstring(vtype)));
+        //return false;
     if (m_current == nullptr)
     {
-        m_current = value.release();
+        m_current = value;
         m_doc.root(m_current);
     }
     else
@@ -107,7 +113,7 @@ bool json::parser::append_value(json::dom_value_type vtype, json::lexeme& lex)
         switch (m_current->type())
         {
         case dom_value_type::vt_array:
-            dynamic_cast<json::dom_array*>(m_current)->append(value.release());
+            dynamic_cast<json::dom_array*>(m_current)->append(value);
             break;
         default:
             return false;
@@ -118,11 +124,35 @@ bool json::parser::append_value(json::dom_value_type vtype, json::lexeme& lex)
 
 bool json::parser::parse_literal(json::lexeme& lex)
 {
-    if (!is_literal_token(lex.token()))
+    unique_ptr<json::dom_literal> value;
+    if (is_literal_token(lex.token()))
+        value.reset(m_doc.create_literal(lex.text()));
+    else
     {
         add_error(parser_msg_kind::err_expected_literal, lex.pos());
         return false;
     }
-    append_value(json::dom_value_type::vt_literal, lex);
+    append_value(value.release());
     return true;
 }
+
+bool json::parser::parse_number(json::lexeme& lex)
+{
+    unique_ptr<json::dom_number> value;
+    switch (lex.token())
+    {
+    case token::number_decimal:
+    case token::number_float:
+        value.reset(m_doc.create_number(lex.text(), dom_number_value_type::nvt_float));
+        break;
+    case token::number_int: 
+        value.reset(m_doc.create_number(lex.text(), dom_number_value_type::nvt_int));
+        break;
+    default:
+        add_error(parser_msg_kind::err_expected_number, lex.pos());
+        return false;
+    }
+    append_value(value.release());
+    return true;
+}
+

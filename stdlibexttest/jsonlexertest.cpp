@@ -4,14 +4,12 @@
 #include <limits>
 #include "strutils.h"
 #include "memchecker.h"
+#include "parserstest.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std;
 using namespace stdext;
 using namespace parsers;
-
-template<> inline std::wstring Microsoft::VisualStudio::CppUnitTestFramework::ToString<json::token>(const json::token& t) { return json::to_wstring(t); }
-template<> inline std::wstring Microsoft::VisualStudio::CppUnitTestFramework::ToString<parsers::textpos>(const parsers::textpos& t) { return t.to_wstring(); }
 
 class lex_vector : public stdext::ptr_vector<json::lexeme>
 {

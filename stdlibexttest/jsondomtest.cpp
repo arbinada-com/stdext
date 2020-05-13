@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include "locutils.h"
 #include "strutils.h"
 #include "memchecker.h"
 
@@ -58,11 +59,18 @@ public:
         test_number(doc.create_number(123456),
             L"123456", json::dom_number_value_type::nvt_int, L"Int 2");
         test_number(doc.create_number(std::numeric_limits<int64_t>::max()),
-            std::to_wstring(std::numeric_limits<int64_t>::max()), json::dom_number_value_type::nvt_int, L"Int 3");
+            L"9223372036854775807", json::dom_number_value_type::nvt_int, L"Int 3");
         test_number(doc.create_number(L"123.456", json::dom_number_value_type::nvt_float),
             L"123.456", json::dom_number_value_type::nvt_float, L"Decimal 1");
         test_number(doc.create_number(123.456),
-            L"123.456", json::dom_number_value_type::nvt_float, L"Float 1");
+            L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.1");
+        {
+            locutils::locale_guard loc(LC_NUMERIC, "ru_RU");
+            test_number(doc.create_number(123.456), // 123.456 -> "123,456" on ru_RU
+                L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.2");
+        }
+        test_number(doc.create_number(123.456),
+            L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.3");
         test_number(doc.create_number(123.456e10),
             L"1.23456e+12", json::dom_number_value_type::nvt_float, L"Float 2");
     }
@@ -268,54 +276,62 @@ public:
         Assert::IsTrue(it.value() == nullptr, L"Curent 1.1");
         Assert::IsTrue(*it == nullptr, L"Curent 1.2");
         Assert::IsTrue(it == doc.end(), L"Curent 1.3");
+        Assert::AreEqual<int>(0, it.level(), L"it.level 1");
         FillTestDoc(doc);
         it = doc.begin();
         Assert::IsTrue(it.value() == doc.root(), L"Curent 2.1");
         Assert::IsTrue(*it == doc.root(), L"Curent 2.2");
         Assert::IsTrue(*it == it.value(), L"Curent 2.2");
         Assert::IsTrue(it != doc.end(), L"Curent 2.4");
+        Assert::AreEqual<int>(1, it.level(), L"it.level 2");
         //
-        json::dom_document::iterator::path_t path = { };
+        json::dom_document::iterator::path_t path = { 0 };
         Assert::IsTrue(path == it.path(), L"path 0");
+        Assert::IsFalse(it.has_prev_sibling(), L"has_prev_sibling 0");
         CheckTestDocValue(L"0", *it);
         it++;
-        path = { 0 };
+        path = { 0, 0 };
         Assert::IsTrue(path == it.path(), L"path 0.0");
+        Assert::IsFalse(it.has_prev_sibling(), L"has_prev_sibling 0.0");
         CheckTestDocValue(L"0.0", *it);
         it++;
-        path = { 1 };
+        path = { 0, 1 };
         Assert::IsTrue(path == it.path(), L"path 0.1");
+        Assert::IsTrue(it.has_prev_sibling(), L"has_prev_sibling 0.1");
         CheckTestDocValue(L"0.1", *it);
         it++;
-        path = { 2 };
+        path = { 0, 2 };
         Assert::IsTrue(path == it.path(), L"path 0.2");
         CheckTestDocValue(L"0.2", *it);
         it++;
-        path = { 2, 0 };
+        path = { 0, 2, 0 };
         Assert::IsTrue(path == it.path(), L"path 0.2.0");
         CheckTestDocValue(L"0.2.0", *it);
         it++;
-        path = { 2, 1 };
+        path = { 0, 2, 1 };
         Assert::IsTrue(path == it.path(), L"path 0.2.1");
         CheckTestDocValue(L"0.2.1", *it);
         it++;
-        path = { 2, 2 };
+        path = { 0, 2, 2 };
         Assert::IsTrue(path == it.path(), L"path 0.2.2");
         CheckTestDocValue(L"0.2.2", *it);
         it++;
-        path = { 2, 3 };
+        path = { 0, 2, 3 };
         Assert::IsTrue(path == it.path(), L"path 0.2.3");
         CheckTestDocValue(L"0.2.3", *it);
         it++;
-        path = { 2, 4 };
+        path = { 0, 2, 4 };
         Assert::IsTrue(path == it.path(), L"path 0.2.4");
+        Assert::IsTrue(it.has_prev_sibling(), L"has_prev_sibling 0.2.4");
         CheckTestDocValue(L"0.2.4", *it);
         it++;
-        path = { 2, 4, 0 };
+        path = { 0, 2, 4, 0 };
         Assert::IsTrue(path == it.path(), L"path 0.2.4.0");
+        Assert::IsFalse(it.has_prev_sibling(), L"has_prev_sibling 0.2.4.0");
         CheckTestDocValue(L"0.2.4.0", *it);
         it++;
-        Assert::IsTrue(it == doc.end(), L"End");
+        Assert::IsTrue(it == doc.end(), L"End 1");
+        Assert::AreEqual<int>(0, it.level(), L"End 2");
     }
 
     TEST_METHOD(TestDomDocumentComparison)
@@ -377,6 +393,182 @@ public:
         }
         chk.checkpoint();
         Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
+    }
+
+    void CheckDocFileWriter(json::dom_document& doc, wstring expected, wstring title)
+    {
+        const wstring file_name = L"current.json";
+        {
+            json::dom_document_writer w(doc);
+            w.conf().pretty_print(true);
+            w.write_to_file(file_name, ioutils::file_encoding::utf8);
+        }
+        ioutils::text_reader r(file_name, ioutils::file_encoding::utf8);
+        wstring s(std::istreambuf_iterator<wchar_t>(r.stream()), {});
+        Assert::AreEqual<wstring>(expected, s, (title + L": content").c_str());
+    }
+
+    void CheckDocStringWriter(json::dom_document& doc, wstring expected, wstring title)
+    {
+        json::dom_document_writer w(doc);
+        w.conf().pretty_print(false);
+        wstring s;
+        w.write(s);
+        Assert::AreEqual<wstring>(expected, s, (title + L": output").c_str());
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_Literal)
+    {
+        json::dom_document doc;
+        doc.clear();
+        doc.root(doc.create_literal(L"false"));
+        CheckDocStringWriter(doc, L"false", L"Str 1");
+        CheckDocFileWriter(doc, L"false", L"Doc 1");
+        doc.clear();
+        doc.root(doc.create_literal(L"null"));
+        CheckDocStringWriter(doc, L"null", L"Str 2");
+        CheckDocFileWriter(doc, L"null", L"Doc 2");
+        doc.clear();
+        doc.root(doc.create_literal(L"true"));
+        CheckDocStringWriter(doc, L"true", L"Str 3");
+        CheckDocFileWriter(doc, L"true", L"Doc 3");
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_Number)
+    {
+        json::dom_document doc;
+        doc.clear();
+        doc.root(doc.create_number(123456));
+        CheckDocStringWriter(doc, L"123456", L"Str 1");
+        CheckDocFileWriter(doc, L"123456", L"Doc 2");
+        doc.clear();
+        doc.root(doc.create_number(123.456));
+        CheckDocStringWriter(doc, L"123.456", L"Str 2");
+        CheckDocFileWriter(doc, L"123.456", L"Doc 2");
+    }
+
+    TEST_METHOD(TestStringEscape)
+    {
+        json::dom_document doc;
+        json::dom_document_writer w(doc);
+        Assert::AreEqual<wstring>(L"", w.escape(L""), L"1");
+        Assert::AreEqual<wstring>(L"\\\"", w.escape(L"\""), L"2.1");
+        Assert::AreEqual<wstring>(L"\\\\", w.escape(L"\\"), L"2.2");
+        Assert::AreEqual<wstring>(L"/", w.escape(L"/"), L"2.3");
+        Assert::AreEqual<wstring>(L"\\b", w.escape(L"\b"), L"2.4");
+        Assert::AreEqual<wstring>(L"\\f", w.escape(L"\f"), L"2.5");
+        Assert::AreEqual<wstring>(L"\\n", w.escape(L"\n"), L"2.6");
+        Assert::AreEqual<wstring>(L"\\r", w.escape(L"\r"), L"2.7");
+        Assert::AreEqual<wstring>(L"\\t", w.escape(L"\t"), L"2.8");
+        //
+        Assert::AreEqual<wstring>(L"\\u0001", w.escape(L"\x0001"), L"3.1");
+        Assert::AreEqual<wstring>(L"\\u001F", w.escape(L"\x001F"), L"3.2");
+        //
+        Assert::AreEqual<wstring>(L"\\uD834\\uDD1E", w.escape(L"\xD834\xDD1E"), L"Surrogate pair 'G clef' 1");
+        Assert::AreEqual<wstring>(L"==\\uD834\\uDD1E==", w.escape(L"==\xD834\xDD1E=="), L"Surrogate pair 'G clef' 2");
+        Assert::AreEqual<wstring>(L"\xD834-\xDD1E", w.escape(L"\xD834-\xDD1E"), L"Surrogate pair 2");
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_String)
+    {
+        json::dom_document doc;
+        doc.clear();
+        doc.root(doc.create_string(L"Hello world!"));
+        CheckDocStringWriter(doc, L"\"Hello world!\"", L"Str 1");
+        CheckDocFileWriter(doc, L"\"Hello world!\"", L"Doc 1");
+        doc.clear();
+        doc.root(doc.create_string(L"Quick\r\nbrown\tfox\t\xD834\xDD1E\n"));
+        CheckDocStringWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Str 2");
+        CheckDocFileWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Doc 2");
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_Array)
+    {
+        json::dom_document doc;
+        doc.clear();
+        doc.root(doc.create_array());
+        CheckDocStringWriter(doc, L"[]", L"Str 1");
+        CheckDocFileWriter(doc, L"[]", L"Doc 1");
+        //
+        doc.clear();
+        json::dom_array* a = doc.create_array();
+        doc.root(a);
+        a->append(doc.create_array());
+        CheckDocStringWriter(doc, L"[[]]", L"Str 2");
+        CheckDocFileWriter(doc, L"[\n\t[]\n]", L"Doc 2");
+        a->append(doc.create_array());
+        CheckDocStringWriter(doc, L"[[],[]]", L"Str 3");
+        CheckDocFileWriter(doc, L"[\n\t[],\n\t[]\n]", L"Doc 3");
+        //
+        doc.clear();
+        a = doc.create_array();
+        doc.root(a);
+        a->append(doc.create_literal(L"null"));
+        a->append(doc.create_string(L"Hello world"));
+        a->append(doc.create_number(12345));
+        CheckDocStringWriter(doc, L"[null,\"Hello world\",12345]", L"Str 4");
+        CheckDocFileWriter(doc, L"[\n\tnull,\n\t\"Hello world\",\n\t12345\n]", L"Doc 4");
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_Object)
+    {
+        json::dom_document doc;
+        doc.clear();
+        doc.root(doc.create_object());
+        CheckDocStringWriter(doc, L"{}", L"Str 1");
+        CheckDocFileWriter(doc, L"{}", L"Doc 1");
+        //
+        doc.clear();
+        json::dom_object* o = doc.create_object();
+        doc.root(o);
+        o->append_member(L"obj 1", doc.create_object());
+        CheckDocStringWriter(doc, L"{\"obj 1\":{}}", L"Str 2");
+        CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {}\n}", L"Doc 2");
+        o->append_member(L"obj 2", doc.create_object());
+        CheckDocStringWriter(doc, L"{\"obj 1\":{},\"obj 2\":{}}", L"Str 3");
+        CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {},\n\t\"obj 2\": {}\n}", L"Doc 3");
+        //
+        doc.clear();
+        o = doc.create_object();
+        doc.root(o);
+        o->append_member(L"Literal 1", doc.create_literal(L"null"));
+        o->append_member(L"String 2", doc.create_string(L"Hello world"));
+        o->append_member(L"Number 3", doc.create_number(12345));
+        CheckDocStringWriter(doc, L"{\"Literal 1\":null,\"String 2\":\"Hello world\",\"Number 3\":12345}", L"Str 4");
+        CheckDocFileWriter(doc, L"{\n\t\"Literal 1\": null,\n\t\"String 2\": \"Hello world\",\n\t\"Number 3\": 12345\n}", L"Doc 4");
+        json::dom_object* o2 = doc.create_object();
+        o->append_member(L"Object 4", o2);
+        CheckDocStringWriter(doc, L"{\"Literal 1\":null,\"String 2\":\"Hello world\",\"Number 3\":12345,\"Object 4\":{}}", L"Str 5");
+        CheckDocFileWriter(doc, L"{\n\t\"Literal 1\": null,\n\t\"String 2\": \"Hello world\",\n\t\"Number 3\": 12345,\n\t\"Object 4\": {}\n}", L"Doc 5");
+        o2->append_member(L"Number 4.1", doc.create_number(123.456));
+        CheckDocStringWriter(doc, L"{\"Literal 1\":null,\"String 2\":\"Hello world\",\"Number 3\":12345,\"Object 4\":{\"Number 4.1\":123.456}}", L"Str 6");
+        CheckDocFileWriter(doc, 
+            L"{\n\t\"Literal 1\": null,\n\t\"String 2\": \"Hello world\",\n\t\"Number 3\": 12345,\n\t\"Object 4\": {\n\t\t\"Number 4.1\": 123.456\n\t}\n}", 
+            L"Doc 6");
+    }
+
+    TEST_METHOD(TestDomDocumentWriter_Doc)
+    {
+        json::dom_document doc;
+        doc.clear();
+        FillTestDoc(doc);
+        CheckDocStringWriter(doc, 
+            L"[\"Hello\",null,{\"Str 1\":\"World\",\"Num 1\":123,\"Arr 1\":[],\"Literal 1\":false,\"Arr 2\":[456.78]}]", 
+            L"Str 1");
+        CheckDocFileWriter(doc,
+            L"[\n\
+\t\"Hello\",\n\
+\tnull,\n\
+\t{\n\
+\t\t\"Str 1\": \"World\",\n\
+\t\t\"Num 1\": 123,\n\
+\t\t\"Arr 1\": [],\n\
+\t\t\"Literal 1\": false,\n\
+\t\t\"Arr 2\": [\n\
+\t\t\t456.78\n\
+\t\t]\n\
+\t}\n\
+]", L"Doc 1");
     }
 
 };

@@ -14,6 +14,7 @@
 #include <cstdint>
 #include "jsonexceptions.h"
 #include "ptr_vector.h"
+#include "ioutils.h"
 
 namespace stdext
 {
@@ -224,6 +225,7 @@ namespace stdext
             const_iterator begin() const noexcept { return m_data.begin(); }
             iterator end() noexcept { return m_data.end(); }
             const_iterator end() const noexcept { return m_data.end(); }
+            bool empty() const noexcept { return m_data.empty(); }
             dom_value* const find(const name_t name) const noexcept;
             size_type size() const { return m_data.size(); }
         protected:
@@ -252,6 +254,7 @@ namespace stdext
         public:
             void clear() override;
             dom_object_members* const members() { return m_members; }
+            const dom_object_members* const_members() const { return m_members; }
         public: // some facade of members() collection
             dom_object_member* const operator [](const size_type i) { return m_members->at(i); }
             void append_member(const name_t name, dom_value* const value) noexcept(false) { m_members->append(name, value); }
@@ -283,6 +286,7 @@ namespace stdext
             iterator end() noexcept { return m_data->end(); }
             const_iterator end() const noexcept { return m_data->end(); }
             void append(dom_value* const value) noexcept;
+            bool empty() const noexcept { return m_data->empty(); }
             size_type size() const { return m_data->size(); }
         public: // indexer_intf implementation
             dom_value* const get_value(const std::size_t i) override { return m_data->at(i); };
@@ -340,7 +344,8 @@ namespace stdext
                 inline bool operator !=(const const_iterator& rhs) { return !(*this == rhs); }
                 inline const dom_value* operator *() const { return m_current; }
                 inline const dom_value* value() const noexcept { return m_current; }
-                inline int level() const noexcept { return static_cast<int>(m_path.size()); }
+                inline std::size_t level() const noexcept { return m_path.size(); }
+                bool has_prev_sibling() const noexcept;
                 inline bool is_end() const noexcept { return m_current == nullptr; }
                 inline const path_t path() const { return m_path; }
             protected:
@@ -366,6 +371,42 @@ namespace stdext
             const_iterator end() const;
         private:
             dom_value* m_root = nullptr;
+        };
+
+
+        class dom_document_writer
+        {
+        public:
+            dom_document_writer() = delete;
+            dom_document_writer(const json::dom_document& doc);
+            dom_document_writer(const dom_document_writer&) = delete;
+            dom_document_writer& operator=(const dom_document_writer&) = delete;
+            dom_document_writer(dom_document_writer&&) = delete;
+            dom_document_writer& operator=(dom_document_writer&&) = delete;
+        public:
+            class config
+            {
+                friend class dom_document_writer;
+            public:
+                config() {}
+            public:
+                bool pretty_print() const noexcept { return m_pretty_print; }
+                void pretty_print(const bool value) { m_pretty_print = value; }
+            private:
+                bool m_pretty_print = false;
+            };
+        public:
+            config& conf() { return m_conf; }
+            std::wstring escape(const std::wstring s) const;
+            void write(ioutils::text_writer& w);
+            void write(std::wostream& stream);
+            void write(std::wstring& s);
+            void write_to_file(const std::wstring file_name,
+                const ioutils::file_encoding enc = ioutils::file_encoding::utf8, 
+                const char* locale_name = nullptr);
+        private:
+            config m_conf;
+            const json::dom_document& m_doc;
         };
 
         bool equal(const dom_value& v1, const dom_value& v2);

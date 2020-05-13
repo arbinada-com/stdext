@@ -9,6 +9,14 @@
 using namespace std;
 using namespace stdext;
 
+bool json::is_unescaped(const wchar_t c)
+{
+    return c == 0x20 || c == 0x21 ||
+        (c >= 0x23 && c <= 0x5B) ||
+        c >= 0x5D; // 0x10FFFF upper limit is for UTF-32
+                   // UTF-16 surrogate pair is encoded as two separated characters
+}
+
 std::wstring json::to_wmessage(const parser_msg_kind kind)
 {
     switch (kind)
@@ -24,9 +32,11 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %s";
         // parser
     case parser_msg_kind::err_expected_literal: return L"Literal expected";
-    case parser_msg_kind::err_unexpected_token_fmt: return L"Unexpected %s";
+    case parser_msg_kind::err_expected_number: return L"Number expected";
+    case parser_msg_kind::err_unexpected_lexeme_fmt: return L"Unexpected '%s'";
     case parser_msg_kind::err_unsupported_dom_value_type_fmt: return L"Unsupported DOM value type: %s";
     default:
         return strutils::format(L"Unsupported message %d", static_cast<int>(kind));
     }
 }
+
