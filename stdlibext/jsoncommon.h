@@ -27,9 +27,22 @@ namespace stdext
             err_unexpected_char_fmt = 1060,
             err_unrecognized_escape_seq_fmt = 1070,
             // parser
-            err_expected_literal = 2100,
-            err_expected_number = 2110,
+            err_expected_array = 2100,
+            err_expected_array_item = 2105,
+            err_expected_literal = 2110,
+            err_expected_member_name = 2112,
+            err_expected_name_separator = 2014,
+            err_expected_number = 2116,
+            err_expected_object = 2120,
+            err_expected_string = 2125,
+            err_expected_value_but_found_fmt = 2150,
+            err_member_name_duplicate_fmt = 2200,
+            err_member_name_is_empty = 2205,
+            err_parent_is_not_container = 2250,
+            err_unclosed_array = 2290,
+            err_unclosed_object = 2295,
             err_unexpected_lexeme_fmt = 2300,
+            err_unexpected_text_end = 2310,
             err_unsupported_dom_value_type_fmt = 2400
         };
         std::wstring to_wmessage(const parser_msg_kind kind);

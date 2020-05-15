@@ -31,9 +31,22 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_unexpected_char_fmt: return L"Unexpected character: %c (0x%x)";
     case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %s";
         // parser
+    case parser_msg_kind::err_expected_array: return L"Array expected";
+    case parser_msg_kind::err_expected_array_item: return L"Array item expected";
     case parser_msg_kind::err_expected_literal: return L"Literal expected";
+    case parser_msg_kind::err_expected_member_name: return L"Object member name expected";
+    case parser_msg_kind::err_expected_name_separator: return L"Name separator ':' expected";
     case parser_msg_kind::err_expected_number: return L"Number expected";
+    case parser_msg_kind::err_expected_object: return L"Object expected";
+    case parser_msg_kind::err_expected_string: return L"String expected";
+    case parser_msg_kind::err_expected_value_but_found_fmt: return L"Expected value but '%s' found";
+    case parser_msg_kind::err_member_name_duplicate_fmt: return L"Duplicate member name '%s'";
+    case parser_msg_kind::err_member_name_is_empty: return L"Member name is empty";
+    case parser_msg_kind::err_parent_is_not_container: L"Parent DOM value is not container";
+    case parser_msg_kind::err_unclosed_array: return L"Unclosed array";
+    case parser_msg_kind::err_unclosed_object: return L"Unclosed object";
     case parser_msg_kind::err_unexpected_lexeme_fmt: return L"Unexpected '%s'";
+    case parser_msg_kind::err_unexpected_text_end: return L"Unexpected end of text";
     case parser_msg_kind::err_unsupported_dom_value_type_fmt: return L"Unsupported DOM value type: %s";
     default:
         return strutils::format(L"Unsupported message %d", static_cast<int>(kind));

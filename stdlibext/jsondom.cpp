@@ -537,7 +537,7 @@ void dom_document_writer::write(ioutils::text_writer& w)
             break;
         case dom_value_type::vt_object:
             w.stream() << L"{";
-            if (dynamic_cast<const json::dom_object*>(v)->const_members()->empty())
+            if (dynamic_cast<const json::dom_object*>(v)->cmembers()->empty())
                 w.stream() << L"}";
             else
                 endings.push(L"}");

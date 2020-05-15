@@ -225,6 +225,7 @@ namespace stdext
             const_iterator begin() const noexcept { return m_data.begin(); }
             iterator end() noexcept { return m_data.end(); }
             const_iterator end() const noexcept { return m_data.end(); }
+            inline bool contains_name(const name_t name) const noexcept { return find(name) != nullptr; }
             bool empty() const noexcept { return m_data.empty(); }
             dom_value* const find(const name_t name) const noexcept;
             size_type size() const { return m_data.size(); }
@@ -254,11 +255,12 @@ namespace stdext
         public:
             void clear() override;
             dom_object_members* const members() { return m_members; }
-            const dom_object_members* const_members() const { return m_members; }
+            const dom_object_members* cmembers() const { return m_members; }
         public: // some facade of members() collection
             dom_object_member* const operator [](const size_type i) { return m_members->at(i); }
             void append_member(const name_t name, dom_value* const value) noexcept(false) { m_members->append(name, value); }
-            dom_value* const find(const name_t name) const noexcept { return m_members->find(name); }
+            inline bool contains_member(const name_t name) const noexcept { return m_members->contains_name(name); }
+            inline dom_value* const find(const name_t name) const noexcept { return m_members->find(name); }
             size_type size() const { return m_members->size(); }
         public: // indexer_intf implementation
             dom_value* const get_value(const std::size_t i) override { return m_members->at(i)->value(); };

@@ -25,6 +25,16 @@ bool json::is_literal_token(const json::token value)
         value == token::literal_true;
 }
 
+bool json::is_value_token(const json::token value)
+{
+    return value == token::begin_array ||
+        value == token::begin_object ||
+        value == token::string ||
+        is_number_token(value) ||
+        is_literal_token(value);
+}
+
+
 std::wstring json::to_wstring(const json::token tok)
 {
     switch (tok)
@@ -92,12 +102,6 @@ void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos p
         pos, 
         m_reader.source_name(), 
         text);
-}
-
-bool json::lexer::eof()
-{
-    m_reader.rdstate();
-    return m_reader.eof();
 }
 
 bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)

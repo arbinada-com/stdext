@@ -72,7 +72,13 @@ public:
         test_number(doc.create_number(123.456),
             L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.3");
         test_number(doc.create_number(123.456e10),
-            L"1.23456e+12", json::dom_number_value_type::nvt_float, L"Float 2");
+            L"1.23456e+12", json::dom_number_value_type::nvt_float, L"Float 2.1");
+        test_number(doc.create_number(0.123456e-10),
+            L"1.23456e-11", json::dom_number_value_type::nvt_float, L"Float 2.2");
+        test_number(doc.create_number(1.23456e8),
+            L"1.23456e+08", json::dom_number_value_type::nvt_float, L"Float 2.3");
+        test_number(doc.create_number(1.23456e-8),
+            L"1.23456e-08", json::dom_number_value_type::nvt_float, L"Float 2.4");
     }
 
     TEST_METHOD(TestDomValues_Other)
@@ -122,6 +128,7 @@ public:
             Assert::IsTrue(test_data[i]->type() == (*o1)[i]->value()->type(), strutils::format(L"Value type %d", i).c_str());
             Assert::IsTrue(test_data[i]->text() == (*o1)[i]->value()->text(), strutils::format(L"Value %d", i).c_str());
             json::dom_value* v = o1->find(name);
+            Assert::IsTrue(o1->contains_member(name), strutils::format(L"Value2 name %d", i).c_str());
             Assert::IsNotNull(v, strutils::format(L"Value2 %d", i).c_str());
             Assert::IsTrue(test_data[i] == v, strutils::format(L"Value2 ptr %d", i).c_str());
             Assert::IsTrue(test_data[i]->type() == v->type(), strutils::format(L"Value2 type %d", i).c_str());

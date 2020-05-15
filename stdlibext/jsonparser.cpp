@@ -12,6 +12,28 @@ using namespace std;
 using namespace stdext;
 using namespace parsers;
 
+/*
+ * dom_value_ptr class
+ */
+json::dom_value_ptr::dom_value_ptr(json::dom_value* const value)
+    : m_value(value)
+{ }
+
+json::dom_value_ptr::~dom_value_ptr()
+{
+    if (!m_accepted && m_value != nullptr)
+        delete m_value;
+}
+
+bool json::dom_value_ptr::accept()
+{
+    m_accepted = true;
+    return true;
+}
+
+/*
+ * parser class
+ */
 json::parser::parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc)
     : m_reader(reader), m_messages(msgs), m_doc(doc)
 { 
@@ -39,120 +61,289 @@ void json::parser::add_error(const parser_msg_kind kind, const parsers::textpos 
 
 }
 
+bool json::parser::is_current_token(const json::token tok)
+{
+    return m_curr.token() == tok;
+}
+
+bool json::parser::is_parent_container(const json::dom_value* parent)
+{
+    return (parent == nullptr && m_doc.root() == nullptr) ||
+        (parent != nullptr &&
+        (parent->type() == json::dom_value_type::vt_array || parent->type() == json::dom_value_type::vt_object));
+}
+
+bool json::parser::accept_value(json::dom_value* const parent, dom_value_ptr& node, const context& ctx)
+{
+    if (parent == nullptr)
+        m_doc.root(node.value());
+    else
+    {
+        switch (parent->type())
+        {
+        case dom_value_type::vt_array:
+        {
+            json::dom_array* arr = dynamic_cast<json::dom_array*>(parent);
+            if (arr == nullptr)
+            {
+                add_error(parser_msg_kind::err_parent_is_not_container, pos());
+                return false;
+            }
+            arr->append(node.value());
+            node.accept();
+            break;
+        }
+        case dom_value_type::vt_object:
+        {
+            json::dom_object* obj = dynamic_cast<json::dom_object*>(parent);
+            if (obj == nullptr)
+            {
+                add_error(parser_msg_kind::err_parent_is_not_container, pos());
+                return false;
+            }
+            if (ctx.member_name().empty())
+            {
+                add_error(parser_msg_kind::err_member_name_is_empty, pos());
+                return false;
+            }
+            if (obj->cmembers()->contains_name(ctx.member_name()))
+            {
+                add_error(parser_msg_kind::err_member_name_duplicate_fmt, pos(),
+                    strutils::format(
+                        json::to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
+                        m_curr.text().c_str()));
+
+                return false;
+            }
+            obj->append_member(ctx.member_name(), node.value());
+            break;
+        }
+        default:
+            add_error(parser_msg_kind::err_parent_is_not_container, pos());
+            return false;
+        }
+    }
+    node.accept();
+    return true;
+}
+
+bool json::parser::next()
+{
+    return m_lexer->next_lexeme(m_curr);
+}
+
 bool json::parser::run()
 {
-    bool result = parse_doc();
-    return result;
+    return parse_doc();
 }
 
 bool json::parser::parse_doc()
 {
     m_doc.clear();
-    m_current = nullptr;
     bool result = false;
-    json::lexeme lex;
-    if (m_lexer->next_lexeme(lex))
+    if (next())
     {
-        switch (lex.token())
-        {
-        case token::begin_array:
-            break;
-        case token::begin_object:
-            break;
-        case token::literal_false:
-        case token::literal_null:
-        case token::literal_true:
-            result = parse_literal(lex);
-            break;
-        case token::number_decimal:
-        case token::number_float:
-        case token::number_int:
-            result = parse_number(lex);
-            break;
-        case token::string:
-            break;
-        default:
-            add_error(parser_msg_kind::err_unexpected_lexeme_fmt, lex.pos(),
-                strutils::format(
-                    json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(), 
-                    json::to_wstring(lex.token()).c_str() ) );
-            break;
-        }
+        context ctx;
+        result = parse_value(nullptr, ctx);
     }
     else if (m_lexer->eof() && !has_errors())
         return true;
     if (result && !m_lexer->eof())
     {
-        result = !m_lexer->next_lexeme(lex);
+        result = !next();
         if (!result)
-        {
-            add_error(parser_msg_kind::err_unexpected_lexeme_fmt, lex.pos(),
+            add_error(parser_msg_kind::err_unexpected_lexeme_fmt, pos(),
                 strutils::format(
                     json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
-                    json::to_wstring(lex.token()).c_str()));
-        }
+                    m_curr.text().c_str()));
     }
     return result;
 }
 
-bool json::parser::append_value(json::dom_value* value)
+bool json::parser::parse_value(json::dom_value* const parent, const context& ctx)
 {
-        //add_error(parser_msg_kind::err_unsupported_dom_value_type_fmt,
-        //    lex.pos(),
-        //    strutils::format(
-        //        json::to_wmessage(parser_msg_kind::err_unsupported_dom_value_type_fmt), 
-        //        json::to_wstring(vtype)));
-        //return false;
-    if (m_current == nullptr)
+    bool result = false;
+    switch (m_curr.token())
     {
-        m_current = value;
-        m_doc.root(m_current);
+    case token::begin_array:
+        result = parse_array(parent, ctx);
+        break;
+    case token::begin_object:
+        result = parse_object(parent, ctx);
+        break;
+    case token::literal_false:
+    case token::literal_null:
+    case token::literal_true:
+        result = parse_literal(parent, ctx);
+        break;
+    case token::number_decimal:
+    case token::number_float:
+    case token::number_int:
+        result = parse_number(parent, ctx);
+        break;
+    case token::string:
+        result = parse_string(parent, ctx);
+        break;
+    default:
+        add_error(parser_msg_kind::err_expected_value_but_found_fmt, pos(),
+            strutils::format(
+                json::to_wmessage(parser_msg_kind::err_expected_value_but_found_fmt).c_str(),
+                m_curr.text().c_str()));
+        break;
     }
+    return result;
+}
+
+bool json::parser::parse_array(json::dom_value* const parent, const context& ctx)
+{
+    bool result = is_current_token(token::begin_array);
+    if (!result)
+        add_error(parser_msg_kind::err_expected_array, pos());
     else
     {
-        switch (m_current->type())
+        dom_value_ptr arr(m_doc.create_array());
+        if (result = accept_value(parent, arr, ctx))
         {
-        case dom_value_type::vt_array:
-            dynamic_cast<json::dom_array*>(m_current)->append(value);
-            break;
-        default:
-            return false;
+            if (result = next())
+            {
+                if (!is_current_token(token::end_array))
+                    result = parse_array_items(dynamic_cast<dom_array*>(arr.value()), ctx);
+                if (result)
+                    result = is_current_token(token::end_array);
+            }
         }
+        if (!result)
+            add_error(parser_msg_kind::err_unclosed_array, m_lexer->pos());
     }
-    return true;
+    return result;
 }
 
-bool json::parser::parse_literal(json::lexeme& lex)
+bool json::parser::parse_array_items(json::dom_array* const parent, const context& ctx)
 {
-    unique_ptr<json::dom_literal> value;
-    if (is_literal_token(lex.token()))
-        value.reset(m_doc.create_literal(lex.text()));
+    bool result = true;
+    bool is_next_item = true;
+    while (result && is_next_item)
+    {
+        if (result = parse_value(parent, ctx))
+        {
+            is_next_item = next() && is_current_token(token::value_separator);
+            if (is_next_item)
+            {
+                if (!(result = next()))
+                    add_error(parser_msg_kind::err_expected_array_item, m_lexer->pos());
+            }
+        }
+        else
+            add_error(parser_msg_kind::err_expected_array_item, pos());
+    }
+    return result;
+}
+
+bool json::parser::parse_object(json::dom_value* const parent, const context& ctx)
+{
+    bool result = is_current_token(token::begin_object);
+    if (!result)
+        add_error(parser_msg_kind::err_expected_object, pos());
     else
     {
-        add_error(parser_msg_kind::err_expected_literal, lex.pos());
-        return false;
+        dom_value_ptr current(m_doc.create_object());
+        if (result = accept_value(parent, current, ctx))
+        {
+            if (result = next())
+            {
+                if (!is_current_token(token::end_object))
+                    result = parse_object_members(dynamic_cast<dom_object*>(current.value()), ctx);
+                if (result)
+                    result = is_current_token(token::end_object);
+            }
+        }
+        if (!result)
+            add_error(parser_msg_kind::err_unclosed_object, m_lexer->pos());
     }
-    append_value(value.release());
-    return true;
+    return result;
 }
 
-bool json::parser::parse_number(json::lexeme& lex)
+bool json::parser::parse_object_members(json::dom_object* const parent, const context& ctx)
 {
-    unique_ptr<json::dom_number> value;
-    switch (lex.token())
+    bool result = true;
+    bool is_next_member = true;
+    while (result && is_next_member)
+    {
+        if (result = is_current_token(token::string))
+        {
+            context member_ctx(ctx);
+            member_ctx.member_name(m_curr.text());
+            if (result = next())
+            {
+                if (result == is_current_token(token::name_separator))
+                {
+                    if (result = next() && parse_value(parent, member_ctx))
+                    {
+                        is_next_member = next() && is_current_token(token::value_separator);
+                        if (is_next_member)
+                        {
+                            if (!(result = next()))
+                                add_error(parser_msg_kind::err_expected_member_name, m_lexer->pos());
+                        }
+                    }
+                }
+                else
+                    add_error(parser_msg_kind::err_expected_name_separator, pos());
+            }
+            else
+                add_error(parser_msg_kind::err_expected_name_separator, m_lexer->pos());
+        }
+        else
+            add_error(parser_msg_kind::err_expected_member_name, pos());
+    }
+    return result;
+}
+
+bool json::parser::parse_literal(json::dom_value* const parent, const context& ctx)
+{
+    bool result = is_literal_token(m_curr.token());
+    if (result)
+    {
+        dom_value_ptr node(m_doc.create_literal(m_curr.text()));
+        result = accept_value(parent, node, ctx);
+    }
+    else
+        add_error(parser_msg_kind::err_expected_literal, m_curr.pos());
+    return result;
+}
+
+bool json::parser::parse_number(json::dom_value* const parent, const context& ctx)
+{
+    switch (m_curr.token())
     {
     case token::number_decimal:
     case token::number_float:
-        value.reset(m_doc.create_number(lex.text(), dom_number_value_type::nvt_float));
-        break;
+    {
+        dom_value_ptr node(m_doc.create_number(m_curr.text(), dom_number_value_type::nvt_float));
+        return accept_value(parent, node, ctx);
+    }
     case token::number_int: 
-        value.reset(m_doc.create_number(lex.text(), dom_number_value_type::nvt_int));
-        break;
+    {
+        dom_value_ptr node(m_doc.create_number(m_curr.text(), dom_number_value_type::nvt_int));
+        return accept_value(parent, node, ctx);
+    }
     default:
-        add_error(parser_msg_kind::err_expected_number, lex.pos());
+        add_error(parser_msg_kind::err_expected_number, m_curr.pos());
         return false;
     }
-    append_value(value.release());
-    return true;
 }
+
+bool json::parser::parse_string(json::dom_value* const parent, const context& ctx)
+{
+    bool result = m_curr.token() == token::string;
+    if (result)
+    {
+        dom_value_ptr node(m_doc.create_string(m_curr.text()));
+        result = accept_value(parent, node, ctx);
+    }
+    else
+        add_error(parser_msg_kind::err_expected_string, m_curr.pos());
+    return result;
+}
+
 

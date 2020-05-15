@@ -36,6 +36,7 @@ namespace stdext
         };
         bool is_number_token(const json::token value);
         bool is_literal_token(const json::token value);
+        bool is_value_token(const json::token value);
         std::wstring to_wstring(const json::token tok);
 
         class lexeme
@@ -79,10 +80,11 @@ namespace stdext
             lexer& operator =(lexer&&) = delete;
             ~lexer() { }
         public:
-            bool eof();
+            inline bool eof() const { return m_reader.eof(); }
             bool next_lexeme(lexeme& lex);
-            bool has_errors() const { return m_messages.has_errors(); }
+            inline bool has_errors() const { return m_messages.has_errors(); }
             const msg_collector_t& messages() const { return m_messages; }
+            const parsers::textpos& pos() const { return m_pos; }
         public:
             static bool is_digit(const wchar_t c);
             static bool is_escape(const wchar_t c);
