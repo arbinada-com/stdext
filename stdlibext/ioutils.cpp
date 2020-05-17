@@ -4,12 +4,36 @@
  */
 #include "ioutils.h"
 #include <fstream>
+#include <sstream>
 #include <locale>
 #include <codecvt>
 
 using namespace std;
 using namespace stdext;
 using namespace ioutils;
+
+bool ioutils::is_high_surrogate(const wchar_t c)
+{
+    return c >= 0xD800 && c <= 0xDBFF;
+}
+
+bool ioutils::is_low_surrogate(const wchar_t c)
+{
+    return c >= 0xDC00 && c <= 0xDFFF;
+}
+
+bool ioutils::is_noncharacter(const wchar_t c)
+{
+    // Noncharacters are code points that are permanently reserved in the Unicode Standard forinternal use.
+    // They are forbidden for use in open interchange of Unicode text data.
+    // http://www.unicode.org/versions/Unicode5.2.0/ch16.pdf#G19635
+    return
+        (c >= 0xFDD0 && c <= 0xFDEF)
+        || c == 0xFEFF // BOM BE
+        || c == 0xFFFE // BOM LE
+        || c == 0xFFFF
+        ;
+}
 
 void ioutils::set_imbue(std::wios* stream, const file_encoding enc, const char* locale_name)
 {
@@ -52,7 +76,19 @@ text_reader::text_reader(const std::wstring file_name, const file_encoding enc, 
 {
     m_owns_stream = true;
     m_stream = new wifstream(file_name, std::ios::binary);
-    set_imbue(m_stream, enc, locale_name);
+    switch (enc)
+    {
+    case file_encoding::ansi:
+        if (locale_name != nullptr)
+            m_stream->imbue(std::locale(locale_name));
+        break;
+    case file_encoding::utf8:
+        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
+        break;
+    case file_encoding::utf16:
+        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::consume_header>));
+        break;
+    }
 }
 
 text_reader::~text_reader()
@@ -77,6 +113,12 @@ bool text_reader::is_next_char(std::initializer_list<wchar_t> chars) const
     return false;
 }
 
+void text_reader::read_all(std::wstring& s)
+{
+    wstringstream wss;
+    wss << m_stream->rdbuf();
+    s = wss.str();
+}
 
 /*
  * test_writer class
@@ -93,7 +135,21 @@ text_writer::text_writer(const std::wstring file_name, const file_encoding enc, 
 {
     m_owns_stream = true;
     m_stream = new wofstream(file_name, ios::binary | ios::trunc);
-    set_imbue(m_stream, enc, locale_name);
+    switch (enc)
+    {
+    case file_encoding::ansi:
+        if (locale_name != nullptr)
+            m_stream->imbue(std::locale(locale_name));
+        break;
+    case file_encoding::utf8:
+        //stream->imbue(std::locale(std::locale("C"), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
+        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
+        break;
+    case file_encoding::utf16:
+        m_stream->imbue(std::locale(std::locale::empty(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::generate_header>));
+        //m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::generate_header>));
+        break;
+    }
 }
 
 text_writer::~text_writer()

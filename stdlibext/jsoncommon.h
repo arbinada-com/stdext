@@ -35,7 +35,8 @@ namespace stdext
             err_expected_number = 2116,
             err_expected_object = 2120,
             err_expected_string = 2125,
-            err_expected_value_but_found_fmt = 2150,
+            err_expected_value = 2150,
+            err_expected_value_but_found_fmt = 2155,
             err_member_name_duplicate_fmt = 2200,
             err_member_name_is_empty = 2205,
             err_parent_is_not_container = 2250,
@@ -51,5 +52,6 @@ namespace stdext
         typedef parsers::msg_collector<json::parser_msg_kind> msg_collector_t;
 
         bool is_unescaped(const wchar_t c);
+        std::wstring to_escaped(const wchar_t c, const bool force_to_numeric = false);
     }
 }

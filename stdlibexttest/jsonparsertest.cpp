@@ -1,4 +1,4 @@
-#include "CppUnitTest.h"
+﻿#include "CppUnitTest.h"
 #include "json.h"
 #include <fstream>
 #include <limits>
@@ -102,6 +102,9 @@ TEST_CLASS(JsonParserTest)
         doc.clear();
         doc.root(doc.create_string(L"\x0001\"\\/\b\f\n\r\t\xD834\xDD1E"));
         CheckParseText(L"\"\\u0001\\\"\\\\/\\b\\f\\n\\r\\t\\uD834\\uDD1E\"", doc, L"Str 3");
+        doc.clear();
+        doc.root(doc.create_string(L"ABC été déjà строка"));
+        CheckParseText(L"\"ABC été déjà строка\"", doc, L"Str 4");
     }
 
     TEST_METHOD(TestSimpleDocErrors)
@@ -171,5 +174,6 @@ TEST_CLASS(JsonParserTest)
         CheckError(L"{", json::parser_msg_kind::err_unclosed_object, textpos(1, 1), L"1.1");
         CheckError(L"{null", json::parser_msg_kind::err_expected_member_name, textpos(1, 2), L"2.1");
         CheckError(L"{\"Member1\"", json::parser_msg_kind::err_expected_name_separator, textpos(1, 10), L"3.1");
+        CheckError(L"{\"Member1\":", json::parser_msg_kind::err_expected_value, textpos(1, 11), L"4.1");
     }
 };

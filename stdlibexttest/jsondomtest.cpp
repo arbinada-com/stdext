@@ -1,5 +1,6 @@
-#include "CppUnitTest.h"
+﻿#include "CppUnitTest.h"
 #include "json.h"
+#include "jsontools.h"
 #include <fstream>
 #include <vector>
 #include <algorithm>
@@ -339,6 +340,19 @@ public:
         it++;
         Assert::IsTrue(it == doc.end(), L"End 1");
         Assert::AreEqual<int>(0, it.level(), L"End 2");
+        //
+        int count = 0;
+        for (const auto value : doc) // const auto -> const json::dom_value*
+            count++;
+        Assert::AreEqual(10, count, L"for const auto");
+        count = 0;
+        for (auto value : doc) // auto -> json::dom_value*
+            count++;
+        Assert::AreEqual(10, count, L"for auto");
+        count = 0;
+        for (json::dom_value* value : doc)
+            count++;
+        Assert::AreEqual(10, count, L"for json::dom_value*");
     }
 
     TEST_METHOD(TestDomDocumentComparison)
@@ -402,14 +416,19 @@ public:
         Assert::IsFalse(chk.has_leaks(), chk.wreport().c_str());
     }
 
+    const wstring default_test_file_name = L"current.json";
+
+    void SaveDoc(json::dom_document& doc, const wstring file_name)
+    {
+        json::dom_document_writer w(doc);
+        w.conf().pretty_print(true);
+        w.write_to_file(file_name, ioutils::file_encoding::utf8);
+    }
+
     void CheckDocFileWriter(json::dom_document& doc, wstring expected, wstring title)
     {
-        const wstring file_name = L"current.json";
-        {
-            json::dom_document_writer w(doc);
-            w.conf().pretty_print(true);
-            w.write_to_file(file_name, ioutils::file_encoding::utf8);
-        }
+        const wstring file_name = default_test_file_name;
+        SaveDoc(doc, file_name);
         ioutils::text_reader r(file_name, ioutils::file_encoding::utf8);
         wstring s(std::istreambuf_iterator<wchar_t>(r.stream()), {});
         Assert::AreEqual<wstring>(expected, s, (title + L": content").c_str());
@@ -473,7 +492,10 @@ public:
         //
         Assert::AreEqual<wstring>(L"\\uD834\\uDD1E", w.escape(L"\xD834\xDD1E"), L"Surrogate pair 'G clef' 1");
         Assert::AreEqual<wstring>(L"==\\uD834\\uDD1E==", w.escape(L"==\xD834\xDD1E=="), L"Surrogate pair 'G clef' 2");
-        Assert::AreEqual<wstring>(L"\xD834-\xDD1E", w.escape(L"\xD834-\xDD1E"), L"Surrogate pair 2");
+        wstring expected;
+        expected += ioutils::replacement_character();
+        expected += L"-\xDD1E";
+        Assert::AreEqual<wstring>(expected, w.escape(L"\xD834-\xDD1E"), L"Surrogate pair 2");
     }
 
     TEST_METHOD(TestDomDocumentWriter_String)
@@ -487,6 +509,35 @@ public:
         doc.root(doc.create_string(L"Quick\r\nbrown\tfox\t\xD834\xDD1E\n"));
         CheckDocStringWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Str 2");
         CheckDocFileWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Doc 2");
+        doc.clear();
+        doc.root(doc.create_string(L"ABC été déjà строка"));
+        CheckDocStringWriter(doc, L"\"ABC été déjà строка\"", L"Str 3");
+        CheckDocFileWriter(doc, L"\"ABC été déjà строка\"", L"Doc 3");
+        doc.clear();
+        doc.root(doc.create_string(L"\x1 \x2 \xFFFE \xFFFF"));
+        wstring expected = strutils::format(L"\"\\u0001 \\u0002 \\u%0.4X \\u%0.4X\"", 
+            ioutils::replacement_character(), ioutils::replacement_character());
+        CheckDocStringWriter(doc, expected, L"Str 4");
+        CheckDocFileWriter(doc, expected, L"Doc 4");
+        //
+        wstring s;
+        expected.clear();
+        for (int i = 0x1; i <= 0xFFFF; i++)
+        {
+            wchar_t c = static_cast<wchar_t>(i);
+            if (ioutils::is_noncharacter(c) || ioutils::is_high_surrogate(c))
+                c = ioutils::replacement_character();
+            s += c;
+            if (json::is_unescaped(c))
+                expected += c;
+            else
+                expected += json::to_escaped(c);
+        }
+        expected = strutils::double_quoted(expected);
+        doc.clear();
+        doc.root(doc.create_string(s));
+        CheckDocStringWriter(doc, expected, L"Str 5");
+        CheckDocFileWriter(doc, expected, L"Doc 5");
     }
 
     TEST_METHOD(TestDomDocumentWriter_Array)
@@ -578,4 +629,68 @@ public:
 ]", L"Doc 1");
     }
 
+    TEST_METHOD(TestDomDocumentGeneratorConfig)
+    {
+        json::dom_document doc;
+        json::dom_document_generator gen(doc);
+        json::dom_document_generator::config& conf = gen.conf();
+        using config_t = json::dom_document_generator::config;
+        //
+        Assert::AreEqual(1, conf.min_depth(), L"min_depth 1");
+        Assert::AreEqual(1, conf.max_depth(), L"max_depth 1");
+        Assert::AreEqual(1, conf.min_values_by_level(), L"min_values_by_level 1");
+        Assert::AreEqual(1, conf.max_values_by_level(), L"max_values_by_level 1");
+        Assert::AreEqual(config_t::default_avg_array_items, conf.avg_array_items(), L"avg_array_items 1");
+        Assert::AreEqual(config_t::default_avg_object_members, conf.avg_object_members(), L"avg_object_members 1");
+        Assert::AreEqual(config_t::default_avg_string_length, conf.avg_string_length(), L"avg_string_length 1");
+        //
+        conf.max_depth(conf.min_depth() - 1);
+        Assert::AreEqual(conf.min_depth(), conf.max_depth(), L"max_depth 2");
+        conf.max_values_by_level(conf.min_values_by_level() - 1);
+        Assert::AreEqual(conf.min_values_by_level(), conf.max_values_by_level(), L"max_values_by_level 2");
+        conf.avg_array_items(0);
+        Assert::AreEqual(config_t::default_avg_array_items, conf.avg_array_items(), L"avg_array_items 2");
+        conf.avg_object_members(-1);
+        Assert::AreEqual(config_t::default_avg_object_members, conf.avg_object_members(), L"avg_object_members 2");
+        conf.avg_string_length(-2);
+        Assert::AreEqual(config_t::default_avg_string_length, conf.avg_string_length(), L"avg_string_length 2");
+        //
+        conf.min_depth(-1);
+        Assert::AreEqual(1, conf.min_depth(), L"min_depth 2");
+        conf.min_values_by_level(-1);
+        Assert::AreEqual(1, conf.min_values_by_level(), L"min_values_by_level 2");
+        //
+        conf.min_depth(2);
+        Assert::AreEqual(2, conf.min_depth(), L"min_depth 3");
+        Assert::AreEqual(2, conf.max_depth(), L"max_depth 3");
+        conf.min_values_by_level(4);
+        Assert::AreEqual(4, conf.min_values_by_level(), L"min_values_by_level 3");
+        Assert::AreEqual(4, conf.max_values_by_level(), L"max_values_by_level 3");
+        //
+        conf.max_depth(7);
+        Assert::AreEqual(2, conf.min_depth(), L"min_depth 4");
+        Assert::AreEqual(7, conf.max_depth(), L"max_depth 4");
+        conf.max_values_by_level(9);
+        Assert::AreEqual(4, conf.min_values_by_level(), L"min_values_by_level 4");
+        Assert::AreEqual(9, conf.max_values_by_level(), L"max_values_by_level 4");
+    }
+
+    TEST_METHOD(TestDomDocumentGenerator)
+    {
+        json::dom_document doc;
+        json::dom_document_generator gen(doc);
+        gen.conf().min_depth(5);
+        gen.conf().max_values_by_level(2);
+        gen.run();
+        SaveDoc(doc, default_test_file_name);
+        int count = 0;
+        for (const auto value : doc)
+        {
+            count++;
+        }
+        Assert::IsTrue(count >= gen.conf().min_depth() * gen.conf().min_values_by_level(), L"Count 1");
+        Assert::IsTrue(count <= gen.conf().max_depth() * gen.conf().max_values_by_level(), L"Count 2");
+    }
+
 };
+

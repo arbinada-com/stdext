@@ -172,6 +172,7 @@
     <ClCompile Include="containerstest.cpp" />
     <ClCompile Include="csvtoolstest.cpp" />
     <ClCompile Include="datetimetest.cpp" />
+    <ClCompile Include="ioutilstest.cpp" />
     <ClCompile Include="jsondomtest.cpp" />
     <ClCompile Include="jsonlexertest.cpp" />
     <ClCompile Include="jsonparsertest.cpp" />

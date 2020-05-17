@@ -68,9 +68,7 @@ bool json::parser::is_current_token(const json::token tok)
 
 bool json::parser::is_parent_container(const json::dom_value* parent)
 {
-    return (parent == nullptr && m_doc.root() == nullptr) ||
-        (parent != nullptr &&
-        (parent->type() == json::dom_value_type::vt_array || parent->type() == json::dom_value_type::vt_object));
+    return (parent == nullptr && m_doc.root() == nullptr) || (parent != nullptr && parent->is_container());
 }
 
 bool json::parser::accept_value(json::dom_value* const parent, dom_value_ptr& node, const context& ctx)
@@ -286,6 +284,8 @@ bool json::parser::parse_object_members(json::dom_object* const parent, const co
                                 add_error(parser_msg_kind::err_expected_member_name, m_lexer->pos());
                         }
                     }
+                    else
+                        add_error(parser_msg_kind::err_expected_value, pos());
                 }
                 else
                     add_error(parser_msg_kind::err_expected_name_separator, pos());

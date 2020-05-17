@@ -12,7 +12,9 @@ namespace stdext
 {
     namespace strutils
     {
+        std::string format(const char* fmt, ...);
         std::string format(const std::string fmt, ...);
+        std::wstring format(const wchar_t* fmt, ...);
         std::wstring format(const std::wstring fmt, ...);
 
         std::string ltrim(const std::string& s);
@@ -43,10 +45,10 @@ namespace stdext
         std::string replace_all(std::string s, const std::string& match, const std::string& repl);
         std::wstring replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl);
 
-        std::string quoted(std::string s);
-        std::wstring quoted(std::wstring s);
-        std::string double_quoted(std::string s);
-        std::wstring double_quoted(std::wstring s);
+        std::string quoted(const std::string& s);
+        std::wstring quoted(const std::wstring& s);
+        std::string double_quoted(const std::string& s);
+        std::wstring double_quoted(const std::wstring& s);
 
         std::string to_string(const std::wstring& ws);
         std::wstring to_wstring(const std::string& s);

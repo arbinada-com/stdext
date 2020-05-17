@@ -45,6 +45,12 @@
     <ClCompile Include="jsonparser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jsontools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="testutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
@@ -90,6 +96,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="locutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jsontools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="testutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

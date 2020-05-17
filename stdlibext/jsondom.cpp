@@ -10,6 +10,7 @@
 #include "strutils.h"
 #include "locutils.h"
 #include "jsoncommon.h"
+#include "testutils.h"
 
 using namespace std;
 using namespace stdext;
@@ -136,7 +137,7 @@ void dom_literal::text(const std::wstring value) noexcept(false)
 /*
  * dom_number class
  */
-dom_number::dom_number(dom_document* const doc, const std::wstring text, const dom_number_value_type subtype)
+dom_number::dom_number(dom_document* const doc, const std::wstring& text, const dom_number_value_type subtype)
     : dom_value(doc, dom_value_type::vt_number)
 {
     this->text(text);
@@ -170,16 +171,20 @@ dom_number::dom_number(dom_document* const doc, const double value)
 /*
  * dom_string class
  */
-dom_string::dom_string(dom_document* const doc, const std::wstring text)
+dom_string::dom_string(dom_document* const doc, const wchar_t* text)
     : dom_value(doc, dom_value_type::vt_string)
 {
     this->text(text);
 }
 
+dom_string::dom_string(dom_document* const doc, const std::wstring& text)
+    : dom_string(doc, text.c_str())
+{ }
+
 /*
  * dom_object_member class
  */
-dom_object_member::dom_object_member(dom_object_members* const owner, const name_t name, dom_value* const value)
+dom_object_member::dom_object_member(dom_object_members* const owner, const name_t& name, dom_value* const value)
     : m_owner(owner), m_name(name), m_value(value)
 { 
     if (m_owner == nullptr)
@@ -337,7 +342,12 @@ dom_object* const dom_document::create_object()
     return new dom_object(this);
 }
 
-dom_string* const dom_document::create_string(const std::wstring text)
+dom_string* const dom_document::create_string(const wchar_t* text)
+{
+    return new dom_string(this, text);
+}
+
+dom_string* const dom_document::create_string(const std::wstring& text)
 {
     return new dom_string(this, text);
 }
@@ -440,54 +450,31 @@ std::wstring dom_document_writer::escape(const std::wstring s) const
     {
         if (high_surrogate != 0)
         {
-            if (c >= 0xDC00 && c <= 0xDFFF)
-                es += strutils::format(L"\\u%0.4X\\u%0.4X", high_surrogate, c);
+            if (ioutils::is_low_surrogate(c))
+                es += json::to_escaped(high_surrogate, true) + json::to_escaped(c, true);
             else
             {
-                es += high_surrogate;
+                es += ioutils::replacement_character(); // invalid high surrogate detected
                 es += c;
             }
             high_surrogate = 0;
-            continue;
         }
-        switch (c)
-        {
-        case L'\"':
-            es += L"\\\"";
-            break;
-        case L'\\':
-            es += L"\\\\";
-            break;
-        //case L'/':
-        //    es += L"\\/";
-        //    break;
-        case L'\b':
-            es += L"\\b";
-            break;
-        case L'\f':
-            es += L"\\f";
-            break;
-        case L'\n':
-            es += L"\\n";
-            break;
-        case L'\r':
-            es += L"\\r";
-            break;
-        case L'\t':
-            es += L"\\t";
-            break;
-        default:
+        else
         {
             if (json::is_unescaped(c))
             {
-                if (c >= 0xD800 && c <= 0xDBFF && high_surrogate == 0)
+                if (ioutils::is_high_surrogate(c))
                     high_surrogate = c;
                 else
                     es += c;
             }
             else
-                es += strutils::format(L"\\u%0.4X", c);
-        }
+            {
+                if (ioutils::is_noncharacter(c))
+                    es += json::to_escaped(ioutils::replacement_character());
+                else
+                    es += json::to_escaped(c);
+            }
         }
     }
     if (high_surrogate != 0)
@@ -579,3 +566,4 @@ void dom_document_writer::write_to_file(const std::wstring file_name,
     ioutils::text_writer w(file_name, enc, locale_name);
     write(w);
 }
+

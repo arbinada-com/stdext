@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <limits>
 #include "jsonexceptions.h"
 #include "ptr_vector.h"
 #include "ioutils.h"
@@ -110,6 +111,7 @@ namespace stdext
             void assert_same_doc_no_parent(dom_document* doc) const noexcept(false);
             virtual void clear() { m_text.clear(); }
             dom_document* const document() const noexcept { return m_doc; }
+            bool is_container() const noexcept { return m_type == dom_value_type::vt_array || m_type == dom_value_type::vt_object; }
             dom_object_member* member() const noexcept { return m_member; }
             dom_value* const parent() const noexcept { return m_parent; }
             virtual std::wstring text() const noexcept { return m_text; }
@@ -157,7 +159,7 @@ namespace stdext
         class dom_number : public dom_value
         {
         public:
-            dom_number(dom_document* const doc, const std::wstring text, const dom_number_value_type subtype);
+            dom_number(dom_document* const doc, const std::wstring& text, const dom_number_value_type subtype);
             dom_number(dom_document* const doc, const int32_t value);
             dom_number(dom_document* const doc, const int64_t value);
             dom_number(dom_document* const doc, const double value);
@@ -171,7 +173,8 @@ namespace stdext
         class dom_string : public dom_value
         {
         public:
-            dom_string(dom_document* const doc, const std::wstring text);
+            dom_string(dom_document* const doc, const wchar_t* text);
+            dom_string(dom_document* const doc, const std::wstring& text);
         };
 
 
@@ -180,7 +183,7 @@ namespace stdext
         public:
             typedef std::wstring name_t;
         public:
-            dom_object_member(dom_object_members* const owner, const name_t name, dom_value* const value);
+            dom_object_member(dom_object_members* const owner, const name_t& name, dom_value* const value);
             dom_object_member() = delete;
             dom_object_member(const dom_object_member&) = delete;
             dom_object_member& operator =(const dom_object_member&) = delete;
@@ -316,7 +319,8 @@ namespace stdext
             dom_number* const create_number(const int64_t value);
             dom_number* const create_number(const double value);
             dom_object* const create_object();
-            dom_string* const create_string(const std::wstring text);
+            dom_string* const create_string(const wchar_t* text);
+            dom_string* const create_string(const std::wstring& text);
             dom_value* const root() const noexcept { return m_root; }
             void root(dom_value* const value) noexcept(false);
         public:
@@ -326,9 +330,9 @@ namespace stdext
             public:
                 typedef std::vector<std::size_t> path_t;
             public:
-                const_iterator() = delete;
                 const_iterator(const dom_document& doc);
                 const_iterator(const dom_document* doc);
+                const_iterator() = delete;
                 const_iterator(const const_iterator&) = default;
                 const_iterator& operator =(const const_iterator&) = default;
                 const_iterator(const_iterator&&) = default;
@@ -379,8 +383,8 @@ namespace stdext
         class dom_document_writer
         {
         public:
-            dom_document_writer() = delete;
             dom_document_writer(const json::dom_document& doc);
+            dom_document_writer() = delete;
             dom_document_writer(const dom_document_writer&) = delete;
             dom_document_writer& operator=(const dom_document_writer&) = delete;
             dom_document_writer(dom_document_writer&&) = delete;
@@ -411,8 +415,10 @@ namespace stdext
             const json::dom_document& m_doc;
         };
 
+
         bool equal(const dom_value& v1, const dom_value& v2);
         bool equal(const dom_document& doc1, const dom_document& doc2);
+
     }
 }
 

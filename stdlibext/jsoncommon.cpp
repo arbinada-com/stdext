@@ -5,17 +5,41 @@
 
 #include "jsoncommon.h"
 #include "strutils.h"
+#include "ioutils.h"
 
 using namespace std;
 using namespace stdext;
 
 bool json::is_unescaped(const wchar_t c)
 {
-    return c == 0x20 || c == 0x21 ||
-        (c >= 0x23 && c <= 0x5B) ||
-        c >= 0x5D; // 0x10FFFF upper limit is for UTF-32
-                   // UTF-16 surrogate pair is encoded as two separated characters
+    return !ioutils::is_noncharacter(c) &&
+        (
+            c == 0x20 || c == 0x21 ||
+            (c >= 0x23 && c <= 0x5B) ||
+            c >= 0x5D // 0x10FFFF upper limit is for UTF-32
+                      // UTF-16 surrogate pair is encoded as two separated characters
+        );
 }
+
+std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
+{
+    if (force_to_numeric)
+        return strutils::format(L"\\u%0.4X", c);
+    switch (c)
+    {
+    case L'\"': return L"\\\"";
+    case L'\\': return L"\\\\";
+        //case L'/': return L"\\/";
+    case L'\b': return L"\\b";
+    case L'\f': return L"\\f";
+    case L'\n': return L"\\n";
+    case L'\r': return L"\\r";
+    case L'\t': return L"\\t";
+    default:
+        return strutils::format(L"\\u%0.4X", c);
+    }
+}
+
 
 std::wstring json::to_wmessage(const parser_msg_kind kind)
 {
@@ -39,6 +63,7 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_expected_number: return L"Number expected";
     case parser_msg_kind::err_expected_object: return L"Object expected";
     case parser_msg_kind::err_expected_string: return L"String expected";
+    case parser_msg_kind::err_expected_value: return L"Expected value";
     case parser_msg_kind::err_expected_value_but_found_fmt: return L"Expected value but '%s' found";
     case parser_msg_kind::err_member_name_duplicate_fmt: return L"Duplicate member name '%s'";
     case parser_msg_kind::err_member_name_is_empty: return L"Member name is empty";

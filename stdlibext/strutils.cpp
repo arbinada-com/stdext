@@ -8,28 +8,31 @@
 using namespace std;
 using namespace stdext;
 
-int basic_vsnprintf_s(std::string& s, const std::string& fmt, va_list args)
+inline int basic_vsnprintf_s(std::string& s, const char* fmt, va_list args)
 {
 #if defined(__BCPLUSPLUS__)
     return vsnprintf_s((char*)s.data(), s.size(), fmt.c_str(), args);
 #else
-    return vsnprintf_s((char*)s.data(), s.size(), s.size() - 1, fmt.c_str(), args);
+    return vsnprintf_s((char*)s.data(), s.size(), s.size() - 1, fmt, args);
 #endif
 }
 
-int basic_vsnprintf_s(std::wstring& s, const std::wstring& fmt, va_list args)
+inline int basic_vsnprintf_s(std::wstring& s, const wchar_t* fmt, va_list args)
 {
 #if defined(__BCPLUSPLUS__)
     return vsnwprintf_s((wchar_t*)s.data(), s.size(), fmt.c_str(), args);
 #else
-    return _vsnwprintf_s((wchar_t*)s.data(), s.size(), s.size() - 1, fmt.c_str(), args);
+    return _vsnwprintf_s((wchar_t*)s.data(), s.size(), s.size() - 1, fmt, args);
 #endif
 }
 
-template<class StringT>
-StringT basic_format(const StringT& fmt, va_list args)
+inline int basic_strlen(const char* s) { return strlen(s); }
+inline int basic_strlen(const wchar_t* s) { return wcslen(s); }
+
+template<class StringT, class CharT>
+StringT basic_format(const CharT* fmt, va_list args)
 {
-    size_t size = fmt.size() * 2;
+    size_t size = basic_strlen(fmt) * 2;
     StringT s;
     while (true)
     {
@@ -48,11 +51,29 @@ StringT basic_format(const StringT& fmt, va_list args)
     return s;
 }
 
+std::string strutils::format(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    string s = basic_format<std::string, char>(fmt, ap);
+    va_end(ap);
+    return s;
+}
+
 string strutils::format(const string fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    string s = basic_format<std::string>(fmt, ap);
+    string s = basic_format<std::string, char>(fmt.c_str(), ap);
+    va_end(ap);
+    return s;
+}
+
+std::wstring strutils::format(const wchar_t* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    wstring s = basic_format<std::wstring, wchar_t>(fmt, ap);
     va_end(ap);
     return s;
 }
@@ -61,7 +82,7 @@ wstring strutils::format(const wstring fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    wstring s = basic_format<std::wstring>(fmt, ap);
+    wstring s = basic_format<std::wstring, wchar_t>(fmt.c_str(), ap);
     va_end(ap);
     return s;
 }
@@ -194,19 +215,19 @@ std::wstring strutils::replace_all(std::wstring s, const std::wstring& match, co
     return basic_replace<std::wstring>(s, match, repl, 0, true);
 }
 
-std::string strutils::quoted(std::string s)
+std::string strutils::quoted(const std::string& s)
 {
     return "'" + s + "'";
 }
-std::wstring strutils::quoted(std::wstring s)
+std::wstring strutils::quoted(const std::wstring& s)
 {
     return L"'" + s + L"'";
 }
-std::string strutils::double_quoted(std::string s)
+std::string strutils::double_quoted(const std::string& s)
 {
     return "\"" + s + "\"";
 }
-std::wstring strutils::double_quoted(std::wstring s)
+std::wstring strutils::double_quoted(const std::wstring& s)
 {
     return L"\"" + s + L"\"";
 }

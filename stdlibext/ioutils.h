@@ -19,12 +19,41 @@ namespace stdext
             utf16
         };
         void set_imbue(std::wios* stream, const file_encoding enc, const char* locale_name = nullptr);
+        bool is_high_surrogate(const wchar_t c);
+        bool is_low_surrogate(const wchar_t c);
+        bool is_noncharacter(const wchar_t c);
+        inline wchar_t replacement_character() { return 0xFFFD; }
+
+        enum class file_encoding_utf16
+        {
+            autodetect,
+            big_endian,
+            little_endian
+        };
 
         /*
          * text_reader adapter class 
          * Designed for use in lexer/parser
          * Reads wide chars sequentely from text streams or from text files (both ANSI and unicode)
          */
+        class text_file_options
+        {
+        public:
+            text_file_options() {}
+            text_file_options(file_encoding enc) 
+                : m_enc(enc)
+            {}
+            text_file_options(const text_file_options&) = default;
+            text_file_options& operator=(const text_file_options&) = default;
+            text_file_options(text_file_options&&) = default;
+            text_file_options& operator=(text_file_options&&) = default;
+        public:
+            file_encoding encoding() const { return m_enc; }
+        private:
+            file_encoding m_enc = file_encoding::utf8;
+            char* m_locale_name;
+        };
+
         class text_reader
         {
         public:
@@ -46,6 +75,7 @@ namespace stdext
             inline bool eof() const { return m_stream->eof(); }
             inline bool good() const { return m_stream->good(); }
             inline int rdstate() const { return m_stream->rdstate(); }
+            void read_all(std::wstring& s);
             std::wstring source_name() const noexcept { return m_source_name; }
             std::wistream& stream() { return *m_stream; }
         public:
