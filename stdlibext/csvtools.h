@@ -80,7 +80,7 @@ namespace stdext
             reader(ioutils::text_reader* const rd);
             reader(std::wistream& stream);
             reader(std::wistream* const stream);
-            reader(const std::wstring file_name, const ioutils::file_encoding enc, const char* locale_name = nullptr);
+            reader(const std::wstring file_name, const ioutils::text_io_options& options);
             reader(const reader&) = delete;
             reader& operator =(const reader&) = delete;
             reader(reader&&) = delete;

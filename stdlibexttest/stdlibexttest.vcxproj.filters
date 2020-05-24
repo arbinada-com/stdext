@@ -37,6 +37,15 @@
     <ClCompile Include="ioutilstest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="jsontoolstest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="locutilstest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="platformstest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

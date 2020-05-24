@@ -1,5 +1,6 @@
 ﻿#include "CppUnitTest.h"
 #include "json.h"
+#include "jsontools.h"
 #include <fstream>
 #include <limits>
 #include "strutils.h"
@@ -39,9 +40,9 @@ TEST_CLASS(JsonParserTest)
         if (!doc_are_equal)
         {
             json::dom_document_writer w1(doc);
-            w1.write_to_file(L"parser_current.json");
+            w1.write_to_file(L"parser_current.json", ioutils::text_io_options_utf8());
             json::dom_document_writer w2(expected);
-            w2.write_to_file(L"parser_expected.json");
+            w2.write_to_file(L"parser_expected.json", ioutils::text_io_options_utf8());
             Assert::Fail((title2 + L"docs are different").c_str());
         }
     }

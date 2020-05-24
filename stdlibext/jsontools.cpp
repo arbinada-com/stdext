@@ -4,10 +4,145 @@
  */
 
 #include "jsontools.h"
+#include <stack>
+#include <sstream>
 
 using namespace std;
 using namespace stdext;
 using namespace json;
+using namespace locutils;
+
+/*
+ * dom_document_writer class
+ */
+dom_document_writer::dom_document_writer(const json::dom_document& doc)
+    : m_doc(doc)
+{ }
+
+std::wstring dom_document_writer::escape(const std::wstring s) const
+{
+    wstring es;
+    es.reserve(s.length());
+    wchar_t high_surrogate = 0;
+    for (const wchar_t& c : s)
+    {
+        if (high_surrogate != 0)
+        {
+            if (utf16::is_low_surrogate(c))
+                es += json::to_escaped(high_surrogate, true) + json::to_escaped(c, true);
+            else
+            {
+                es += utf16::replacement_character; // invalid high surrogate detected
+                es += c;
+            }
+            high_surrogate = 0;
+        }
+        else
+        {
+            if (json::is_unescaped(c))
+            {
+                if (utf16::is_high_surrogate(c))
+                    high_surrogate = c;
+                else
+                    es += c;
+            }
+            else
+            {
+                if (utf16::is_noncharacter(c))
+                    es += json::to_escaped(utf16::replacement_character);
+                else
+                    es += json::to_escaped(c);
+            }
+        }
+    }
+    if (high_surrogate != 0)
+        es += high_surrogate;
+    return es;
+}
+
+void dom_document_writer::write(ioutils::text_writer& w)
+{
+    auto indent = [](int n) -> wstring
+    {
+        wstring s;
+        if (n > 1)
+            s.insert(s.begin(), n - 1, L'\t');
+        return s;
+    };
+    stack<wstring> endings;
+    dom_document::const_iterator doc_begin = m_doc.begin();
+    dom_document::const_iterator doc_end = m_doc.end();
+    dom_document::const_iterator it = doc_begin;
+    while (it != doc_end)
+    {
+        if (it.has_prev_sibling())
+            w.write(L",");
+        if (m_conf.pretty_print() && it != doc_begin)
+            w.write_endl();
+        if (m_conf.pretty_print())
+            w.write(indent(it.level()));
+        const dom_value* v = *it;
+        if (v->member() != nullptr)
+            w.write(L"\"").write(v->member()->name()).write(L"\"").write(m_conf.pretty_print() ? L": " : L":");
+        switch (v->type())
+        {
+        case dom_value_type::vt_literal:
+        case dom_value_type::vt_number:
+            w.write(v->text());
+            break;
+        case dom_value_type::vt_string:
+            w.write(L"\"").write(escape(v->text())).write(L"\"");
+            break;
+        case dom_value_type::vt_array:
+            w.write(L"[");
+            if (dynamic_cast<const json::dom_array*>(v)->empty())
+                w.write(L"]");
+            else
+                endings.push(L"]");
+            break;
+        case dom_value_type::vt_object:
+            w.write(L"{");
+            if (dynamic_cast<const json::dom_object*>(v)->cmembers()->empty())
+                w.write(L"}");
+            else
+                endings.push(L"}");
+            break;
+        }
+        dom_document::const_iterator::path_t prev_path = it.path();
+        ++it;
+        int curr_level = it.level();
+        for (int i = prev_path.size(); i > curr_level; i--)
+        {
+            if (!endings.empty())
+            {
+                if (m_conf.pretty_print())
+                    w.write_endl().write(indent(i - 1));
+                w.write(endings.top());
+                endings.pop();
+            }
+        }
+    }
+}
+
+void dom_document_writer::write(std::wostream& stream)
+{
+    ioutils::text_writer w(stream);
+    write(w);
+}
+
+void dom_document_writer::write(std::wstring& s)
+{
+    wstringstream ss;
+    write(ss);
+    s = ss.str();
+}
+
+void dom_document_writer::write_to_file(const std::wstring file_name, const ioutils::text_io_options& options)
+{
+    ioutils::text_writer w(file_name, options);
+    write(w);
+}
+
 
 /*
  * dom_document_generator class

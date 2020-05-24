@@ -25,8 +25,8 @@ csv::reader::reader(std::wistream* const stream)
     : m_owns_reader(true), m_reader(new ioutils::text_reader(stream))
 { }
 
-csv::reader::reader(const std::wstring file_name, const ioutils::file_encoding enc, const char* locale_name)
-    : m_owns_reader(true), m_reader(new ioutils::text_reader(file_name, enc, locale_name))
+csv::reader::reader(const std::wstring file_name, const ioutils::text_io_options& options)
+    : m_owns_reader(true), m_reader(new ioutils::text_reader(file_name, options))
 { }
 
 csv::reader::~reader()

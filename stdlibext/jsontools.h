@@ -10,13 +10,50 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include "jsoncommon.h"
 #include "jsondom.h"
+#include "locutils.h"
+#include "ioutils.h"
 #include "testutils.h"
 
 namespace stdext
 {
     namespace json
     {
+        class dom_document_writer
+        {
+        public:
+            dom_document_writer(const json::dom_document& doc);
+            dom_document_writer() = delete;
+            dom_document_writer(const dom_document_writer&) = delete;
+            dom_document_writer& operator=(const dom_document_writer&) = delete;
+            dom_document_writer(dom_document_writer&&) = delete;
+            dom_document_writer& operator=(dom_document_writer&&) = delete;
+        public:
+            class config
+            {
+                friend class dom_document_writer;
+            public:
+                config() {}
+            public:
+                bool pretty_print() const noexcept { return m_pretty_print; }
+                void pretty_print(const bool value) { m_pretty_print = value; }
+            private:
+                bool m_pretty_print = false;
+            };
+        public:
+            config& conf() { return m_conf; }
+            std::wstring escape(const std::wstring s) const;
+            void write(ioutils::text_writer& w);
+            void write(std::wostream& stream);
+            void write(std::wstring& s);
+            void write_to_file(const std::wstring file_name, const ioutils::text_io_options& options);
+        private:
+            config m_conf;
+            const json::dom_document& m_doc;
+        };
+
+
         class dom_document_generator
         {
         public:

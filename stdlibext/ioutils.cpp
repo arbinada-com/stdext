@@ -5,51 +5,51 @@
 #include "ioutils.h"
 #include <fstream>
 #include <sstream>
-#include <locale>
-#include <codecvt>
+#include <clocale>
 
 using namespace std;
 using namespace stdext;
 using namespace ioutils;
 
-bool ioutils::is_high_surrogate(const wchar_t c)
+/*
+ * text_io_options_ansi class
+ */
+void text_io_options_ansi::set_imbue_read(std::wistream& stream) const
 {
-    return c >= 0xD800 && c <= 0xDBFF;
+    if (!locale_default())
+        stream.imbue(std::locale(m_locale_name));
 }
 
-bool ioutils::is_low_surrogate(const wchar_t c)
+void text_io_options_ansi::set_imbue_write(std::wostream& stream) const
 {
-    return c >= 0xDC00 && c <= 0xDFFF;
+    if (!locale_default())
+        stream.imbue(std::locale(m_locale_name));
 }
 
-bool ioutils::is_noncharacter(const wchar_t c)
+/*
+ * text_io_options_utf8 class
+ */
+void text_io_options_utf8::set_imbue_read(std::wistream& stream) const
 {
-    // Noncharacters are code points that are permanently reserved in the Unicode Standard forinternal use.
-    // They are forbidden for use in open interchange of Unicode text data.
-    // http://www.unicode.org/versions/Unicode5.2.0/ch16.pdf#G19635
-    return
-        (c >= 0xFDD0 && c <= 0xFDEF)
-        || c == 0xFEFF // BOM BE
-        || c == 0xFFFE // BOM LE
-        || c == 0xFFFF
-        ;
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf8_wchar_t(m_cvt_mode)));
 }
 
-void ioutils::set_imbue(std::wios* stream, const file_encoding enc, const char* locale_name)
+void text_io_options_utf8::set_imbue_write(std::wostream& stream) const
 {
-    switch (enc)
-    {
-    case file_encoding::ansi:
-        if (locale_name != nullptr)
-            stream->imbue(std::locale(locale_name));
-        break;
-    case file_encoding::utf8:
-        stream->imbue(std::locale(stream->getloc(), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
-        break;
-    case file_encoding::utf16:
-        stream->imbue(std::locale(stream->getloc(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::consume_header>));
-        break;
-    }
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf8_wchar_t(m_cvt_mode)));
+}
+
+/*
+ * text_io_options_utf16 class
+ */
+void text_io_options_utf16::set_imbue_read(std::wistream& stream) const
+{
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf16_wchar_t(m_cvt_mode)));
+}
+
+void text_io_options_utf16::set_imbue_write(std::wostream& stream) const
+{
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf16_wchar_t(m_cvt_mode)));
 }
 
 /*
@@ -71,24 +71,12 @@ text_reader::text_reader(std::wistream* const stream, const std::wstring source_
     : m_stream(stream), m_source_name(source_name)
 { }
 
-text_reader::text_reader(const std::wstring file_name, const file_encoding enc, const char* locale_name)
-    :m_source_name(file_name)
+text_reader::text_reader(const std::wstring file_name, const text_io_options& options)
+    : m_source_name(file_name)
 {
     m_owns_stream = true;
     m_stream = new wifstream(file_name, std::ios::binary);
-    switch (enc)
-    {
-    case file_encoding::ansi:
-        if (locale_name != nullptr)
-            m_stream->imbue(std::locale(locale_name));
-        break;
-    case file_encoding::utf8:
-        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
-        break;
-    case file_encoding::utf16:
-        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::consume_header>));
-        break;
-    }
+    options.set_imbue_read(*m_stream);
 }
 
 text_reader::~text_reader()
@@ -131,25 +119,11 @@ text_writer::text_writer(std::wostream* const stream)
     : m_stream(stream)
 { }
 
-text_writer::text_writer(const std::wstring file_name, const file_encoding enc, const char* locale_name)
+text_writer::text_writer(const std::wstring file_name, const text_io_options& options)
 {
     m_owns_stream = true;
     m_stream = new wofstream(file_name, ios::binary | ios::trunc);
-    switch (enc)
-    {
-    case file_encoding::ansi:
-        if (locale_name != nullptr)
-            m_stream->imbue(std::locale(locale_name));
-        break;
-    case file_encoding::utf8:
-        //stream->imbue(std::locale(std::locale("C"), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
-        m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf8<wchar_t, 0x10ffffUL, std::consume_header>));
-        break;
-    case file_encoding::utf16:
-        m_stream->imbue(std::locale(std::locale::empty(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::generate_header>));
-        //m_stream->imbue(std::locale(m_stream->getloc(), new std::codecvt_utf16<wchar_t, 0x10ffffUL, std::generate_header>));
-        break;
-    }
+    options.set_imbue_write(*m_stream);
 }
 
 text_writer::~text_writer()
@@ -158,8 +132,20 @@ text_writer::~text_writer()
         delete m_stream;
 }
 
-text_writer& text_writer::operator <<(const std::wstring s) 
+text_writer& text_writer::write(const std::wstring& s)
 {
-    *m_stream << s.c_str(); 
+    return write(s.c_str());
+}
+
+text_writer& text_writer::write(const wchar_t* s)
+{
+    *m_stream << s;
     return *this; 
 }
+
+text_writer& text_writer::write_endl()
+{
+    *m_stream << endl;
+    return *this;
+}
+

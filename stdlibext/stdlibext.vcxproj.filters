@@ -51,6 +51,9 @@
     <ClCompile Include="testutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="locutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datetime.h">
@@ -102,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="testutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

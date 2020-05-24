@@ -3,10 +3,15 @@
  (c) 2001-2020 Serguei Tarassov (see license.txt)
 
  Locale manipulation utils
+ Converter implementations
  */
 #pragma once
 #include <clocale>
-#include <string.h>
+#include <locale>
+#include <string>
+#include "platforms.h"
+
+using namespace std;
 
 namespace stdext
 {
@@ -15,23 +20,244 @@ namespace stdext
         class locale_guard
         {
         public:
-            locale_guard(int category, const char* new_locale_name)
-                : m_category(category)
-            {
-                const char* s = std::setlocale(m_category, nullptr);
-                rsize_t len = strlen(s);
-                m_old_locale_name = new char[len + 1];
-                strncpy_s(m_old_locale_name, len + 1, s, len);
-                std::setlocale(m_category, new_locale_name);
-            }
-            ~locale_guard()
-            {
-                std::setlocale(m_category, m_old_locale_name);
-                delete[] m_old_locale_name;
-            }
+            locale_guard(int category, const char* new_locale_name);
+            ~locale_guard();
         private:
             int m_category;
-            char* m_old_locale_name;
+            std::string m_old_locale_name;
+        };
+
+
+        /*
+         * Converters
+         */
+        struct utf16
+        {
+            static const char bom_be[2];
+            static const char bom_le[2];
+            static void add_bom(wstring& ws);
+            static void add_bom(string& mbs, endianess::byte_order order);
+            static bool is_bom(wchar_t c);
+            static bool is_bom(char c1, char c2);
+            static std::string bom_str(endianess::byte_order order);
+            inline static std::string bom_str() { return utf16::bom_str(endianess::platform_value()); }
+            static std::string bom_le_str();
+            static std::string bom_be_str();
+            static const uint16_t bom_be_value = 0xFEFFu;
+            static const uint16_t bom_le_value = 0xFFFEu;
+            static uint16_t bom_value() { return (endianess::platform_value() == endianess::byte_order::big_endian ? bom_be_value : bom_le_value); }
+            static const uint16_t high_surrogate_min = 0xD800u;
+            static const uint16_t high_surrogate_max = 0xDBFFu;
+            static const uint16_t low_surrogate_min = 0xDC00u;
+            static const uint16_t low_surrogate_max = 0xDFFFu;
+            static const char32_t max_char = 0x10FFFF;
+            static const wchar_t replacement_character = 0xFFFDu;
+            //
+            static bool is_high_surrogate(const wchar_t c);
+            static bool is_low_surrogate(const wchar_t c);
+            static bool is_noncharacter(const wchar_t c);
+            static bool is_surrogate_pair(const char32_t c);
+            static bool to_surrogate_pair(const char32_t c, wchar_t& high, wchar_t& low);
+            static bool from_surrogate_pair(wchar_t high, wchar_t low, char32_t& c);
+            static std::wstring swap_byte_order(const std::wstring& ws);
+            static char16_t swap_byte_order16(const char16_t c);
+            static char32_t swap_byte_order32(const char32_t c);
+#if __STDEXT_WCHAR_SIZE == 2
+            inline static char16_t swap_byte_order(const char16_t c) { return swap_byte_order16(c); }
+#else
+            inline static char32_t swap_byte_order(const char32_t c) { return swap_byte_order32(c); }
+#endif
+            static std::string wchar_to_multibyte(
+                const std::wstring& ws, 
+                const endianess::byte_order wchar_order,
+                const endianess::byte_order mbyte_order);
+            static std::string wchar_to_multibyte(const std::wstring& ws);
+            static std::string wchar_to_multibyte(
+                const wchar_t* ws, const size_t len,
+                const endianess::byte_order wchar_order,
+                const endianess::byte_order mbyte_order);
+            static std::string wchar_to_multibyte(const wchar_t* ws, const size_t len);
+            static bool try_detect_byte_order(const char* str, const size_t len, endianess::byte_order& order);
+        };
+        
+        struct utf8
+        {
+            static const char bom[3];
+            static std::string bom_str();
+            static void add_bom(string& mbs);
+            static const int max_seq_length = 4; // RFC 3629 limit since 2003
+            // check points
+            static const unsigned char chk_seq1 = 0x80;
+            static const unsigned char chk_seq2 = 0xC0;
+            static const unsigned char chk_seq3 = 0xE0;
+            static const unsigned char chk_seq4 = 0xF0;
+            static const unsigned char chk_seq5 = 0xF8;
+            static const unsigned char chk_seq6 = 0xFC;
+            // code points
+            static const char32_t code_point1 = 0x80;
+            static const char32_t code_point2 = 0x800;
+            static const char32_t code_point3 = 0x10000;
+            static const char32_t code_point4 = 0x200000;
+            static const char32_t code_point5 = 0x4000000;
+            //
+            static bool is_noncharacter(const char c);
+        };
+
+
+        class codecvt_mode_base abstract
+        {
+        public:
+            enum class headers
+            {
+                consume,
+                generate
+            };
+        public:
+            codecvt_mode_base() {}
+            codecvt_mode_base(const codecvt_mode_base::headers headers_mode)
+                : m_headers(headers_mode)
+            {}
+            codecvt_mode_base(const codecvt_mode_base&) = default;
+            codecvt_mode_base& operator=(const codecvt_mode_base&) = default;
+            codecvt_mode_base(codecvt_mode_base&&) = default;
+            codecvt_mode_base& operator=(codecvt_mode_base&&) = default;
+            virtual ~codecvt_mode_base() {}
+        public:
+            codecvt_mode_base::headers headers_mode() const noexcept { return m_headers; }
+            void headers_mode(const codecvt_mode_base::headers value) noexcept { m_headers = value; }
+            bool consume_header() const noexcept { return m_headers == codecvt_mode_base::headers::consume; }
+            bool generate_header() const noexcept { return m_headers == codecvt_mode_base::headers::generate; }
+        protected:
+            codecvt_mode_base::headers m_headers = codecvt_mode_base::headers::consume;
+        };
+
+        enum codecvt_state : unsigned short
+        {
+            initial = 0,
+            passed_once_or_more = 1,
+        };
+
+        /*
+         * codecvt_utf8_wchar_t
+         * Facet class for converting between wchar_t and UTF-8 byte sequences
+         * Implementation details: https://docs.microsoft.com/en-us/cpp/standard-library/codecvt-class
+         *
+         * UTF-8 sequence is limited by 4 bytes for support of the U+0000..U+10FFFF range
+         * See RFC 3629 for more information: https://tools.ietf.org/html/rfc3629
+         */
+        class codecvt_mode_utf8 : public codecvt_mode_base
+        {
+        public:
+            codecvt_mode_utf8()
+                : codecvt_mode_base()
+            {}
+            codecvt_mode_utf8(const codecvt_mode_base::headers headers_mode)
+                : codecvt_mode_base(headers_mode)
+            {}
+        };
+
+
+        class codecvt_utf8_wchar_t : public codecvt<wchar_t, char, mbstate_t>
+        {
+        public:
+            typedef codecvt<wchar_t, char, mbstate_t> codecvt_base_t;
+            typedef typename codecvt_base_t::result result_t;
+        public:
+            explicit codecvt_utf8_wchar_t(size_t refs = 0)
+                : codecvt_utf8_wchar_t(codecvt_mode_utf8(), refs)
+            {}
+            codecvt_utf8_wchar_t(const codecvt_mode_utf8& mode, size_t refs = 0)
+                : m_cvt_mode(codecvt_mode_utf8(mode)), codecvt_base_t(refs)
+            {}
+            virtual ~codecvt_utf8_wchar_t() noexcept { }
+        public:
+            result_t to_utf16(const std::string& utf8s, std::wstring& utf16s);
+            result_t to_utf8(const std::wstring& utf16s, std::string& utf8s);
+        protected:
+            // codecvt implementation
+            virtual result_t do_in(mbstate_t& state,
+                const extern_type* first1, const extern_type* last1, const extern_type*& next1,
+                intern_type* first2, intern_type* last2, intern_type*& next2) const override;
+            virtual result_t do_out(mbstate_t& state,
+                const intern_type* first1, const intern_type* last1, const intern_type*& next1,
+                extern_type* first2, extern_type* last2, extern_type*& next2) const override;
+            virtual result_t do_unshift(mbstate_t&, extern_type* first2, extern_type*, extern_type*& next2) const noexcept override;
+            virtual int do_length(mbstate_t& state, const extern_type* first1, const extern_type* last1, size_t len2) const noexcept override;
+            virtual bool do_always_noconv() const noexcept override { return false; }
+            virtual int do_max_length() const noexcept override;
+            virtual int do_encoding() const noexcept override;
+        private:
+            codecvt_mode_utf8 m_cvt_mode;
+        };
+
+
+        /*
+         * codecvt_utf16_wchar_t
+         * Facet class for converting between wchar_t and UTF-16 multibyte sequences
+         * Implementation details: https://docs.microsoft.com/en-us/cpp/standard-library/codecvt-class
+         */
+        class codecvt_mode_utf16 : public codecvt_mode_base
+        {
+        public:
+            codecvt_mode_utf16()
+                : codecvt_mode_base()
+            {}
+            codecvt_mode_utf16(const endianess::byte_order order)
+                : codecvt_mode_base(), m_byte_order(order), m_is_byte_order_assigned(true)
+            {}
+            codecvt_mode_utf16(const codecvt_mode_base::headers headers_mode)
+                : codecvt_mode_base(headers_mode)
+            {}
+            codecvt_mode_utf16(const endianess::byte_order order, const codecvt_mode_base::headers headers_mode)
+                : codecvt_mode_base(headers_mode), m_byte_order(order), m_is_byte_order_assigned(true)
+            {}
+        public:
+            endianess::byte_order byte_order() const noexcept { return m_byte_order; }
+            void byte_order(const endianess::byte_order value) noexcept
+            {
+                m_byte_order = value;
+                m_is_byte_order_assigned = true;
+            }
+            bool is_byte_order_assigned() const noexcept { return m_is_byte_order_assigned; }
+        protected:
+            bool m_is_byte_order_assigned = false;
+            endianess::byte_order m_byte_order = endianess::platform_value();
+        };
+
+
+        class codecvt_utf16_wchar_t : public codecvt<wchar_t, char, mbstate_t>
+        {
+        protected:
+            static const int bytes_per_character = 2;
+        public:
+            typedef codecvt<wchar_t, char, mbstate_t> codecvt_base_t;
+            typedef typename codecvt_base_t::result result_t;
+        public:
+            explicit codecvt_utf16_wchar_t(size_t refs = 0)
+                : codecvt_utf16_wchar_t(codecvt_mode_utf16(), refs)
+            { }
+            codecvt_utf16_wchar_t(const codecvt_mode_utf16& mode, size_t refs = 0)
+                : m_cvt_mode(mode), codecvt_base_t(refs)
+            { }
+            virtual ~codecvt_utf16_wchar_t() noexcept { }
+        public:
+            result_t mb_to_utf16(const std::string& mbs, std::wstring& ws);
+            result_t utf16_to_mb(const std::wstring& ws, std::string& mbs);
+        protected:
+            // codecvt implementation
+            virtual result_t do_in(mbstate_t& state,
+                const extern_type* first1, const extern_type* last1, const extern_type*& next1,
+                intern_type* first2, intern_type* last2, intern_type*& next2) const override;
+            virtual result_t do_out(mbstate_t& state,
+                const intern_type* first1, const intern_type* last1, const intern_type*& next1,
+                extern_type* first2, extern_type* last2, extern_type*& next2) const override;
+            virtual result_t do_unshift(mbstate_t&, extern_type* first2, extern_type*, extern_type*& next2) const noexcept override;
+            virtual int do_length(mbstate_t& state, const extern_type* first1, const extern_type* last1, size_t len2) const noexcept override;
+            virtual bool do_always_noconv() const noexcept override { return false; }
+            virtual int do_max_length() const noexcept override;
+            virtual int do_encoding() const noexcept override;
+        private:
+            codecvt_mode_utf16 m_cvt_mode;
         };
 
     }

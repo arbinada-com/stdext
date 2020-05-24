@@ -5,14 +5,15 @@
 
 #include "jsoncommon.h"
 #include "strutils.h"
-#include "ioutils.h"
+#include "locutils.h"
 
 using namespace std;
 using namespace stdext;
+using namespace locutils;
 
 bool json::is_unescaped(const wchar_t c)
 {
-    return !ioutils::is_noncharacter(c) &&
+    return !utf16::is_noncharacter(c) &&
         (
             c == 0x20 || c == 0x21 ||
             (c >= 0x23 && c <= 0x5B) ||

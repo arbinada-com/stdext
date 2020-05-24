@@ -501,7 +501,7 @@ int variant::to_int() const noexcept(false)
     case value_type::vt_double:
     {
         double ipart;
-        double fpart = modf(*((double*)m_value), &ipart);
+        modf(*((double*)m_value), &ipart);
         if (ipart > std::numeric_limits<int>::max() || ipart < std::numeric_limits<int>::min())
             throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
         return static_cast<int>(ipart);
@@ -522,7 +522,7 @@ int64_t variant::to_int64() const noexcept(false)
     case value_type::vt_double:
     {
         double ipart;
-        double fpart = modf(*((double*)m_value), &ipart);
+        modf(*((double*)m_value), &ipart);
         if (ipart > std::numeric_limits<int64_t>::max() || ipart < std::numeric_limits<int64_t>::min())
             throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
         return static_cast<int64_t>(ipart);

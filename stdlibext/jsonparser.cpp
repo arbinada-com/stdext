@@ -200,9 +200,11 @@ bool json::parser::parse_array(json::dom_value* const parent, const context& ctx
     else
     {
         dom_value_ptr arr(m_doc.create_array());
-        if (result = accept_value(parent, arr, ctx))
+        result = accept_value(parent, arr, ctx);
+        if (result)
         {
-            if (result = next())
+            result = next();
+            if (result)
             {
                 if (!is_current_token(token::end_array))
                     result = parse_array_items(dynamic_cast<dom_array*>(arr.value()), ctx);
@@ -222,12 +224,14 @@ bool json::parser::parse_array_items(json::dom_array* const parent, const contex
     bool is_next_item = true;
     while (result && is_next_item)
     {
-        if (result = parse_value(parent, ctx))
+        result = parse_value(parent, ctx);
+        if (result)
         {
             is_next_item = next() && is_current_token(token::value_separator);
             if (is_next_item)
             {
-                if (!(result = next()))
+                result = next();
+                if (!result)
                     add_error(parser_msg_kind::err_expected_array_item, m_lexer->pos());
             }
         }
@@ -245,9 +249,11 @@ bool json::parser::parse_object(json::dom_value* const parent, const context& ct
     else
     {
         dom_value_ptr current(m_doc.create_object());
-        if (result = accept_value(parent, current, ctx))
+        result = accept_value(parent, current, ctx);
+        if (result)
         {
-            if (result = next())
+            result = next();
+            if (result)
             {
                 if (!is_current_token(token::end_object))
                     result = parse_object_members(dynamic_cast<dom_object*>(current.value()), ctx);
@@ -267,20 +273,24 @@ bool json::parser::parse_object_members(json::dom_object* const parent, const co
     bool is_next_member = true;
     while (result && is_next_member)
     {
-        if (result = is_current_token(token::string))
+        result = is_current_token(token::string);
+        if (result)
         {
             context member_ctx(ctx);
             member_ctx.member_name(m_curr.text());
-            if (result = next())
+            result = next();
+            if (result)
             {
-                if (result == is_current_token(token::name_separator))
+                if (is_current_token(token::name_separator))
                 {
-                    if (result = next() && parse_value(parent, member_ctx))
+                    result = next();
+                    if (result && parse_value(parent, member_ctx))
                     {
                         is_next_member = next() && is_current_token(token::value_separator);
                         if (is_next_member)
                         {
-                            if (!(result = next()))
+                            result = next();
+                            if (!result)
                                 add_error(parser_msg_kind::err_expected_member_name, m_lexer->pos());
                         }
                     }

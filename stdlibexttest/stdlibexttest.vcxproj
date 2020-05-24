@@ -176,8 +176,11 @@
     <ClCompile Include="jsondomtest.cpp" />
     <ClCompile Include="jsonlexertest.cpp" />
     <ClCompile Include="jsonparsertest.cpp" />
+    <ClCompile Include="jsontoolstest.cpp" />
+    <ClCompile Include="locutilstest.cpp" />
     <ClCompile Include="memchecker.cpp" />
     <ClCompile Include="parserstest.cpp" />
+    <ClCompile Include="platformstest.cpp" />
     <ClCompile Include="strutilstest.cpp" />
     <ClCompile Include="treestest.cpp" />
     <ClCompile Include="variantstest.cpp" />
