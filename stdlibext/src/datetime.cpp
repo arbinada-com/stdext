@@ -43,7 +43,9 @@ datetime_exception::datetime_exception(const datetime_exception::kind kind, cons
 
 datetime_exception::datetime_exception(const datetime_exception::kind kind, const int value)
     : m_kind(kind)
-{ }
+{
+    m_message = strutils::format(msg_by_kind(kind), value);
+}
 
 const char* datetime_exception::what() const throw()
 {
