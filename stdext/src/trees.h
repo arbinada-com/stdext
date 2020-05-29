@@ -103,12 +103,12 @@ namespace stdext
             m_alloc.deallocate(node, 1);
         }
 
-        const int child_count() const
+        int child_count() const
         {
             return m_root->child_count(false);
         }
 
-        const int child_count(bool recursive) const
+        int child_count(bool recursive) const
         {
             return m_root->child_count(recursive);
         }
@@ -341,12 +341,12 @@ namespace stdext
             return m_tree->create_node_first(this, data);
         }
 
-        const int child_count()
+        int child_count()
         {
             return child_count(false);
         }
 
-        const int child_count(bool recursive)
+        int child_count(bool recursive)
         {
             if (!recursive)
                 return m_child_count;

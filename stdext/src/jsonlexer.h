@@ -44,7 +44,7 @@ namespace stdext
         public:
             lexeme() { }
             lexeme(const json::token token, const parsers::textpos pos, const std::wstring text)
-                : m_token(token), m_pos(pos), m_text(text)
+                : m_pos(pos), m_token(token), m_text(text)
             { }
             lexeme(const lexeme& source) = default;
             lexeme& operator =(const lexeme& source) = default;
@@ -103,8 +103,8 @@ namespace stdext
             bool next_char();
             void skip_whitespaces();
         private:
-            msg_collector_t& m_messages;
             ioutils::text_reader& m_reader;
+            msg_collector_t& m_messages;
             wchar_t m_c = 0;
             bool m_look_ahead = false;
             parsers::textpos m_pos{ 1, 0 };

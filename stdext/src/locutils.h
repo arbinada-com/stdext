@@ -104,7 +104,7 @@ namespace stdext
         };
 
 
-        class codecvt_mode_base abstract
+        class codecvt_mode_base
         {
         public:
             enum class headers
@@ -167,7 +167,7 @@ namespace stdext
                 : codecvt_utf8_wchar_t(codecvt_mode_utf8(), refs)
             {}
             codecvt_utf8_wchar_t(const codecvt_mode_utf8& mode, size_t refs = 0)
-                : m_cvt_mode(codecvt_mode_utf8(mode)), codecvt_base_t(refs)
+                : codecvt_base_t(refs), m_cvt_mode(codecvt_mode_utf8(mode))
             {}
             virtual ~codecvt_utf8_wchar_t() noexcept { }
         public:
@@ -220,8 +220,8 @@ namespace stdext
             }
             bool is_byte_order_assigned() const noexcept { return m_is_byte_order_assigned; }
         protected:
-            bool m_is_byte_order_assigned = false;
             endianess::byte_order m_byte_order = endianess::platform_value();
+            bool m_is_byte_order_assigned = false;
         };
 
 
@@ -237,7 +237,7 @@ namespace stdext
                 : codecvt_utf16_wchar_t(codecvt_mode_utf16(), refs)
             { }
             codecvt_utf16_wchar_t(const codecvt_mode_utf16& mode, size_t refs = 0)
-                : m_cvt_mode(mode), codecvt_base_t(refs)
+                : codecvt_base_t(refs), m_cvt_mode(mode)
             { }
             virtual ~codecvt_utf16_wchar_t() noexcept { }
         public:

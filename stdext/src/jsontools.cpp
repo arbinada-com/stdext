@@ -62,7 +62,7 @@ std::wstring dom_document_writer::escape(const std::wstring s) const
 
 void dom_document_writer::write(ioutils::text_writer& w)
 {
-    auto indent = [](int n) -> wstring
+    auto indent = [](size_t n) -> wstring
     {
         wstring s;
         if (n > 1)
@@ -110,8 +110,8 @@ void dom_document_writer::write(ioutils::text_writer& w)
         }
         dom_document::const_iterator::path_t prev_path = it.path();
         ++it;
-        int curr_level = it.level();
-        for (int i = prev_path.size(); i > curr_level; i--)
+        size_t curr_level = it.level();
+        for (size_t i = prev_path.size(); i > curr_level; i--)
         {
             if (!endings.empty())
             {

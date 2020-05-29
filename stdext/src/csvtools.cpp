@@ -14,19 +14,19 @@ using namespace parsers;
  */
 
 csv::reader::reader(ioutils::text_reader* const rd)
-    : m_owns_reader(false), m_reader(rd)
+    : m_reader(rd), m_owns_reader(false)
 { }
 
 csv::reader::reader(std::wistream& stream)
-    : m_owns_reader(true), m_reader(new ioutils::text_reader(stream))
+    : m_reader(new ioutils::text_reader(stream)), m_owns_reader(true)
 { }
 
 csv::reader::reader(std::wistream* const stream)
-    : m_owns_reader(true), m_reader(new ioutils::text_reader(stream))
+    : m_reader(new ioutils::text_reader(stream)), m_owns_reader(true)
 { }
 
 csv::reader::reader(const std::wstring file_name, const ioutils::text_io_options& options)
-    : m_owns_reader(true), m_reader(new ioutils::text_reader(file_name, options))
+    : m_reader(new ioutils::text_reader(file_name, options)), m_owns_reader(true)
 { }
 
 csv::reader::~reader()

@@ -94,3 +94,87 @@ std::wstring rnd_helper::random_wstring(const int min_length, const int max_leng
     return s;
 }
 
+
+/*
+ * memchecker class
+ */
+memchecker::memchecker(bool check_on_destroy)
+    : m_check_on_destroy(check_on_destroy)
+{
+#if defined(_DEBUG)
+    #if defined(__STDEXT_WINDOWS)
+    _CrtMemCheckpoint(&m_first_state);
+    #endif
+#endif
+    checkpoint();
+}
+
+memchecker::~memchecker()
+{
+    if (m_check_on_destroy)
+    {
+        checkpoint();
+        check();
+    }
+}
+
+void memchecker::checkpoint() noexcept
+{
+#if defined(_DEBUG)
+    #if defined(__STDEXT_WINDOWS)
+    _CrtMemCheckpoint(&m_curr_state);
+    _CrtMemDifference(&m_curr_diff, &m_first_state, &m_curr_state);
+    #endif
+#endif
+}
+
+void memchecker::check() noexcept(false)
+{
+    checkpoint();
+    if (has_leaks())
+    {
+        string msg = report();
+        throw exception(msg.c_str());
+    }
+}
+
+bool memchecker::has_leaks() const noexcept
+{
+#if defined(_DEBUG)
+    #if defined(__STDEXT_WINDOWS)
+    return
+        m_curr_diff.lCounts[_FREE_BLOCK] > 0 ||
+        m_curr_diff.lCounts[_NORMAL_BLOCK] > 0 ||
+        m_curr_diff.lCounts[_CRT_BLOCK] > 0 ||
+        m_curr_diff.lCounts[_IGNORE_BLOCK] > 0 ||
+        m_curr_diff.lCounts[_CLIENT_BLOCK] > 0;
+    #else
+    return false;
+    #endif
+#else
+    return false;
+#endif
+}
+
+std::string memchecker::report() const noexcept
+{
+    stringstream ss;
+    ss << "Memory difference report" << endl
+        << "Blocks difference:" << endl;
+#if defined(__STDEXT_WINDOWS)
+    ss << "\t_FREE_BLOCK: " << m_curr_diff.lSizes[_FREE_BLOCK] << "bytes in " << m_curr_diff.lCounts[_FREE_BLOCK] << " blocks" << endl;
+    ss << "\t_NORMAL_BLOCK: " << m_curr_diff.lSizes[_NORMAL_BLOCK] << "bytes in " << m_curr_diff.lCounts[_NORMAL_BLOCK] << " blocks" << endl;
+    ss << "\t_CRT_BLOCK: " << m_curr_diff.lSizes[_CRT_BLOCK] << "bytes in " << m_curr_diff.lCounts[_CRT_BLOCK] << " blocks" << endl;
+    ss << "\t_IGNORE_BLOCK: " << m_curr_diff.lSizes[_IGNORE_BLOCK] << "bytes in " << m_curr_diff.lCounts[_IGNORE_BLOCK] << " blocks" << endl;
+    ss << "\t_CLIENT_BLOCK: " << m_curr_diff.lSizes[_CLIENT_BLOCK] << "bytes in " << m_curr_diff.lCounts[_CLIENT_BLOCK] << " blocks" << endl;
+    ss << "Largest number used: " << m_curr_diff.lHighWaterCount << " bytes" << endl;
+    ss << "Total allocations: " << m_curr_diff.lTotalCount << " bytes" << endl;
+#endif
+    return ss.str();
+}
+
+std::wstring memchecker::wreport() const noexcept
+{
+    std::string s = report();
+    return std::wstring(s.begin(), s.end());
+}

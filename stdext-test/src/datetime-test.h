@@ -6,9 +6,6 @@
 
 using namespace std;
 using namespace stdext;
-using namespace testing;
-
-namespace {
 
 class DatetimeTest : public testing::Test
 {
@@ -122,7 +119,7 @@ TEST_F(DatetimeTest, TestJulianDateCalcs)
     // Epoch date 1 Jan 4713 BC 12:00 (julian) = 24 Nov 4714 BC 12:00 (gregorian)
     // Important note: for NNNN BC years the year parameter is specified as -(NNNN + 1)
     // I.e. 4713 BC => -4712, 1 BC => 0
-    //ASSERT_EQ(0.0, datetime::calendar_to_jd(calendar_t::julian, datetime::data_t(-4712, 1, 1)), L"Epoch day 1");
+    //ASSERT_EQ(0.0, datetime::calendar_to_jd(calendar_t::julian, datetime::data_t(-4712, 1, 1))) << L"Epoch day 1";
     datetime::data_t d1 = datetime::data_t(-4712, 1, 1, 12, 0, 0, 0);
     datetime::jd_t jd1 = datetime::calendar_to_jd(calendar_t::julian, d1);
     ASSERT_EQ(0.0, jd1) << L"Epoch date J1";
@@ -471,6 +468,4 @@ TEST_F(DatetimeTest, TestDateInc)
     CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 0, 59, 0).inc(dtunit_t::seconds, -59), L"Inc SS 1.3.2");
     CompareDates(datetime(2000, 2, 29, 0, 0, 0, 0), datetime(2000, 2, 28, 23, 59, 59, 0).inc(dtunit_t::seconds, 1), L"Inc SS 3.3.1");
     CompareDates(datetime(2000, 2, 28, 23, 59, 59, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::seconds, -1), L"Inc SS 3.3.2");
-}
-
 }

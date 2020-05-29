@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <string>
+#include "strutils.h"
 #include "ptr_vector.h"
 
 namespace stdext

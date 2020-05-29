@@ -104,8 +104,6 @@ namespace stdext
                 int m_avg_string_length = config::default_avg_string_length;
                 int m_min_depth = 1;
                 int m_max_depth = 1;
-                int m_min_string_length = 1;
-                int m_max_string_length = 100;
                 int m_min_values_by_level = 1;
                 int m_max_values_by_level = 1;
             };

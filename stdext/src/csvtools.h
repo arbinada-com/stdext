@@ -91,7 +91,7 @@ namespace stdext
             bool read_header();
             inline bool eof() const noexcept { return m_reader->eof(); }
             bool has_error() const { return m_messages.has_errors(); }
-            const csv::header& header() { m_header; }
+            const csv::header& header() { return m_header; }
             bool has_header() { return m_header.field_count() > 0; }
             const parsers::textpos pos() const noexcept { return m_pos; }
             long row_count() const { return m_row_num; }

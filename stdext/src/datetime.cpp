@@ -22,7 +22,7 @@ using namespace stdext;
 double trunc2(const double n)
 {
     double ipart;
-    double fpart = modf(n, &ipart);
+    modf(n, &ipart);
     return ipart;
 }
 #define trunc(n) trunc2(n)
@@ -109,7 +109,14 @@ datetime::datetime(const datepart_t year, const datepart_t month, const datepart
 { }
 
 datetime::datetime(const struct tm &t)
-    : datetime(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, 0, calendar_t::gregorian)
+    : datetime(static_cast<datepart_t>(t.tm_year + 1900),
+               static_cast<datepart_t>(t.tm_mon + 1),
+               static_cast<datepart_t>(t.tm_mday),
+               static_cast<datepart_t>(t.tm_hour),
+               static_cast<datepart_t>(t.tm_min),
+               static_cast<datepart_t>(t.tm_sec),
+               0,
+               calendar_t::gregorian)
 { }
 
 datetime::datetime(const char* str)
@@ -130,30 +137,6 @@ datetime::datetime(const wchar_t* str)
 datetime::datetime(const std::string& str)
 {
 	parse(str.c_str());
-}
-
-datetime::datetime(const datetime& dt)
-    : m_jd(dt.m_jd),
-      m_cal(dt.m_cal)
-{ }
-
-datetime& datetime::operator =(const datetime& dt)
-{
-    m_jd = dt.m_jd;
-    m_cal = dt.m_cal;
-    return *this;
-}
-
-datetime::datetime(datetime&& dt) noexcept
-    : m_jd(std::move(dt.m_jd)),
-      m_cal(std::move(dt.m_cal))
-{ }
-
-datetime& datetime::operator =(datetime&& dt) noexcept
-{
-    m_jd = std::move(dt.m_jd);
-    m_cal = std::move(dt.m_cal);
-    return *this;
 }
 
 void datetime::init(const datepart_t year, const datepart_t month, const datepart_t day,
@@ -181,7 +164,7 @@ datetime::jd_t datetime::calendar_to_jd(const calendar_t cal, const data_t& dt)
     long b = 0;
     if (cal == calendar_t::gregorian)
     {
-        short a = div(y, 100).quot;
+        int a = div(y, 100).quot;
         b = 2 - a + div(a, 4).quot;
     }
     long c = (long)trunc(365.25 * y);
@@ -229,7 +212,7 @@ datetime::data_t datetime::hh_to_hms(const double hh)
     dt.min = (datepart_t)ipart;
     fpart = modf(fpart * 60, &ipart);
     dt.sec = (datepart_t)ipart;
-    fpart = modf(round(fpart * 1000), &ipart);
+    modf(round(fpart * 1000), &ipart);
     dt.msec = (datepart_t)ipart;
     if (dt.msec > 999)
     {
@@ -280,16 +263,16 @@ void datetime::parse(const char* str)
 	{
         // try to read date and time
         if (strchr(str, 'T') != NULL)
-            npos = sscanf_s(str, "%4hd-%2hu-%2huT%2hu:%2hu:%2hu.%3hu", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = sscanf_s(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
         else
-			npos = sscanf_s(str, "%4hd-%2hu-%2hu %2hu:%2hu:%2hu.%3hu", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = sscanf_s(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
         if (npos < 3 || npos == EOF || npos == 4)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
     }
 	else
 	{
 		// try to read time only
-		npos = sscanf_s(str, "%2hu:%2hu:%2hu.%3hu", &hour, &minute, &second, &millisec);
+        npos = sscanf_s(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
 		if (npos < 2 || npos == EOF)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
         datetime dt = datetime::now();
@@ -303,7 +286,7 @@ void datetime::parse(const char* str)
 }
 
 
-string datetime::to_str()
+string datetime::to_string()
 {
     char buf[64];
 	sprintf_s(buf, sizeof(buf) - 1, "%04hu-%02hu-%02hu %02hu:%02hu:%02hu.%03hu",

@@ -71,7 +71,9 @@ bool utf16::is_noncharacter(const wchar_t c)
         || c == utf16::bom_be_value
         || c == utf16::bom_le_value
         || c == 0xFFFF
+#if __STDEXT_WCHAR_SIZE > 2
         || c > utf16::max_char
+#endif
         ;
 }
 
@@ -180,7 +182,7 @@ std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len,
         unsigned char* p = (unsigned char*)&c;
         if (wchar_order == mbyte_order)
         {
-            for (int j = 0; j < sizeof(wchar_t); j++)
+            for (size_t j = 0; j < sizeof(wchar_t); j++)
                 s += p[j];
         }
         else

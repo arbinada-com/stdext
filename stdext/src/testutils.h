@@ -3,15 +3,22 @@
  C++ standard library extensions
  (c) 2001-2020 Serguei Tarassov (see license.txt)
 
- Testing tools
+ Testing utilities
  */
 #include <string>
 #include <random>
 #include <ctime>
 #include <chrono>
 #include <cstdint>
-
 #include <iostream>
+#include "platforms.h"
+
+#if defined(__STDEXT_WINDOWS)
+    #define _CRTDBG_MAP_ALLOC
+    #include <crtdbg.h>
+    #include <sstream>
+#endif
+
 
 namespace stdext
 {
@@ -74,6 +81,34 @@ namespace stdext
             std::random_device m_device;
             std::default_random_engine m_engine;
         };
+
+        class memchecker
+        {
+        public:
+#if defined(__STDEXT_WINDOWS)
+            typedef _CrtMemState memstate_t;
+#else
+            typedef struct
+            {
+                // to do
+            } memstate_t;
+#endif
+        public:
+            memchecker(bool check_on_destroy = false);
+            ~memchecker();
+        public:
+            void checkpoint() noexcept;
+            void check() noexcept(false);
+            bool has_leaks() const noexcept;
+            std::string report() const noexcept;
+            std::wstring wreport() const noexcept;
+        private:
+            bool m_check_on_destroy;
+            memstate_t m_first_state;
+            memstate_t m_curr_state;
+            memstate_t m_curr_diff;
+        };
+
     }
 }
 

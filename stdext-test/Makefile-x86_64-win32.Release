@@ -54,7 +54,20 @@ OBJECTS       = release\x86_64\win32\gtest-all.obj \
 		release\x86_64\win32\gmock-all.obj \
 		release\x86_64\win32\main.obj
 
-DIST          =  src/datetime-test.h ..\..\googletest\googletest\src\gtest-all.cc \
+DIST          =  src/containers-test.h \
+		src/csvtools-test.h \
+		src/datetime-test.h \
+		src/ioutils-test.h \
+		src/jsondom-test.h \
+		src/jsonlexer-test.h \
+		src/jsonparser-test.h \
+		src/jsontools-test.h \
+		src/locutils-test.h \
+		src/parsers-test.h \
+		src/platforms-test.h \
+		src/strutils-test.h \
+		src/trees-test.h \
+		src/variants-test.h ..\..\googletest\googletest\src\gtest-all.cc \
 		..\..\googletest\googlemock\src\gmock-all.cc \
 		src\main.cpp
 QMAKE_TARGET  = stdext-test
@@ -176,6 +189,8 @@ release\x86_64\win32\stdext-test.exe: D:\Projects\stdext\stdext-test\..\stdext\r
 release\x86_64\win32\gtest-all.obj release\x86_64\win32\gmock-all.obj release\x86_64\win32\main.obj
 $(LIBS)
 <<
+	copy /y D:\Projects\stdext\stdext-test\data\* D:\Projects\stdext\stdext-test\release\x86_64\win32\* 
+
 
 qmake: FORCE
 	@$(QMAKE) -o Makefile-x86_64-win32.Release stdext-test.pro -spec win32-msvc "CONFIG+=qtquickcompiler"
@@ -294,7 +309,7 @@ release\x86_64\win32\gmock-all.obj: ..\..\googletest\googlemock\src\gmock-all.cc
 		..\..\googletest\googlemock\src\gmock-spec-builders.cc \
 		..\..\googletest\googlemock\src\gmock.cc
 
-release\x86_64\win32\main.obj: src\main.cpp src\datetime-test.h \
+release\x86_64\win32\main.obj: src\main.cpp src\containers-test.h \
 		..\..\googletest\googletest\include\gtest\gtest.h \
 		..\..\googletest\googletest\include\gtest\internal\gtest-internal.h \
 		..\..\googletest\googletest\include\gtest\internal\gtest-port.h \
@@ -320,7 +335,37 @@ release\x86_64\win32\main.obj: src\main.cpp src\datetime-test.h \
 		..\..\googletest\googlemock\include\gmock\internal\gmock-port.h \
 		..\..\googletest\googlemock\include\gmock\internal\custom\gmock-port.h \
 		..\..\googletest\googlemock\include\gmock\internal\custom\gmock-matchers.h \
-		..\stdext\src\datetime.h
+		..\stdext\src\ptr_vector.h \
+		..\stdext\src\strutils.h \
+		..\stdext\src\testutils.h \
+		..\stdext\src\platforms.h \
+		src\csvtools-test.h \
+		..\stdext\src\csvtools.h \
+		..\stdext\src\ioutils.h \
+		..\stdext\src\locutils.h \
+		..\stdext\src\parsers.h \
+		src\datetime-test.h \
+		..\stdext\src\datetime.h \
+		src\ioutils-test.h \
+		src\jsondom-test.h \
+		..\stdext\src\json.h \
+		..\stdext\src\jsonexceptions.h \
+		..\stdext\src\jsondom.h \
+		..\stdext\src\jsonparser.h \
+		..\stdext\src\jsonlexer.h \
+		..\stdext\src\jsoncommon.h \
+		src\jsonlexer-test.h \
+		src\parsers-test.h \
+		src\jsonparser-test.h \
+		..\stdext\src\jsontools.h \
+		src\jsontools-test.h \
+		src\locutils-test.h \
+		src\platforms-test.h \
+		src\strutils-test.h \
+		src\trees-test.h \
+		..\stdext\src\trees.h \
+		src\variants-test.h \
+		..\stdext\src\variants.h
 
 ####### Install
 

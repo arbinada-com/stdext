@@ -54,16 +54,16 @@ namespace stdext
             vt_wstring,
             vt_object
         };
-        const value_type first_value_type = value_type::vt_unknown;
-        const value_type last_value_type = value_type::vt_object;
+        inline value_type first_value_type() { return value_type::vt_unknown; }
+        inline value_type last_value_type() { return value_type::vt_object; }
         std::string to_string(const value_type vtype);
-        inline const value_type to_value_type(bool) { return value_type::vt_bool; }
-        inline const value_type to_value_type(int) { return value_type::vt_int; }
-        inline const value_type to_value_type(int64_t) { return value_type::vt_int64; }
-        inline const value_type to_value_type(float) { return value_type::vt_double; }
-        inline const value_type to_value_type(double) { return value_type::vt_double; }
-        inline const value_type to_value_type(std::string) { return value_type::vt_string; }
-        inline const value_type to_value_type(std::wstring) { return value_type::vt_wstring; }
+        inline value_type to_value_type(bool) { return value_type::vt_bool; }
+        inline value_type to_value_type(int) { return value_type::vt_int; }
+        inline value_type to_value_type(int64_t) { return value_type::vt_int64; }
+        inline value_type to_value_type(float) { return value_type::vt_double; }
+        inline value_type to_value_type(double) { return value_type::vt_double; }
+        inline value_type to_value_type(std::string) { return value_type::vt_string; }
+        inline value_type to_value_type(std::wstring) { return value_type::vt_wstring; }
 
         enum class operation
         {
@@ -84,14 +84,14 @@ namespace stdext
             b_not,
             nop
         };
-        const operation first_operation = operation::unknown;
-        const operation last_operation = operation::nop;
+        inline operation first_operation() { return operation::unknown; }
+        inline operation last_operation() { return operation::nop; }
         std::string to_string(const operation op);
         bool is_comparision(variants::operation op);
         bool is_logical_op(variants::operation op);
 
 
-        class objref abstract
+        class objref
         {
         public:
             objref() 
@@ -136,7 +136,7 @@ namespace stdext
             variant& operator=(const wchar_t* source);
             variant(objref* const val);
             variant& operator=(objref* const source);
-            virtual ~variant() noexcept;
+            virtual ~variant();
         public: 
             // cast operators
             operator bool() const { return to_bool(); }
@@ -323,8 +323,8 @@ namespace stdext
             bool is_vtype(const std::initializer_list<value_type> vtypes) const noexcept;
             static variant do_operation(const variant& v1, const variant& v2, const operation op) noexcept(false);
         protected:
-            void* m_value = nullptr;
             value_type m_vtype = value_type::vt_unknown;
+            void* m_value = nullptr;
         };
 
     }

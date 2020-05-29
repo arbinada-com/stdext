@@ -14,7 +14,7 @@
 namespace stdext
 {
 
-    typedef short datepart_t;
+    typedef int datepart_t;
     typedef enum class calendar
     {
         julian,
@@ -76,13 +76,13 @@ namespace stdext
 
         typedef struct data
         {
-            datepart_t msec;   // milliseconds
-            datepart_t sec;    // seconds after the minute - [0, 60] including leap second
-            datepart_t min;    // minutes after the hour - [0, 59]
-            datepart_t hour;   // hours since midnight - [0, 23]
-            datepart_t day;    // day of the month - [1, 31]
-            datepart_t month;  // months of year - [1, 12]
             datepart_t year;   // year starting from epoch 1 Jan 4713 BC (julian)
+            datepart_t month;  // months of year - [1, 12]
+            datepart_t day;    // day of the month - [1, 31]
+            datepart_t hour;   // hours since midnight - [0, 23]
+            datepart_t min;    // minutes after the hour - [0, 59]
+            datepart_t sec;    // seconds after the minute - [0, 60] including leap second
+            datepart_t msec;   // milliseconds
             data()
                 : year(0), month(0), day(0), hour(0), min(0), sec(0), msec(0)
             { }
@@ -94,6 +94,10 @@ namespace stdext
                  const datepart_t millisecond)
                 : year(year), month(month), day(day), hour(hour), min(minute), sec(second), msec(millisecond)
             { }
+            data(const data&) = default;
+            data& operator =(const data&) = default;
+            data(data&&) = default;
+            data& operator =(data&&) = default;
         } data_t;
 
     public:
@@ -128,24 +132,12 @@ namespace stdext
         datetime(const std::wstring& str);
 
         /*
-         Copy constructor
+         Copy/move constructors and assigment operators
          */
-        datetime(const datetime& dt);
-
-        /*
-         Assignment operator
-         */
-        datetime& operator =(const datetime& dt);
-
-        /*
-         Move constructor
-         */
-        datetime(datetime&& dt) noexcept;
-
-        /*
-         Move assignment operator
-         */
-        datetime& operator =(datetime&& dt) noexcept;
+        datetime(const datetime& dt) = default;
+        datetime& operator =(const datetime& dt) = default;
+        datetime(datetime&& dt) noexcept = default;
+        datetime& operator =(datetime&& dt) noexcept = default;
 
         /*
          * Returns the parts of date
@@ -178,7 +170,7 @@ namespace stdext
         /*
          Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
          */
-        std::string to_str();
+        std::string to_string();
 
         /* 
          Increments the date/time value. 

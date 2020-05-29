@@ -18,7 +18,22 @@ unix: PRE_TARGETDEPS += $$LIBS_DIR/stdext.a
 
 
 HEADERS += \
-    src/datetime-test.h
+    src/containers-test.h \
+    src/csvtools-test.h \
+    src/datetime-test.h \
+    src/ioutils-test.h \
+    src/jsondom-test.h \
+    src/jsonlexer-test.h \
+    src/jsonparser-test.h \
+    src/jsontools-test.h \
+    src/locutils-test.h \
+    src/parsers-test.h \
+    src/platforms-test.h \
+    src/strutils-test.h \
+    src/trees-test.h \
+    src/variants-test.h
 
 SOURCES += \
     src/main.cpp
+
+PostLink_CopyFile($$PWD/data/*, $$PWD/$$DESTDIR/*)

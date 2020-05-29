@@ -25,7 +25,6 @@ std::string json::to_string(const dom_value_type type)
     case dom_value_type::vt_number: return "number";
     case dom_value_type::vt_object: return "object";
     case dom_value_type::vt_string: return "string";
-    case dom_value_type::vt_unknown: return "unknown";
     default:
         return "unsupported";
     }
@@ -77,7 +76,7 @@ bool json::equal(const dom_document& doc1, const dom_document& doc2)
  * dom_value class
  */
 dom_value::dom_value(dom_document* const doc, const dom_value_type type)
-    : m_doc(doc), m_type(type), m_text(L"")
+    : m_doc(doc), m_text(L""), m_type(type)
 { 
     if (m_doc == nullptr)
         throw dom_exception(L"Value should be created in document scope", dom_error::document_is_null);
@@ -231,7 +230,7 @@ void dom_object_members::clear() noexcept
     m_data.clear();
 }
 
-dom_value* const dom_object_members::find(const name_t name) const noexcept
+dom_value* dom_object_members::find(const name_t name) const noexcept
 {
     data_index_t::const_iterator it = m_index.find(name);
     if (it == m_index.end())
@@ -307,47 +306,47 @@ void dom_document::clear()
     m_root = nullptr;
 }
 
-dom_array* const dom_document::create_array()
+dom_array* dom_document::create_array()
 {
     return new dom_array(this);
 }
 
-dom_literal* const dom_document::create_literal(const std::wstring text)
+dom_literal* dom_document::create_literal(const std::wstring text)
 {
     return new dom_literal(this, text);
 }
 
-dom_number* const dom_document::create_number(const std::wstring text, const json::dom_number_value_type numtype)
+dom_number* dom_document::create_number(const std::wstring text, const json::dom_number_value_type numtype)
 {
     return new dom_number(this, text, numtype);
 }
 
-dom_number* const dom_document::create_number(const int32_t value)
+dom_number* dom_document::create_number(const int32_t value)
 {
     return new dom_number(this, value);
 }
 
-dom_number* const dom_document::create_number(const int64_t value)
+dom_number* dom_document::create_number(const int64_t value)
 {
     return new dom_number(this, value);
 }
 
-dom_number* const dom_document::create_number(const double value)
+dom_number* dom_document::create_number(const double value)
 {
     return new dom_number(this, value);
 }
 
-dom_object* const dom_document::create_object()
+dom_object* dom_document::create_object()
 {
     return new dom_object(this);
 }
 
-dom_string* const dom_document::create_string(const wchar_t* text)
+dom_string* dom_document::create_string(const wchar_t* text)
 {
     return new dom_string(this, text);
 }
 
-dom_string* const dom_document::create_string(const std::wstring& text)
+dom_string* dom_document::create_string(const std::wstring& text)
 {
     return new dom_string(this, text);
 }

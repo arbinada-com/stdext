@@ -74,15 +74,14 @@ namespace stdext
 
         enum class dom_value_type
         {
-            vt_unknown,
             vt_array,
             vt_literal,
             vt_number,
             vt_object,
             vt_string
         };
-        const dom_value_type first_value_type = dom_value_type::vt_unknown;
-        const dom_value_type last_value_type = dom_value_type::vt_string;
+        inline dom_value_type first_value_type() { return dom_value_type::vt_array; }
+        inline dom_value_type last_value_type() { return dom_value_type::vt_string; }
         std::string to_string(const dom_value_type type);
         std::wstring to_wstring(const dom_value_type type);
 
@@ -92,7 +91,7 @@ namespace stdext
         class dom_object_member;
         class dom_object_members;
 
-        class dom_value abstract
+        class dom_value
         {
             friend class dom_array;
             friend class dom_object_members;
@@ -109,10 +108,10 @@ namespace stdext
             void assert_no_parent() const noexcept(false);
             void assert_same_doc_no_parent(dom_document* doc) const noexcept(false);
             virtual void clear() { m_text.clear(); }
-            dom_document* const document() const noexcept { return m_doc; }
+            dom_document* document() const noexcept { return m_doc; }
             bool is_container() const noexcept { return m_type == dom_value_type::vt_array || m_type == dom_value_type::vt_object; }
             dom_object_member* member() const noexcept { return m_member; }
-            dom_value* const parent() const noexcept { return m_parent; }
+            dom_value* parent() const noexcept { return m_parent; }
             virtual std::wstring text() const noexcept { return m_text; }
             virtual void text(const std::wstring value) noexcept(false) { m_text = value; }
             dom_value_type type() const noexcept { return m_type; }
@@ -126,7 +125,7 @@ namespace stdext
             dom_object_member* m_member = nullptr;
             dom_value* m_parent = nullptr;
             std::wstring m_text;
-            dom_value_type m_type = dom_value_type::vt_unknown;
+            dom_value_type m_type;
         };
 
         enum class dom_literal_value_type
@@ -191,12 +190,12 @@ namespace stdext
             ~dom_object_member();
         public:
             name_t name() const noexcept { return m_name; }
-            dom_object_members* const owner() { return m_owner; }
-            dom_value* const value() const noexcept { return m_value; }
+            dom_object_members* owner() { return m_owner; }
+            dom_value* value() const noexcept { return m_value; }
         private:
+            dom_object_members* m_owner = nullptr;
             name_t m_name;
             dom_value* m_value = nullptr;
-            dom_object_members* m_owner = nullptr;
         };
 
         class dom_object_members
@@ -221,15 +220,15 @@ namespace stdext
         public:
             void append(const name_t name, dom_value* const value) noexcept(false);
             void clear() noexcept;
-            dom_object_member* const at(const size_type i) { return m_data.at(i); }
-            dom_object_member* const operator [](const size_type i) { return m_data.at(i); }
+            dom_object_member* at(const size_type i) { return m_data.at(i); }
+            dom_object_member* operator [](const size_type i) { return m_data.at(i); }
             iterator begin() noexcept { return m_data.begin(); }
             const_iterator begin() const noexcept { return m_data.begin(); }
             iterator end() noexcept { return m_data.end(); }
             const_iterator end() const noexcept { return m_data.end(); }
             inline bool contains_name(const name_t name) const noexcept { return find(name) != nullptr; }
             bool empty() const noexcept { return m_data.empty(); }
-            dom_value* const find(const name_t name) const noexcept;
+            dom_value* find(const name_t name) const noexcept;
             size_type size() const { return m_data.size(); }
         protected:
             void check_name(const name_t name) const noexcept(false);
@@ -239,10 +238,10 @@ namespace stdext
             data_index_t m_index;
         };
 
-        class indexer_intf abstract
+        class indexer_intf
         {
         public:
-            virtual dom_value* const get_value(const std::size_t i) = 0;
+            virtual dom_value* get_value(const std::size_t i) = 0;
             virtual std::size_t value_count() const = 0;
         };
 
@@ -256,16 +255,16 @@ namespace stdext
             ~dom_object() override;
         public:
             void clear() override;
-            dom_object_members* const members() { return m_members; }
+            dom_object_members* members() { return m_members; }
             const dom_object_members* cmembers() const { return m_members; }
         public: // some facade of members() collection
-            dom_object_member* const operator [](const size_type i) { return m_members->at(i); }
+            dom_object_member* operator [](const size_type i) { return m_members->at(i); }
             void append_member(const name_t name, dom_value* const value) noexcept(false) { m_members->append(name, value); }
             inline bool contains_member(const name_t name) const noexcept { return m_members->contains_name(name); }
-            inline dom_value* const find(const name_t name) const noexcept { return m_members->find(name); }
+            inline dom_value* find(const name_t name) const noexcept { return m_members->find(name); }
             size_type size() const { return m_members->size(); }
         public: // indexer_intf implementation
-            dom_value* const get_value(const std::size_t i) override { return m_members->at(i)->value(); };
+            dom_value* get_value(const std::size_t i) override { return m_members->at(i)->value(); };
             std::size_t value_count() const override { return m_members->size(); }
         private:
             dom_object_members* m_members = nullptr;
@@ -282,9 +281,9 @@ namespace stdext
             dom_array(dom_document* const doc);
             ~dom_array() override;
         public:
-            void clear() noexcept { m_data->clear(); }
-            dom_value* const at(const size_type i) { return m_data->at(i); }
-            dom_value* const operator [](const size_type i) { return m_data->at(i); }
+            void clear() noexcept override { m_data->clear(); }
+            dom_value* at(const size_type i) { return m_data->at(i); }
+            dom_value* operator [](const size_type i) { return m_data->at(i); }
             iterator begin() noexcept { return m_data->begin(); }
             const_iterator begin() const noexcept { return m_data->begin(); }
             iterator end() noexcept { return m_data->end(); }
@@ -293,7 +292,7 @@ namespace stdext
             bool empty() const noexcept { return m_data->empty(); }
             size_type size() const { return m_data->size(); }
         public: // indexer_intf implementation
-            dom_value* const get_value(const std::size_t i) override { return m_data->at(i); };
+            dom_value* get_value(const std::size_t i) override { return m_data->at(i); };
             std::size_t value_count() const override { return m_data->size(); }
         private:
             data_t* m_data = nullptr;
@@ -311,16 +310,16 @@ namespace stdext
             ~dom_document();
         public:
             void clear();
-            dom_array* const create_array();
-            dom_literal* const create_literal(const std::wstring text);
-            dom_number* const create_number(const std::wstring text, const json::dom_number_value_type numtype);
-            dom_number* const create_number(const int32_t value);
-            dom_number* const create_number(const int64_t value);
-            dom_number* const create_number(const double value);
-            dom_object* const create_object();
-            dom_string* const create_string(const wchar_t* text);
-            dom_string* const create_string(const std::wstring& text);
-            dom_value* const root() const noexcept { return m_root; }
+            dom_array* create_array();
+            dom_literal* create_literal(const std::wstring text);
+            dom_number* create_number(const std::wstring text, const json::dom_number_value_type numtype);
+            dom_number* create_number(const int32_t value);
+            dom_number* create_number(const int64_t value);
+            dom_number* create_number(const double value);
+            dom_object* create_object();
+            dom_string* create_string(const wchar_t* text);
+            dom_string* create_string(const std::wstring& text);
+            dom_value* root() const noexcept { return m_root; }
             void root(dom_value* const value) noexcept(false);
         public:
             class const_iterator

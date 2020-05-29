@@ -26,8 +26,8 @@ inline int basic_vsnprintf_s(std::wstring& s, const wchar_t* fmt, va_list args)
 #endif
 }
 
-inline int basic_strlen(const char* s) { return strlen(s); }
-inline int basic_strlen(const wchar_t* s) { return wcslen(s); }
+inline size_t basic_strlen(const char* s) { return strlen(s); }
+inline size_t basic_strlen(const wchar_t* s) { return wcslen(s); }
 
 template<class StringT, class CharT>
 StringT basic_format(const CharT* fmt, va_list args)
@@ -60,7 +60,7 @@ std::string strutils::format(const char* fmt, ...)
     return s;
 }
 
-string strutils::format(const string fmt, ...)
+string strutils::format(const std::string fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -78,7 +78,7 @@ std::wstring strutils::format(const wchar_t* fmt, ...)
     return s;
 }
 
-wstring strutils::format(const wstring fmt, ...)
+wstring strutils::format(const std::wstring fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

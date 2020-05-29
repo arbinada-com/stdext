@@ -11,19 +11,21 @@ using namespace std;
 using namespace stdext;
 using namespace variants;
 
+#define VARIANTS_CASE_VTYPE_STR(name) case value_type::name: return #name
+#define VARIANTS_CASE_OP_STR(name) case operation::name: return #name
+
 std::string variants::to_string(const value_type vtype)
 {
-#define CASE_VTYPE_STR(name) case value_type::name: return #name
     switch (vtype)
     {
-        CASE_VTYPE_STR(vt_bool);
-        CASE_VTYPE_STR(vt_double);
-        CASE_VTYPE_STR(vt_int);
-        CASE_VTYPE_STR(vt_int64);
-        CASE_VTYPE_STR(vt_object);
-        CASE_VTYPE_STR(vt_string);
-        CASE_VTYPE_STR(vt_wstring);
-        CASE_VTYPE_STR(vt_unknown);
+        VARIANTS_CASE_VTYPE_STR(vt_bool);
+        VARIANTS_CASE_VTYPE_STR(vt_double);
+        VARIANTS_CASE_VTYPE_STR(vt_int);
+        VARIANTS_CASE_VTYPE_STR(vt_int64);
+        VARIANTS_CASE_VTYPE_STR(vt_object);
+        VARIANTS_CASE_VTYPE_STR(vt_string);
+        VARIANTS_CASE_VTYPE_STR(vt_wstring);
+        VARIANTS_CASE_VTYPE_STR(vt_unknown);
     default:
         return "unsupported";
     }
@@ -31,24 +33,23 @@ std::string variants::to_string(const value_type vtype)
 
 std::string variants::to_string(const operation op)
 {
-#define CASE_OP_STR(name) case operation::name: return #name
     switch (op)
     {
-        CASE_OP_STR(unknown);
-        CASE_OP_STR(add);
-        CASE_OP_STR(divide);
-        CASE_OP_STR(multiply);
-        CASE_OP_STR(subtract);
-        CASE_OP_STR(cmp_eq);
-        CASE_OP_STR(cmp_neq);
-        CASE_OP_STR(cmp_gt);
-        CASE_OP_STR(cmp_ge);
-        CASE_OP_STR(cmp_lt);
-        CASE_OP_STR(cmp_le);
-        CASE_OP_STR(b_and);
-        CASE_OP_STR(b_or);
-        CASE_OP_STR(b_not);
-        CASE_OP_STR(nop);
+        VARIANTS_CASE_OP_STR(unknown);
+        VARIANTS_CASE_OP_STR(add);
+        VARIANTS_CASE_OP_STR(divide);
+        VARIANTS_CASE_OP_STR(multiply);
+        VARIANTS_CASE_OP_STR(subtract);
+        VARIANTS_CASE_OP_STR(cmp_eq);
+        VARIANTS_CASE_OP_STR(cmp_neq);
+        VARIANTS_CASE_OP_STR(cmp_gt);
+        VARIANTS_CASE_OP_STR(cmp_ge);
+        VARIANTS_CASE_OP_STR(cmp_lt);
+        VARIANTS_CASE_OP_STR(cmp_le);
+        VARIANTS_CASE_OP_STR(b_and);
+        VARIANTS_CASE_OP_STR(b_or);
+        VARIANTS_CASE_OP_STR(b_not);
+        VARIANTS_CASE_OP_STR(nop);
     default:
         return "unsupported";
     }
@@ -216,7 +217,7 @@ variant::~variant()
 template <class T> 
 void variant::clear()
 {
-    if (value_type::vt_object)
+    if (m_vtype == value_type::vt_object)
         static_cast<objref*>(m_value)->release();
     else 
         delete static_cast<T*>(m_value);
@@ -252,7 +253,6 @@ void variant::clear()
             static_cast<objref*>(m_value)->release();
             break;
         default:
-            delete m_value;
             break;
         }
         m_value = nullptr;
@@ -305,6 +305,8 @@ value_type deduce_compatible_type(const value_type t1, const value_type t2) noex
             return value_type::vt_int64;
         case value_type::vt_double:
             return value_type::vt_double;
+        default:
+            return value_type::vt_unknown;
         }
         break;
     case value_type::vt_double:
@@ -319,6 +321,8 @@ value_type deduce_compatible_type(const value_type t1, const value_type t2) noex
         if (t2 == value_type::vt_wstring)
             return t2;
         break;
+    default:
+        return value_type::vt_unknown;
     }
     return value_type::vt_unknown;
 }
@@ -341,6 +345,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() + v2.to_double();
         case value_type::vt_string: return v1.to_string() + v2.to_string();
         case value_type::vt_wstring: return v1.to_string() + v2.to_string();
+        default: break;
         }
         break;
     case operation::divide:
@@ -349,6 +354,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_int: return v1.to_int() / v2.to_int();
         case value_type::vt_int64: return v1.to_int64() / v2.to_int64();
         case value_type::vt_double: return v1.to_double() / v2.to_double();
+        default: break;
         }
         break;
     case operation::multiply:
@@ -357,6 +363,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_int: return v1.to_int() * v2.to_int();
         case value_type::vt_int64: return v1.to_int64() * v2.to_int64();
         case value_type::vt_double: return v1.to_double() * v2.to_double();
+        default: break;
         }
         break;
     case operation::subtract:
@@ -365,6 +372,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_int: return v1.to_int() - v2.to_int();
         case value_type::vt_int64: return v1.to_int64() - v2.to_int64();
         case value_type::vt_double: return v1.to_double() - v2.to_double();
+        default: break;
         }
         break;
      // Logical
@@ -386,6 +394,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() == v2.to_double();
         case value_type::vt_string: return v1.to_string() == v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() == v2.to_wstring();
+        default: break;
         }
         break;
     case operation::cmp_neq:
@@ -397,6 +406,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() != v2.to_double();
         case value_type::vt_string: return v1.to_string() != v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() != v2.to_wstring();
+        default: break;
         }
         break;
     case operation::cmp_gt:
@@ -408,6 +418,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() > v2.to_double();
         case value_type::vt_string: return v1.to_string() > v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() > v2.to_wstring();
+        default: break;
         }
         break;
     case operation::cmp_ge:
@@ -419,6 +430,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() >= v2.to_double();
         case value_type::vt_string: return v1.to_string() >= v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() >= v2.to_wstring();
+        default: break;
         }
         break;
     case operation::cmp_lt:
@@ -430,6 +442,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() < v2.to_double();
         case value_type::vt_string: return v1.to_string() < v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() < v2.to_wstring();
+        default: break;
         }
         break;
     case operation::cmp_le:
@@ -441,9 +454,11 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         case value_type::vt_double: return v1.to_double() <= v2.to_double();
         case value_type::vt_string: return v1.to_string() <= v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() <= v2.to_wstring();
+        default: break;
         }
         break;
-
+    default:
+        break;
     }
     if (is_comparision(op))
         throw variant_exception(err_msg_unsupported_comparision(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);

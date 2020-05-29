@@ -1,36 +1,23 @@
-#include "CppUnitTest.h"
+#pragma once
+#include <gtest/gtest.h>
+#include <gmock/gmock-matchers.h>
 #include "ioutils.h"
 #include <fstream>
 #include "testutils.h"
 #include "strutils.h"
-#include "memchecker.h"
 
-
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std;
 using namespace stdext;
 using namespace locutils;
 
+namespace ioutils_test
+{
+
 const wstring test_file_name = L"current.txt";
 
-TEST_CLASS(IOUtilsTest)
+class IOUtilsTest : public testing::Test
 {
-    TEST_METHOD(TestTextIOOptions)
-    {
-        ioutils::text_io_options_ansi opt_ansi;
-        Assert::IsTrue(opt_ansi.encoding() == ioutils::text_encoding::ansi, L"ANSI encoding");
-        Assert::IsTrue(opt_ansi.locale_default(), L"ANSI locale_default");
-        ioutils::text_io_options_ansi opt_ansi2(".1252");
-        Assert::IsFalse(opt_ansi2.locale_default(), L"ANSI locale_default 2");
-        Assert::AreEqual<string>(".1252", opt_ansi2.locale_name(), L"ANSI locale_name 2");
-        //
-        ioutils::text_io_options_utf8 opt_utf8;
-        Assert::IsTrue(opt_utf8.encoding() == ioutils::text_encoding::utf8, L"UTF-8 encoding");
-        //
-        ioutils::text_io_options_utf16 opt_utf16;
-        Assert::IsTrue(opt_utf16.encoding() == ioutils::text_encoding::utf16, L"UTF-16 encoding");
-    }
-
+protected:
     void GenerateTestWstring(wstring& ws)
     {
         ws.clear();
@@ -55,11 +42,28 @@ TEST_CLASS(IOUtilsTest)
         wstring s2;
         s2.reserve(s.length());
         r.read_all(s2);
-        Assert::AreEqual(expected.length(), s2.length(), (title2 + L"length").c_str());
-        Assert::IsTrue(expected == s2, (title2 + L"length").c_str());
+        ASSERT_EQ(expected.length(), s2.length()) << title2 + L"length";
+        ASSERT_TRUE(expected == s2) << title2 + L"length";
     }
 
-    TEST_METHOD(TestFileWriteAndRead_ANSI)
+};
+    TEST_F(IOUtilsTest, TestTextIOOptions)
+    {
+        ioutils::text_io_options_ansi opt_ansi;
+        ASSERT_TRUE(opt_ansi.encoding() == ioutils::text_encoding::ansi) << L"ANSI encoding";
+        ASSERT_TRUE(opt_ansi.locale_default()) << L"ANSI locale_default";
+        ioutils::text_io_options_ansi opt_ansi2(".1252");
+        ASSERT_FALSE(opt_ansi2.locale_default()) << L"ANSI locale_default 2";
+        ASSERT_EQ(".1252", opt_ansi2.locale_name()) << L"ANSI locale_name 2";
+        //
+        ioutils::text_io_options_utf8 opt_utf8;
+        ASSERT_TRUE(opt_utf8.encoding() == ioutils::text_encoding::utf8) << L"UTF-8 encoding";
+        //
+        ioutils::text_io_options_utf16 opt_utf16;
+        ASSERT_TRUE(opt_utf16.encoding() == ioutils::text_encoding::utf16) << L"UTF-16 encoding";
+    }
+
+    TEST_F(IOUtilsTest, TestFileWriteAndRead_ANSI)
     {
         wstring ws1;
         ws1.reserve(0xFF);
@@ -71,7 +75,7 @@ TEST_CLASS(IOUtilsTest)
         CheckFileWriteAndRead(ws1, ws1, ioutils::text_io_options_ansi(), L"ANSI (default)");
     }
 
-    TEST_METHOD(TestFileWriteAndRead_Utf8)
+    TEST_F(IOUtilsTest, TestFileWriteAndRead_Utf8)
     {
         wstring ws1;
         GenerateTestWstring(ws1);
@@ -103,7 +107,7 @@ TEST_CLASS(IOUtilsTest)
             L"UTF-8 (BOM, generate)");
     }
 
-    TEST_METHOD(TestFileWriteAndRead_Utf16)
+    TEST_F(IOUtilsTest, TestFileWriteAndRead_Utf16)
     {
         wstring ws1;
         GenerateTestWstring(ws1);
@@ -160,4 +164,5 @@ TEST_CLASS(IOUtilsTest)
             ioutils::text_io_options_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_mode_base::headers::generate)),
             L"UTF-16 (BOM, BE, generate)");
     }
-};
+
+}

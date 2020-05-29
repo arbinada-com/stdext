@@ -27,7 +27,7 @@ namespace stdext
             ~dom_value_ptr();
         public:
             bool accept();
-            json::dom_value* const value() const { return m_value; }
+            json::dom_value* value() const { return m_value; }
             void value(json::dom_value* const value) { m_value = value; }
         private:
             bool m_accepted = false;
@@ -83,10 +83,10 @@ namespace stdext
             bool parse_value(json::dom_value* const parent, const context& ctx);
             inline const parsers::textpos pos() const { return m_curr.pos(); }
         private:
+            ioutils::text_reader& m_reader;
             json::lexer* m_lexer = nullptr;
             json::lexeme m_curr;
             msg_collector_t& m_messages;
-            ioutils::text_reader& m_reader;
             json::dom_document& m_doc;
         };
     }

@@ -68,7 +68,7 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_expected_value_but_found_fmt: return L"Expected value but '%s' found";
     case parser_msg_kind::err_member_name_duplicate_fmt: return L"Duplicate member name '%s'";
     case parser_msg_kind::err_member_name_is_empty: return L"Member name is empty";
-    case parser_msg_kind::err_parent_is_not_container: L"Parent DOM value is not container";
+    case parser_msg_kind::err_parent_is_not_container: return L"Parent DOM value is not container";
     case parser_msg_kind::err_unclosed_array: return L"Unclosed array";
     case parser_msg_kind::err_unclosed_object: return L"Unclosed object";
     case parser_msg_kind::err_unexpected_lexeme_fmt: return L"Unexpected '%s'";
