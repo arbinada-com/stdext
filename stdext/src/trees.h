@@ -316,19 +316,19 @@ namespace stdext
     public:
         gtree_node(tree_t* const tree)
             : m_tree(tree),
-            m_parent(nullptr),
-            m_prev_sibling(nullptr), m_next_sibling(nullptr),
-            m_first_child(nullptr),
-            m_child_count(0)
+              m_parent(nullptr),
+              m_prev_sibling(nullptr), m_next_sibling(nullptr),
+              m_first_child(nullptr),
+              m_child_count(0)
         { }
 
         gtree_node(tree_t* const tree, const T& data)
             : m_tree(tree),
-            m_parent(nullptr),
-            m_prev_sibling(nullptr), m_next_sibling(nullptr),
-            m_first_child(nullptr),
-            m_child_count(0),
-            m_data(data)
+              m_data(data),
+              m_parent(nullptr),
+              m_prev_sibling(nullptr), m_next_sibling(nullptr),
+              m_first_child(nullptr),
+              m_child_count(0)
         { }
 
         node_t* append_child(const T& data)
@@ -413,12 +413,12 @@ namespace stdext
 
     protected:
         tree_t* m_tree = nullptr;
-        int     m_child_count = 0;
         T       m_data;
-        node_t* m_first_child = nullptr;
         node_t* m_parent = nullptr;
         node_t* m_prev_sibling = nullptr;
         node_t* m_next_sibling = nullptr;
+        node_t* m_first_child = nullptr;
+        int     m_child_count = 0;
     };
 
 }

@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock-matchers.h>
 #include "strutils.h"
+#include "platforms.h"
 
 using namespace std;
 using namespace stdext;
@@ -11,17 +12,26 @@ TEST(StrUtilsTest, TestFormat)
     const char s[] = "The value is";
     const int i = 123456789;
     const double f = 12345.6789;
-    ASSERT_EQ("The value is 123456789 12345.6789", strutils::format("%s %d %5.4f", s, i, f));
+    EXPECT_STREQ(s, strutils::format("%s", s).c_str());
+    EXPECT_EQ("The value is 123456789 12345.6789", strutils::format("%s %d %5.4f", s, i, f));
     const wchar_t ws[] = L"The value is";
-    ASSERT_EQ(L"The value is 123456789 12345.6789", strutils::format(L"%s %d %5.4f", ws, i, f));
+    EXPECT_STREQ(s, strutils::format("%S", ws).c_str());
+    EXPECT_STREQ(ws, strutils::format(L"%ls", ws).c_str());
+    EXPECT_STREQ(ws, strutils::format(L"%hs", s).c_str());
+#if defined(__STDEXT_WINDOWS)
+    // Safe versions of formatting functions (xxxprintf_s) are used on Windows
+    EXPECT_STREQ(ws, strutils::format(L"%s", ws).c_str());
+    EXPECT_STREQ(ws, strutils::format(L"%S", s).c_str());
+#endif
+    EXPECT_EQ(L"The value is 123456789 12345.6789", strutils::format(L"%ls %d %5.4f", ws, i, f));
 }
 
 TEST(StrUtilsTest, TestConvertion)
 {
     wstring ws = L"123 %d %s %i";
     ASSERT_EQ(strutils::to_string(ws), "123 %d %s %i");
-    ws = L"Aa""\u263A""E";
-    ASSERT_EQ(strutils::to_string(ws), "Aa?E");
+    ws = L"Aa\u263AE";
+    ASSERT_EQ(strutils::to_string(ws), "Aa:E");
     string s1   =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";
     wstring ws1 = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";
     ASSERT_EQ(s1, strutils::to_string(ws1));

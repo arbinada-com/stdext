@@ -5,6 +5,7 @@
 
 #include "testutils.h"
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 using namespace stdext;
@@ -134,7 +135,7 @@ void memchecker::check() noexcept(false)
     if (has_leaks())
     {
         string msg = report();
-        throw exception(msg.c_str());
+        throw std::logic_error(msg.c_str());
     }
 }
 

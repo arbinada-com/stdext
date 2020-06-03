@@ -23,18 +23,18 @@ protected:
         endianess::byte_order order;
         //
         string test = utf16::bom_str(endianess::platform_value()) +
-            utf16::wchar_to_multibyte(ws, endianess::platform_value(), endianess::platform_value());
+            utf16::wchar_to_multibyte(ws, endianess::platform_value());
         ASSERT_TRUE(utf16::try_detect_byte_order(test.c_str(), test.length(), order)) << title2 + L"detect failed 2";
-        ASSERT_TRUE(endianess::platform_value() == order) << title2 + L"unexpected (BOM, default)";
+        EXPECT_TRUE(endianess::platform_value() == order) << title2 + L"unexpected (BOM, default)";
         //
         test = utf16::bom_str(endianess::inverse_platform_value()) +
-            utf16::wchar_to_multibyte(ws, endianess::platform_value(), endianess::inverse_platform_value());
+            utf16::wchar_to_multibyte(ws, endianess::inverse_platform_value());
         ASSERT_TRUE(utf16::try_detect_byte_order(test.c_str(), test.length(), order)) << title2 + L"detect failed 3";
-        ASSERT_TRUE(endianess::inverse_platform_value() == order) << title2 + L"unexpected (BOM, inverse)";
+        EXPECT_TRUE(endianess::inverse_platform_value() == order) << title2 + L"unexpected (BOM, inverse)";
         //
-        test = utf16::wchar_to_multibyte(ws, endianess::platform_value(), endianess::platform_value());
+        test = utf16::wchar_to_multibyte(ws, endianess::platform_value());
         ASSERT_TRUE(utf16::try_detect_byte_order(test.c_str(), test.length(), order)) << title2 + L"detect failed 1";
-        ASSERT_TRUE(endianess::platform_value() == order) << title2 + L"unexpected (NoBOM, default)";
+        EXPECT_TRUE(endianess::platform_value() == order) << title2 + L"unexpected (NoBOM, default)";
     }
 
     void CheckConverter_Utf8_8to16(const wstring expected, const string utf8str, const codecvt_mode_utf8& mode, const wstring title)
@@ -42,9 +42,9 @@ protected:
         locutils::codecvt_utf8_wchar_t cvt(mode);
         wstring ws;
         int result = cvt.to_utf16(utf8str, ws);
-        ASSERT_TRUE(result == cvt.ok) << title + L": result";
-        ASSERT_EQ(expected.length(), ws.length()) << title + L": length";
-        ASSERT_EQ(expected, ws) << title + L": compare";
+        EXPECT_EQ(result, cvt.ok) << title + L": result";
+        EXPECT_EQ(expected.length(), ws.length()) << title + L": length";
+        EXPECT_EQ(expected, ws) << title + L": compare";
     }
 
     void CheckConverter_Utf8_16to8(const string expected, const wstring utf16str, const codecvt_mode_utf8& mode, const wstring title)
@@ -52,9 +52,9 @@ protected:
         locutils::codecvt_utf8_wchar_t cvt(mode);
         string s;
         int result = cvt.to_utf8(utf16str, s);
-        ASSERT_TRUE(result == cvt.ok) << title + L": result";
-        ASSERT_EQ(expected.length(), s.length()) << title + L": length";
-        ASSERT_EQ(expected, s) << title + L": compare";
+        EXPECT_EQ(result, cvt.ok) << title + L": result";
+        EXPECT_EQ(expected.length(), s.length()) << title + L": length";
+        EXPECT_EQ(expected, s) << title + L": compare";
     }
 
     void CheckConverter_Utf16_Mbto16(const wstring expected, const string mbstr, const codecvt_mode_utf16& mode, const wstring title)
@@ -62,9 +62,9 @@ protected:
         locutils::codecvt_utf16_wchar_t cvt(mode);
         wstring ws;
         int result = cvt.mb_to_utf16(mbstr, ws);
-        ASSERT_TRUE(result == cvt.ok) << title + L": result";
-        ASSERT_EQ(expected.length(), ws.length()) << title + L": length";
-        ASSERT_EQ(expected, ws) << title + L": compare";
+        EXPECT_EQ(result, cvt.ok) << title + L": result";
+        EXPECT_EQ(expected.length(), ws.length()) << title + L": length";
+        EXPECT_EQ(expected, ws) << title + L": compare";
     }
 
     void CheckConverter_Utf16_16toMb(const string expected, const wstring ws, const codecvt_mode_utf16& mode, const wstring title)
@@ -72,11 +72,34 @@ protected:
         locutils::codecvt_utf16_wchar_t cvt(mode);
         string mbs;
         int result = cvt.utf16_to_mb(ws, mbs);
-        ASSERT_TRUE(result == cvt.ok) << title + L": result";
-        ASSERT_EQ(expected.length(), mbs.length()) << title + L": length";
-        ASSERT_EQ(expected, mbs) << title + L": compare";
+        EXPECT_EQ(result, cvt.ok) << title + L": result";
+        EXPECT_EQ(expected.length(), mbs.length()) << title + L": length";
+        EXPECT_EQ(expected, mbs) << title + L": compare";
     }
 
+#if !defined(__STDEXT_WINDOWS)
+    void CheckConverter_Ansi_Utf16ToAnsi(const string expected, const wstring ws, const codecvt_mode_ansi& mode, const wstring title)
+    {
+        locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
+        string ansi;
+        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name()) + L": ";
+        int result = cvt.utf16_to_ansi(ws, ansi);
+        EXPECT_EQ(result, cvt.ok) << title2 + L"result";
+        EXPECT_EQ(expected.length(), ansi.length()) << title2 + L"length";
+        EXPECT_EQ(expected, ansi) << title2 + L"compare";
+    }
+
+    void CheckConverter_Ansi_AnsiToUtf16(const wstring expected, const string s, const codecvt_mode_ansi& mode, const wstring title)
+    {
+        locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
+        wstring ws;
+        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name()) + L": ";
+        int result = cvt.ansi_to_utf16(s, ws);
+        EXPECT_EQ(result, cvt.ok) << title2 + L"result";
+        EXPECT_EQ(expected.length(), ws.length()) << title2 + L"length";
+        EXPECT_EQ(expected, ws) << title2 + L"compare";
+    }
+#endif
 };
 
 TEST_F(LocaleUtilsTest, TestSurrogatePair)
@@ -85,11 +108,11 @@ TEST_F(LocaleUtilsTest, TestSurrogatePair)
     char32_t c = 0x10437;
     ASSERT_TRUE(utf16::is_surrogate_pair(c)) << L"1.1";
     ASSERT_TRUE(utf16::to_surrogate_pair(c, high, low)) << L"1.2";
-    ASSERT_EQ(0xD801u, high) << L"1.3";
-    ASSERT_EQ(0xDC37u, low) << L"1.4";
+    EXPECT_EQ((wchar_t)0xD801u, high) << L"1.3";
+    EXPECT_EQ((wchar_t)0xDC37u, low) << L"1.4";
     c = 0;
     ASSERT_TRUE(utf16::from_surrogate_pair(high, low, c)) << L"2.1";
-    ASSERT_EQ(0x10437u, c) << L"2.2";
+    EXPECT_EQ(0x10437u, c) << L"2.2";
     c = 0xFFFF;
     ASSERT_FALSE(utf16::to_surrogate_pair(c, high, low)) << L"3.1";
     high = utf16::high_surrogate_min - 1;
@@ -102,14 +125,14 @@ TEST_F(LocaleUtilsTest, TestSurrogatePair)
 
 TEST_F(LocaleUtilsTest, TestUtf16_BOM)
 {
-    ASSERT_EQ(2, utf16::bom_be_str().length()) << L"BOM BE length";
-    ASSERT_EQ(utf16::bom_be[0], utf16::bom_be_str()[0]) << L"BOM BE [0]";
-    ASSERT_EQ(utf16::bom_be[1], utf16::bom_be_str()[1]) << L"BOM BE [1]";
-    ASSERT_EQ(2, utf16::bom_le_str().length()) << L"BOM LE length";
-    ASSERT_EQ(utf16::bom_le[0], utf16::bom_le_str()[0]) << L"BOM LE [0]";
-    ASSERT_EQ(utf16::bom_le[1], utf16::bom_le_str()[1]) << L"BOM LE [1]";
-    ASSERT_TRUE(utf16::is_bom(0xFFFEu)) << L"is_bom 1";
-    ASSERT_TRUE(utf16::is_bom(0xFEFFu)) << L"is_bom 2";
+    ASSERT_EQ(2u, utf16::bom_be_str().length()) << L"BOM BE length";
+    EXPECT_EQ(utf16::bom_be[0], utf16::bom_be_str()[0]) << L"BOM BE [0]";
+    EXPECT_EQ(utf16::bom_be[1], utf16::bom_be_str()[1]) << L"BOM BE [1]";
+    ASSERT_EQ(2u, utf16::bom_le_str().length()) << L"BOM LE length";
+    EXPECT_EQ(utf16::bom_le[0], utf16::bom_le_str()[0]) << L"BOM LE [0]";
+    EXPECT_EQ(utf16::bom_le[1], utf16::bom_le_str()[1]) << L"BOM LE [1]";
+    EXPECT_TRUE(utf16::is_bom(0xFFFEu)) << L"is_bom 1";
+    EXPECT_TRUE(utf16::is_bom(0xFEFFu)) << L"is_bom 2";
 }
 
 TEST_F(LocaleUtilsTest, TestUtf16_DetectEndianess)
@@ -122,57 +145,53 @@ TEST_F(LocaleUtilsTest, TestUtf16_DetectEndianess)
 
 TEST_F(LocaleUtilsTest, TestUtf8_BOM)
 {
-    ASSERT_EQ(3, utf8::bom_str().length()) << L"BOM length";
-    ASSERT_EQ(utf8::bom[0], utf8::bom_str()[0]) << L"BOM char [0]";
-    ASSERT_EQ(utf8::bom[1], utf8::bom_str()[1]) << L"BOM char [1]";
-    ASSERT_EQ(utf8::bom[2], utf8::bom_str()[2]) << L"BOM char [2]";
+    ASSERT_EQ(3u, utf8::bom_str().length()) << L"BOM length";
+    EXPECT_EQ(utf8::bom[0], utf8::bom_str()[0]) << L"BOM char [0]";
+    EXPECT_EQ(utf8::bom[1], utf8::bom_str()[1]) << L"BOM char [1]";
+    EXPECT_EQ(utf8::bom[2], utf8::bom_str()[2]) << L"BOM char [2]";
     string s11 = u8"ABC";
     string s12 = utf8::bom_str() + s11;
-    ASSERT_EQ(s11.length() + 3, s12.length()) << L"BOM length";
-    ASSERT_EQ(utf8::bom_str() + s11, s12) << L"BOM default";
+    EXPECT_EQ(s11.length() + 3, s12.length()) << L"BOM length";
+    EXPECT_EQ(utf8::bom_str() + s11, s12) << L"BOM default";
 
 }
 
 TEST_F(LocaleUtilsTest, TestSwapByteOrder)
 {
-    ASSERT_EQ(0x0u, utf16::swap_byte_order16(0x0)) << L"1.1";
-    ASSERT_EQ(0xFF00u, utf16::swap_byte_order16(0xFF)) << L"1.2";
-    ASSERT_EQ(0xFFu, utf16::swap_byte_order16(0xFF00)) << L"1.3";
-    ASSERT_EQ(0x3412u, utf16::swap_byte_order16(0x1234)) << L"1.4";
+    EXPECT_EQ(0x0u, utf16::swap_byte_order16(0x0u)) << L"1.1";
+    EXPECT_EQ(0xFF00u, utf16::swap_byte_order16(0xFFu)) << L"1.2";
+    EXPECT_EQ(0xFFu, utf16::swap_byte_order16(0xFF00u)) << L"1.3";
+    EXPECT_EQ(0x3412u, utf16::swap_byte_order16(0x1234u)) << L"1.4";
     //
-    ASSERT_EQ(0x0u, utf16::swap_byte_order32(0x0)) << L"2.1";
-    ASSERT_EQ(0x00FF0000u, utf16::swap_byte_order32(0xFF)) << L"2.2";
-    ASSERT_EQ(0xFF000000u, utf16::swap_byte_order32(0xFF00)) << L"2.3";
-    ASSERT_EQ(0xFF00u, utf16::swap_byte_order32(0xFF000000)) << L"2.4";
-    ASSERT_EQ(0xFFu, utf16::swap_byte_order32(0x00FF0000)) << L"2.5";
-    ASSERT_EQ(0x56781234u, utf16::swap_byte_order32(0x12345678)) << L"2.6";
+    EXPECT_EQ(0x0u, utf16::swap_byte_order32(0x0u)) << L"2.1";
+    EXPECT_EQ(0xFF000000u, utf16::swap_byte_order32(0x000000FFu)) << L"2.2";
+    EXPECT_EQ(0x00FF0000u, utf16::swap_byte_order32(0x0000FF00u)) << L"2.3";
+    EXPECT_EQ(0x0000FF00u, utf16::swap_byte_order32(0x00FF0000u)) << L"2.4";
+    EXPECT_EQ(0x000000FFu, utf16::swap_byte_order32(0xFF000000u)) << L"2.5";
+    EXPECT_EQ(0x12345678u, utf16::swap_byte_order32(0x78563412u)) << L"2.6";
+    EXPECT_EQ(0x78563412u, utf16::swap_byte_order32(0x12345678u)) << L"2.7";
     //
     wstring s1 = L"ABC déjà строка";
-    ASSERT_EQ(s1, utf16::swap_byte_order(utf16::swap_byte_order(s1))) << L"3";
+    EXPECT_EQ(s1, utf16::swap_byte_order(utf16::swap_byte_order(s1))) << L"3";
 }
 
 TEST_F(LocaleUtilsTest, TestUtf16_WCharToMbytes)
 {
     wstring ws1 = L"ABC déjà строка";
-    string expected_le("\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x00\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30\x04", ws1.length() * 2);
-    string expected_be("\x00\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x04\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30", ws1.length() * 2);
-    string s1 = utf16::wchar_to_multibyte(ws1, endianess::platform_value(), endianess::platform_value());
+    string expected_le, expected_be;
+    expected_le.assign("\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x00\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30\x04", ws1.length() * utf16::bytes_per_character);
+    expected_be.assign("\x00\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x04\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30", ws1.length() * utf16::bytes_per_character);
+    string s1 = utf16::wchar_to_multibyte(ws1, endianess::platform_value());
+    string s2 = utf16::wchar_to_multibyte(ws1, endianess::inverse_platform_value());
     if (endianess::platform_value() == endianess::byte_order::little_endian)
-        ASSERT_EQ(expected_le, s1) << L"default LE";
-    else
-        ASSERT_EQ(expected_be, s1) << L"default BE";
-    string s2 = utf16::wchar_to_multibyte(ws1, endianess::platform_value(), endianess::inverse_platform_value());
-    wstring ws2 = utf16::swap_byte_order(ws1);
-    string s3 = utf16::wchar_to_multibyte(ws2, endianess::inverse_platform_value(), endianess::inverse_platform_value());
-    if (endianess::inverse_platform_value() == endianess::byte_order::little_endian)
     {
-        ASSERT_EQ(expected_le, s2) << L"default --> inverse LE";
-        ASSERT_EQ(expected_le, s3) << L"inverse --> inverse LE";
+        EXPECT_EQ(expected_le, s1) << L"platform LE 1";
+        EXPECT_EQ(expected_be, s2) << L"platform LE 2";
     }
     else
     {
-        ASSERT_EQ(expected_be, s2) << L"default --> inverse BE";
-        ASSERT_EQ(expected_be, s3) << L"inverse --> inverse BE";
+        EXPECT_EQ(expected_be, s1) << L"platform BE 1";
+        EXPECT_EQ(expected_le, s2) << L"platform BE 2";
     }
 }
 
@@ -282,7 +301,7 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16)
     wstring ws1 = L"ABC déjà строка";
     wstring ws1_bom = ws1;
     utf16::add_bom(ws1_bom);
-    string s1_le = utf16::wchar_to_multibyte(ws1, endianess::platform_value(), endianess::byte_order::little_endian);
+    string s1_le = utf16::wchar_to_multibyte(ws1, endianess::byte_order::little_endian);
     string s1_le_bom = s1_le;
     utf16::add_bom(s1_le_bom, endianess::byte_order::little_endian);
     {
@@ -313,7 +332,7 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16)
         CheckConverter_Utf16_16toMb(s1_le_bom, ws1, cm, L"8.1 - NoBOM (LE, generate)");
         CheckConverter_Utf16_16toMb(s1_le_bom, ws1_bom, cm, L"8.2 - BOM (LE, generate)");
     }
-    string s1_be = utf16::wchar_to_multibyte(ws1, endianess::platform_value(), endianess::byte_order::big_endian);
+    string s1_be = utf16::wchar_to_multibyte(ws1, endianess::byte_order::big_endian);
     string s1_be_bom = s1_be;
     utf16::add_bom(s1_be_bom, endianess::byte_order::big_endian);
     {
@@ -351,5 +370,43 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_Memory)
     chk.checkpoint();
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
+
+#if !defined(__STDEXT_WINDOWS)
+TEST_F(LocaleUtilsTest, TestStreamConverter_Ansi)
+{
+    wstring ws1 = L"ABC déjà";
+    wstring ws1_bom = ws1;
+    utf16::add_bom(ws1_bom);
+    wstring ws2 = L"ABC строка";
+    wstring ws2_bom = ws2;
+    utf16::add_bom(ws2_bom);
+    string s1 = "ABC d\xE9j\xE0";
+    string s2 = "ABC \xF1\xF2\xF0\xEE\xEA\xE0";
+    {
+        codecvt_mode_ansi cm("CP1252", codecvt_mode_ansi::headers::consume);
+        CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"1.1 - NoBOM (default, consume)");
+        CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"1.2 - BOM (default, consume)");
+        CheckConverter_Ansi_AnsiToUtf16(ws1, s1, cm, L"2.1 - NoBOM (default, consume)");
+    }
+    {
+        codecvt_mode_ansi cm("CP1251", codecvt_mode_ansi::headers::consume);
+        CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"3.1 - NoBOM (default, consume)");
+        CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"3.2 - BOM (default, consume)");
+        CheckConverter_Ansi_AnsiToUtf16(ws2, s2, cm, L"3.3 - NoBOM (default, consume)");
+    }
+    {
+        codecvt_mode_ansi cm("CP1252", codecvt_mode_ansi::headers::generate);
+        CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"5.1 - NoBOM (default, generate)");
+        CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"5.2 - BOM (default, generate)");
+        CheckConverter_Ansi_AnsiToUtf16(ws1_bom, s1, cm, L"5.3 - NoBOM (default, generate)");
+    }
+    {
+        codecvt_mode_ansi cm("CP1251", codecvt_mode_ansi::headers::generate);
+        CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"7.1 - NoBOM (default, generate)");
+        CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"7.2 - BOM (default, generate)");
+        CheckConverter_Ansi_AnsiToUtf16(ws2_bom, s2, cm, L"7.3 - NoBOM (default, generate)");
+    }
+}
+#endif
 
 }

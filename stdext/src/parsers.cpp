@@ -16,7 +16,7 @@ std::wstring parsers::to_wstring(const msg_severity value)
     {
     case msg_severity::error: return L"error";
     case msg_severity::hint: return L"hint";
-    case msg_severity::none: return L"";
+    case msg_severity::info: return L"info";
     case msg_severity::warning: return L"warning";
     default:
         return L"unknown severity";

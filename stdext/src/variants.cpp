@@ -4,6 +4,7 @@
  */
 
 #include "variants.h"
+#include <cmath>
 #include <limits>
 #include "strutils.h"
 

@@ -68,9 +68,9 @@ namespace stdext
             class config
             {
             public:
-                static const int default_avg_array_items = 10;
-                static const int default_avg_object_members = 10;
-                static const int default_avg_string_length = 50;
+                static int default_avg_array_items() noexcept { return 10; }
+                static int default_avg_object_members() noexcept { return 10; }
+                static int default_avg_string_length() noexcept { return 50; }
                 int avg_array_items() const noexcept { return m_avg_array_items; }
                 void avg_array_items(const int value) noexcept { m_avg_array_items = (value > 0 ? value : m_avg_array_items); }
                 int avg_object_members() const noexcept { return m_avg_object_members; }
@@ -99,9 +99,9 @@ namespace stdext
                         max_value = min_value;
                 }
             private:
-                int m_avg_array_items = config::default_avg_array_items;
-                int m_avg_object_members = config::default_avg_object_members;
-                int m_avg_string_length = config::default_avg_string_length;
+                int m_avg_array_items = config::default_avg_array_items();
+                int m_avg_object_members = config::default_avg_object_members();
+                int m_avg_string_length = config::default_avg_string_length();
                 int m_min_depth = 1;
                 int m_max_depth = 1;
                 int m_min_values_by_level = 1;

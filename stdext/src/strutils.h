@@ -51,6 +51,7 @@ namespace stdext
         std::wstring double_quoted(const std::wstring& s);
 
         std::string to_string(const std::wstring& ws);
+        std::string to_utf8string(const std::wstring& ws);
         std::wstring to_wstring(const std::string& s);
     }
 }

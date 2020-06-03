@@ -259,20 +259,20 @@ TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
     ASSERT_EQ(1, conf.max_depth()) << L"max_depth 1";
     ASSERT_EQ(1, conf.min_values_by_level()) << L"min_values_by_level 1";
     ASSERT_EQ(1, conf.max_values_by_level()) << L"max_values_by_level 1";
-    ASSERT_EQ(config_t::default_avg_array_items, conf.avg_array_items()) << L"avg_array_items 1";
-    ASSERT_EQ(config_t::default_avg_object_members, conf.avg_object_members()) << L"avg_object_members 1";
-    ASSERT_EQ(config_t::default_avg_string_length, conf.avg_string_length()) << L"avg_string_length 1";
+    ASSERT_EQ(config_t::default_avg_array_items(), conf.avg_array_items()) << L"avg_array_items 1";
+    ASSERT_EQ(config_t::default_avg_object_members(), conf.avg_object_members()) << L"avg_object_members 1";
+    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << L"avg_string_length 1";
     //
     conf.max_depth(conf.min_depth() - 1);
     ASSERT_EQ(conf.min_depth(), conf.max_depth()) << L"max_depth 2";
     conf.max_values_by_level(conf.min_values_by_level() - 1);
     ASSERT_EQ(conf.min_values_by_level(), conf.max_values_by_level()) << L"max_values_by_level 2";
     conf.avg_array_items(0);
-    ASSERT_EQ(config_t::default_avg_array_items, conf.avg_array_items()) << L"avg_array_items 2";
+    ASSERT_EQ(config_t::default_avg_array_items(), conf.avg_array_items()) << L"avg_array_items 2";
     conf.avg_object_members(-1);
-    ASSERT_EQ(config_t::default_avg_object_members, conf.avg_object_members()) << L"avg_object_members 2";
+    ASSERT_EQ(config_t::default_avg_object_members(), conf.avg_object_members()) << L"avg_object_members 2";
     conf.avg_string_length(-2);
-    ASSERT_EQ(config_t::default_avg_string_length, conf.avg_string_length()) << L"avg_string_length 2";
+    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << L"avg_string_length 2";
     //
     conf.min_depth(-1);
     ASSERT_EQ(1, conf.min_depth()) << L"min_depth 2";

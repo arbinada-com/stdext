@@ -60,7 +60,7 @@ namespace stdext
 
         enum class msg_severity
         {
-            none,
+            info,
             hint,
             warning,
             error
@@ -102,11 +102,11 @@ namespace stdext
             }
         protected:
             msg_origin m_origin;
-            textpos m_pos;
             msg_severity m_severity;
+            MsgEnumT m_kind;
+            textpos m_pos;
             std::wstring m_source;
             std::wstring m_text;
-            MsgEnumT m_kind;
         };
 
 
@@ -119,6 +119,7 @@ namespace stdext
             typedef typename container_t::size_type size_type;
             typedef std::vector<message_t*> errors_t;
             typedef std::vector<message_t*> hints_t;
+            typedef std::vector<message_t*> infos_t;
             typedef std::vector<message_t*> warnings_t;
             typedef typename container_t::const_iterator const_iterator;
         public:
@@ -147,6 +148,9 @@ namespace stdext
                 case msg_severity::hint:
                     m_hints.push_back(msg);
                     break;
+                case msg_severity::info:
+                    m_infos.push_back(msg);
+                    break;
                 }
             }
             void add_error(const msg_origin origin, const MsgEnumT kind, const textpos pos, const std::wstring source, const std::wstring text)
@@ -161,8 +165,13 @@ namespace stdext
             {
                 add(new message_t(origin, msg_severity::hint, kind, pos, source, text));
             }
+            void add_info(const msg_origin origin, const MsgEnumT kind, const textpos pos, const std::wstring source, const std::wstring text)
+            {
+                add(new message_t(origin, msg_severity::info, kind, pos, source, text));
+            }
             inline bool has_errors() const noexcept { return m_errors.size() > 0; }
             inline bool has_hints() const noexcept { return m_hints.size() > 0; }
+            inline bool has_infos() const noexcept { return m_infos.size() > 0; }
             inline bool has_warnings() const noexcept { return m_warnings.size() > 0; }
             inline bool has_messages() const noexcept { return m_data.size() > 0; }
             size_type size() const noexcept { return m_data.size(); }
@@ -170,8 +179,10 @@ namespace stdext
             const hints_t& hints() const { return m_hints; }
             const warnings_t& warnings() const { return m_warnings; }
             const errors_t& errors() const { return m_errors; }
+            const infos_t& infos() const { return m_infos; }
         private:
             container_t m_data;
+            infos_t m_infos;
             hints_t m_hints;
             warnings_t m_warnings;
             errors_t m_errors;

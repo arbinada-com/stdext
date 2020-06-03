@@ -2,27 +2,41 @@
 #include <memory>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "strutils.h"
+#include "platforms.h"
 
 using namespace std;
 using namespace stdext;
 
 inline int basic_vsnprintf_s(std::string& s, const char* fmt, va_list args)
 {
-#if defined(__BCPLUSPLUS__)
-    return vsnprintf_s((char*)s.data(), s.size(), fmt.c_str(), args);
-#else
+#if defined(__STDEXT_WINDOWS)
+    #if defined(__BCPLUSPLUS__)
+    return vsnprintf_s((char*)s.data(), s.size(), fmt, args);
+    #else
     return vsnprintf_s((char*)s.data(), s.size(), s.size() - 1, fmt, args);
+    #endif
+#elif defined(__STDEXT_LINUX)
+    return vsnprintf((char*)s.data(), s.size(), fmt, args);
+#else
+    #error Unsupported platfotm
 #endif
 }
 
 inline int basic_vsnprintf_s(std::wstring& s, const wchar_t* fmt, va_list args)
 {
-#if defined(__BCPLUSPLUS__)
-    return vsnwprintf_s((wchar_t*)s.data(), s.size(), fmt.c_str(), args);
-#else
+#if defined(__STDEXT_WINDOWS)
+    #if defined(__BCPLUSPLUS__)
+    return vsnwprintf_s((wchar_t*)s.data(), s.size(), fmt, args);
+    #else
     return _vsnwprintf_s((wchar_t*)s.data(), s.size(), s.size() - 1, fmt, args);
+    #endif
+#elif defined(__STDEXT_LINUX)
+    return vswprintf((wchar_t*)s.data(), s.size(), fmt, args);
+#else
+    #error Unsupported platfotm
 #endif
 }
 
@@ -33,11 +47,14 @@ template<class StringT, class CharT>
 StringT basic_format(const CharT* fmt, va_list args)
 {
     size_t size = basic_strlen(fmt) * 2;
-    StringT s;
     while (true)
     {
+        StringT s;
         s.resize(size);
-        int n = basic_vsnprintf_s(s, fmt, args);
+//        s.assign(0, size);
+        va_list args2;
+        va_copy(args2, args); // On Linux/gcc args va_list pointer may be changed (checked with StrUtilsTest, TestFormat)
+        int n = basic_vsnprintf_s(s, fmt, args2);
         if (n > -1 && (size_t)n < size)
         {
             s.resize(n);
@@ -48,7 +65,7 @@ StringT basic_format(const CharT* fmt, va_list args)
         else
             size *= 2;
     }
-    return s;
+//    return s;
 }
 
 std::string strutils::format(const char* fmt, ...)
@@ -238,6 +255,12 @@ string strutils::to_string(const wstring& ws)
 {
     string s(ws.begin(), ws.end());
     return s;
+}
+
+std::string strutils::to_utf8string(const std::wstring& ws)
+{
+    // TODO
+    return strutils::to_string(ws);
 }
 
 wstring strutils::to_wstring(const string& s)

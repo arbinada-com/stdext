@@ -104,9 +104,11 @@ namespace stdext
             std::wstring wreport() const noexcept;
         private:
             bool m_check_on_destroy;
+#if defined(__STDEXT_WINDOWS)
             memstate_t m_first_state;
             memstate_t m_curr_state;
             memstate_t m_curr_diff;
+#endif
         };
 
     }

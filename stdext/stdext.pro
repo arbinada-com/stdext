@@ -4,6 +4,7 @@ CONFIG -= qt
 CONFIG -= app_bundle
 
 TEMPLATE = lib
+TARGET = stdext
 CONFIG += staticlib
 
 CONFIG += c++11

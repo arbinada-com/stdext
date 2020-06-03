@@ -14,7 +14,9 @@ win32: LIBS += -L$$LIBS_DIR/ -lstdext
 unix: LIBS += -L$$LIBS_DIR/ -lstdext
 DEPENDPATH += $$LIBS_DIR
 win32: PRE_TARGETDEPS += $$LIBS_DIR/stdext.lib
-unix: PRE_TARGETDEPS += $$LIBS_DIR/stdext.a
+unix: PRE_TARGETDEPS += $$LIBS_DIR/libstdext.a
+message(Uses libs: $$LIBS)
+message(Pre targetdeps: $$PRE_TARGETDEPS)
 
 
 HEADERS += \
@@ -36,4 +38,4 @@ HEADERS += \
 SOURCES += \
     src/main.cpp
 
-PostLink_CopyFile($$PWD/data/*, $$PWD/$$DESTDIR/*)
+PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)

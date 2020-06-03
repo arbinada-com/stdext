@@ -3,6 +3,7 @@
  (c) 2001-2020 Serguei Tarassov (see license.txt)
  */
 #include "ioutils.h"
+#include "strutils.h"
 #include <fstream>
 #include <sstream>
 #include <clocale>
@@ -16,14 +17,22 @@ using namespace ioutils;
  */
 void text_io_options_ansi::set_imbue_read(std::wistream& stream) const
 {
-    if (!locale_default())
-        stream.imbue(std::locale(m_locale_name));
+#if defined(__STDEXT_USE_ICONV)
+    stream.imbue(std::locale(std::locale(""), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
+#elif defined(__STDEXT_WINDOWS)
+    if (m_cvt_mode.is_encoding_name_assigned())
+        stream.imbue(std::locale(m_cvt_mode.encoding_name()));
+#endif
 }
 
 void text_io_options_ansi::set_imbue_write(std::wostream& stream) const
 {
-    if (!locale_default())
-        stream.imbue(std::locale(m_locale_name));
+#if defined(__STDEXT_USE_ICONV)
+    stream.imbue(std::locale(std::locale(""), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
+#elif defined(__STDEXT_WINDOWS)
+    if (m_cvt_mode.is_encoding_name_assigned())
+        stream.imbue(std::locale(m_cvt_mode.encoding_name()));
+#endif
 }
 
 /*
@@ -71,11 +80,15 @@ text_reader::text_reader(std::wistream* const stream, const std::wstring source_
     : m_stream(stream), m_source_name(source_name)
 { }
 
-text_reader::text_reader(const std::wstring file_name, const text_io_options& options)
+text_reader::text_reader(const std::wstring& file_name, const text_io_options& options)
     : m_source_name(file_name)
 {
     m_owns_stream = true;
+#if defined(__STDEXT_WINDOWS)
     m_stream = new wifstream(file_name, std::ios::binary);
+#else
+    m_stream = new wifstream(strutils::to_utf8string(file_name), std::ios::binary);
+#endif
     options.set_imbue_read(*m_stream);
 }
 
@@ -95,7 +108,7 @@ bool text_reader::is_next_char(std::initializer_list<wchar_t> chars) const
 {
     for (wchar_t c : chars)
     {
-        if (m_stream->peek() == c)
+        if (c == (wchar_t)(m_stream->peek()))
             return true;
     }
     return false;
@@ -103,9 +116,13 @@ bool text_reader::is_next_char(std::initializer_list<wchar_t> chars) const
 
 void text_reader::read_all(std::wstring& s)
 {
-    wstringstream wss;
-    wss << m_stream->rdbuf();
-    s = wss.str();
+//    wstringstream wss;
+//    wss << m_stream->rdbuf();
+//    s = wss.str();
+    s.clear();
+    wchar_t c;
+    while (next_char(c))
+        s += c;
 }
 
 /*
@@ -122,7 +139,11 @@ text_writer::text_writer(std::wostream* const stream)
 text_writer::text_writer(const std::wstring file_name, const text_io_options& options)
 {
     m_owns_stream = true;
+#if defined(__STDEXT_WINDOWS)
     m_stream = new wofstream(file_name, ios::binary | ios::trunc);
+#else
+    m_stream = new wofstream(strutils::to_utf8string(file_name), ios::binary | ios::trunc);
+#endif
     options.set_imbue_write(*m_stream);
 }
 

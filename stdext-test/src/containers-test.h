@@ -30,7 +30,7 @@ public:
         return m_int_value == rhs.m_int_value && m_str_value == rhs.m_str_value;
     }
     std::wstring str_value() const { return m_str_value; }
-    int int_value() const { return m_int_value; };
+    int int_value() const { return m_int_value; }
 private:
     int     m_int_value;
     wstring m_str_value;
@@ -54,7 +54,7 @@ TEST_F(PtrVectorTest, TestInsertEraseClear)
 {
     TestDataPtrVector v;
     FillData(v);
-    ASSERT_EQ(3, v.size()) << L"init";
+    ASSERT_EQ(3u, v.size()) << L"init";
     int i = 1;
     for (TestDataPtrVector::iterator it = v.begin(); it != v.end(); it++)
     {
@@ -72,12 +72,12 @@ TEST_F(PtrVectorTest, TestInsertEraseClear)
     TestDataPtrVector::iterator it = v.begin();
     ASSERT_EQ(1, (*it)->int_value()) << L"begin";
     it = v.erase(v.begin());
-    ASSERT_EQ(2, v.size()) << L"erase 1";
+    ASSERT_EQ(2u, v.size()) << L"erase 1";
     ASSERT_EQ(2, (*it)->int_value()) << L"erase 2";
     it++;
     ASSERT_EQ(3, (*it)->int_value()) << L"it++";
     v.clear();
-    ASSERT_EQ(0, v.size()) << L"clear";
+    ASSERT_EQ(0u, v.size()) << L"clear";
 }
 
 TEST_F(PtrVectorTest, TestExtract)
@@ -133,13 +133,14 @@ TEST_F(PtrVectorTest, TestOperators)
     TestDataPtrVector v1, v2, v3;
     FillData(v1);
     FillData(v2);
-    ASSERT_TRUE(v1 == v2) << L"Equal 1";
-    ASSERT_TRUE(*v1[0] == *v2[0]) << L"Equal 2";
+    ASSERT_TRUE(v1.size() > 0 && v2.size() > 0) << "Size";
+    EXPECT_TRUE(v1 == v2) << "Equal 1";
+    EXPECT_TRUE(*v1[0] == *v2[0]) << "Equal 2";
     v3 = std::move(v2);
-    ASSERT_EQ(v1.size(), v3.size()) << L"move 1";
-    ASSERT_EQ(0, v2.size()) << L"move 2";
-    ASSERT_TRUE(v1 == v3) << L"Equal 3.1";
-    ASSERT_FALSE(v1 == v2) << L"Equal 3.2";
+    EXPECT_EQ(v1.size(), v3.size()) << "move 1";
+    EXPECT_EQ(0u, v2.size()) << "move 2";
+    EXPECT_TRUE(v1 == v3) << "Equal 3.1";
+    EXPECT_FALSE(v1 == v2) << "Equal 3.2";
 }
 
 TEST_F(PtrVectorTest, TestMemory)

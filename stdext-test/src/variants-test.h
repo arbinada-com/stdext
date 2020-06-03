@@ -65,23 +65,23 @@ private:
     variant v3 = v1 op v2; \
     variant v4 = n1 op v2; \
     variant v5 = v1 op n2; \
-    ASSERT_EQ((TypeR)test.result(), v1 op v2) << this->make_title(test, L#opname"_1"); \
-    ASSERT_EQ((TypeR)test.result(), n1 op v2) << this->make_title(test, L#opname"_2"); \
-    ASSERT_EQ((TypeR)test.result(), v1 op n2) << this->make_title(test, L#opname"_3"); \
-    ASSERT_EQ((TypeR)test.result(), v3) << this->make_title(test, L#opname"_4"); \
-    ASSERT_EQ((TypeR)test.result(), v4) << this->make_title(test, L#opname"_5"); \
-    ASSERT_EQ((TypeR)test.result(), v5) << this->make_title(test, L#opname"_6"); \
+    ASSERT_EQ((TypeR)test.result(), v1 op v2) << this->make_title(test, L ## #opname"_1"); \
+    ASSERT_EQ((TypeR)test.result(), n1 op v2) << this->make_title(test, L ## #opname"_2"); \
+    ASSERT_EQ((TypeR)test.result(), v1 op n2) << this->make_title(test, L ## #opname"_3"); \
+    ASSERT_EQ((TypeR)test.result(), v3) << this->make_title(test, L ## #opname"_4"); \
+    ASSERT_EQ((TypeR)test.result(), v4) << this->make_title(test, L ## #opname"_5"); \
+    ASSERT_EQ((TypeR)test.result(), v5) << this->make_title(test, L ## #opname"_6"); \
 //
 #define DECLARE_BIN_OP_FLOAT_TESTS(TypeR, op, opname) \
     variant v3 = v1 op v2; \
     variant v4 = n1 op v2; \
     variant v5 = v1 op n2; \
-    ASSERT_LT((test.result() - (v1 op v2)), 1E-5) << this->make_title(test, L#opname"_1"); \
-    ASSERT_LT((test.result() - (n1 op v2)), 1E-5) << this->make_title(test, L#opname"_2"); \
-    ASSERT_LT((test.result() - (v1 op n2)), 1E-5) << this->make_title(test, L#opname"_3"); \
-    ASSERT_LT((test.result() - v3), 1E-5) << this->make_title(test, L#opname"_4"); \
-    ASSERT_LT((test.result() - v4), 1E-5) << this->make_title(test, L#opname"_5"); \
-    ASSERT_LT((test.result() - v5), 1E-5) << this->make_title(test, L#opname"_6"); \
+    ASSERT_LT((test.result() - (v1 op v2)), 1E-5) << this->make_title(test, L ## #opname"_1"); \
+    ASSERT_LT((test.result() - (n1 op v2)), 1E-5) << this->make_title(test, L ## #opname"_2"); \
+    ASSERT_LT((test.result() - (v1 op n2)), 1E-5) << this->make_title(test, L ## #opname"_3"); \
+    ASSERT_LT((test.result() - v3), 1E-5) << this->make_title(test, L ## #opname"_4"); \
+    ASSERT_LT((test.result() - v4), 1E-5) << this->make_title(test, L ## #opname"_5"); \
+    ASSERT_LT((test.result() - v5), 1E-5) << this->make_title(test, L ## #opname"_6"); \
 //
 
 template <class Type1, class Type2, class TypeR>

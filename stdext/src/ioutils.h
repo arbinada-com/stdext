@@ -55,16 +55,20 @@ namespace stdext
             text_io_options_ansi()
                 : text_io_options(text_encoding::ansi)
             { }
-            text_io_options_ansi(const std::string locale_name)
-                : text_io_options(text_encoding::ansi), m_locale_name(locale_name)
+            text_io_options_ansi(const char* encoding_name)
+                : text_io_options(text_encoding::ansi), m_cvt_mode(encoding_name)
+            {}
+            text_io_options_ansi(const locutils::codecvt_mode_ansi& cvt_mode)
+                : text_io_options(text_encoding::ansi), m_cvt_mode(cvt_mode)
             { }
         public:
-            bool locale_default() const noexcept { return m_locale_name.empty(); }
-            std::string locale_name() const { return m_locale_name; }
+            bool use_default_encoding() const noexcept { return !m_cvt_mode.is_encoding_name_assigned(); }
+            std::string ansi_encoding_name() const noexcept { return m_cvt_mode.encoding_name(); }
+            locutils::codecvt_mode_ansi& cvt_mode() noexcept { return m_cvt_mode; }
             virtual void set_imbue_read(std::wistream& stream) const override;
             virtual void set_imbue_write(std::wostream& stream) const override;
         protected:
-            std::string m_locale_name;
+            locutils::codecvt_mode_ansi m_cvt_mode;
         };
 
         class text_io_options_utf8 : public text_io_options
@@ -114,7 +118,7 @@ namespace stdext
             text_reader(std::wistream& stream, const std::wstring source_name);
             text_reader(std::wistream* const stream);
             text_reader(std::wistream* const stream, const std::wstring source_name);
-            text_reader(const std::wstring file_name, const text_io_options& options);
+            text_reader(const std::wstring& file_name, const text_io_options& options);
             text_reader(const text_reader&) = delete;
             text_reader& operator=(const text_reader&) = delete;
             text_reader(text_reader&&) = delete;
@@ -130,7 +134,7 @@ namespace stdext
             void read_all(std::wstring& s);
             std::wstring source_name() const noexcept { return m_source_name; }
         public:
-            inline bool is_next_char(wchar_t c) const { return m_stream->peek() == c; }
+            inline bool is_next_char(wchar_t c) const { return c == (wchar_t)(m_stream->peek()); }
             bool is_next_char(std::initializer_list<wchar_t> chars) const;
         protected:
             std::wistream* m_stream = nullptr;

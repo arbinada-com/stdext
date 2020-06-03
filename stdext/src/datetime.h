@@ -53,6 +53,7 @@ namespace stdext
             const char* what() const throw() override;
         private:
             static std::string msg_by_kind(const datetime_exception::kind kind);
+            std::string msg_by_kind() { return msg_by_kind(m_kind); }
         private:
             std::string              m_message;
             datetime_exception::kind m_kind;

@@ -47,7 +47,7 @@ protected:
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
             json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
             ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            ASSERT_EQ(3, idx->value_count()) << title + L"count";
+            EXPECT_EQ(3u, idx->value_count()) << title + L"count";
         }
         else if (path == L"0.0")
         {
@@ -66,7 +66,7 @@ protected:
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
             json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
             ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            ASSERT_EQ(5, idx->value_count()) << title + L"count";
+            EXPECT_EQ(5u, idx->value_count()) << title + L"count";
         }
         else if (path == L"0.2.0")
         {
@@ -88,32 +88,32 @@ protected:
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
             json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
             ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            ASSERT_EQ(0, idx->value_count()) << title + L"count";
+            EXPECT_EQ(0u, idx->value_count()) << title + L"count";
             ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            ASSERT_EQ(L"Arr 1", v1->member()->name()) << title + L"member name";
+            EXPECT_EQ(L"Arr 1", v1->member()->name()) << title + L"member name";
         }
         else if (path == L"0.2.3")
         {
-            ASSERT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type";
-            ASSERT_TRUE(json::dom_literal_value_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype";
-            ASSERT_EQ(L"false", dynamic_cast<json::dom_literal*>(v1)->text()) << title + L"text";
+            EXPECT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type";
+            EXPECT_TRUE(json::dom_literal_value_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype";
+            EXPECT_EQ(L"false", dynamic_cast<json::dom_literal*>(v1)->text()) << title + L"text";
             ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            ASSERT_EQ(L"Literal 1", v1->member()->name()) << title + L"member name";
+            EXPECT_EQ(L"Literal 1", v1->member()->name()) << title + L"member name";
         }
         else if (path == L"0.2.4")
         {
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
             json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
             ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            ASSERT_EQ(1, idx->value_count()) << title + L"count";
+            EXPECT_EQ(1u, idx->value_count()) << title + L"count";
             ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            ASSERT_EQ(L"Arr 2", v1->member()->name()) << title + L"member name";
+            EXPECT_EQ(L"Arr 2", v1->member()->name()) << title + L"member name";
         }
         else if (path == L"0.2.4.0")
         {
-            ASSERT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
-            ASSERT_TRUE(json::dom_number_value_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
-            ASSERT_EQ(L"456.78", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
+            EXPECT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
+            EXPECT_TRUE(json::dom_number_value_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
+            EXPECT_EQ(L"456.78", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
         }
         else
             FAIL() << title + L"unsupported path";
@@ -197,12 +197,12 @@ TEST_F(JsonDomTest, TestDomValues_Other)
     //
     json::dom_array* v5 = doc.create_array();
     EXPECT_EQ(L"", v5->text()) << L"v5 text";
-    EXPECT_EQ(0, v5->size()) << L"v5 size";
+    EXPECT_EQ(0u, v5->size()) << L"v5 size";
     EXPECT_TRUE(json::dom_value_type::vt_array == v5->type()) << L"v5 type";
     //
     json::dom_object* v6 = doc.create_object();
     EXPECT_EQ(L"", v6->text()) << L"v6 text";
-    EXPECT_EQ(0, v6->members()->size()) << L"v6 values size";
+    EXPECT_EQ(0u, v6->members()->size()) << L"v6 values size";
     EXPECT_TRUE(json::dom_value_type::vt_object == v6->type()) << L"v6 type";
 }
 
@@ -267,7 +267,7 @@ TEST_F(JsonDomTest, TestDomIndexers)
     CheckTestDocValue(L"0.2.2", v1);
     json::indexer_intf* idx3 = dynamic_cast<json::indexer_intf*>(v1);
     ASSERT_NE(idx3, nullptr);
-    EXPECT_EQ(idx3->value_count(), 0);
+    EXPECT_EQ(idx3->value_count(), 0u);
     v1 = idx2->get_value(3);
     CheckTestDocValue(L"0.2.3", v1);
     v1 = idx2->get_value(4);
@@ -293,65 +293,65 @@ TEST_F(JsonDomTest, TestDomDocumentIterator)
 {
     json::dom_document doc;
     json::dom_document::iterator it = doc.begin();
-    ASSERT_TRUE(it.value() == nullptr) << L"Curent 1.1";
-    ASSERT_TRUE(*it == nullptr) << L"Curent 1.2";
-    ASSERT_TRUE(it == doc.end()) << L"Curent 1.3";
-    ASSERT_EQ(0, it.level()) << L"it.level 1";
+    EXPECT_TRUE(it.value() == nullptr) << L"Curent 1.1";
+    EXPECT_TRUE(*it == nullptr) << L"Curent 1.2";
+    EXPECT_TRUE(it == doc.end()) << L"Curent 1.3";
+    EXPECT_EQ(0u, it.level()) << L"it.level 1";
     FillTestDoc(doc);
     it = doc.begin();
     ASSERT_TRUE(it.value() == doc.root()) << L"Curent 2.1";
-    ASSERT_TRUE(*it == doc.root()) << L"Curent 2.2";
-    ASSERT_TRUE(*it == it.value()) << L"Curent 2.2";
-    ASSERT_TRUE(it != doc.end()) << L"Curent 2.4";
-    ASSERT_EQ(1, it.level()) << L"it.level 2";
+    EXPECT_TRUE(*it == doc.root()) << L"Curent 2.2";
+    EXPECT_TRUE(*it == it.value()) << L"Curent 2.2";
+    EXPECT_TRUE(it != doc.end()) << L"Curent 2.4";
+    EXPECT_EQ(1u, it.level()) << L"it.level 2";
     //
     json::dom_document::iterator::path_t path = { 0 };
-    ASSERT_TRUE(path == it.path()) << L"path 0";
-    ASSERT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0";
+    EXPECT_TRUE(path == it.path()) << L"path 0";
+    EXPECT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0";
     CheckTestDocValue(L"0", *it);
     it++;
     path = { 0, 0 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.0";
-    ASSERT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0.0";
+    EXPECT_TRUE(path == it.path()) << L"path 0.0";
+    EXPECT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0.0";
     CheckTestDocValue(L"0.0", *it);
     it++;
     path = { 0, 1 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.1";
-    ASSERT_TRUE(it.has_prev_sibling()) << L"has_prev_sibling 0.1";
+    EXPECT_TRUE(path == it.path()) << L"path 0.1";
+    EXPECT_TRUE(it.has_prev_sibling()) << L"has_prev_sibling 0.1";
     CheckTestDocValue(L"0.1", *it);
     it++;
     path = { 0, 2 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2";
     CheckTestDocValue(L"0.2", *it);
     it++;
     path = { 0, 2, 0 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.0";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.0";
     CheckTestDocValue(L"0.2.0", *it);
     it++;
     path = { 0, 2, 1 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.1";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.1";
     CheckTestDocValue(L"0.2.1", *it);
     it++;
     path = { 0, 2, 2 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.2";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.2";
     CheckTestDocValue(L"0.2.2", *it);
     it++;
     path = { 0, 2, 3 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.3";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.3";
     CheckTestDocValue(L"0.2.3", *it);
     it++;
     path = { 0, 2, 4 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.4";
-    ASSERT_TRUE(it.has_prev_sibling()) << L"has_prev_sibling 0.2.4";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.4";
+    EXPECT_TRUE(it.has_prev_sibling()) << L"has_prev_sibling 0.2.4";
     CheckTestDocValue(L"0.2.4", *it);
     it++;
     path = { 0, 2, 4, 0 };
-    ASSERT_TRUE(path == it.path()) << L"path 0.2.4.0";
-    ASSERT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0.2.4.0";
+    EXPECT_TRUE(path == it.path()) << L"path 0.2.4.0";
+    EXPECT_FALSE(it.has_prev_sibling()) << L"has_prev_sibling 0.2.4.0";
     CheckTestDocValue(L"0.2.4.0", *it);
     it++;
-    ASSERT_TRUE(it == doc.end()) << L"End 1";
-    ASSERT_EQ(0, it.level()) << L"End 2";
+    EXPECT_TRUE(it == doc.end()) << L"End 1";
+    EXPECT_EQ(0u, it.level()) << L"End 2";
     //
     int count = 0;
     for (const auto& value : doc) // const auto -> const json::dom_value*
@@ -359,21 +359,21 @@ TEST_F(JsonDomTest, TestDomDocumentIterator)
         EXPECT_EQ(value->document(), &doc);
         count++;
     }
-    ASSERT_EQ(10, count) << L"for const auto";
+    EXPECT_EQ(10, count) << L"for const auto";
     count = 0;
     for (auto value : doc) // auto -> json::dom_value*
     {
         EXPECT_EQ(value->document(), &doc);
         count++;
     }
-    ASSERT_EQ(10, count) << L"for auto";
+    EXPECT_EQ(10, count) << L"for auto";
     count = 0;
     for (json::dom_value* value : doc)
     {
         EXPECT_EQ(value->document(), &doc);
         count++;
     }
-    ASSERT_EQ(10, count) << L"for json::dom_value*";
+    EXPECT_EQ(10, count) << L"for json::dom_value*";
 }
 
 TEST_F(JsonDomTest, TestDomDocumentComparison)

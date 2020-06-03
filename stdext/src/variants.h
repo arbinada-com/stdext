@@ -30,15 +30,14 @@ namespace stdext
         {
         public:
             variant_exception(const char* message, const variant_error error) noexcept
-                : exception(message), 
-                m_error(error)
+                : exception(), m_message(message), m_error(error)
             {}
             variant_exception(const std::string message, const variant_error error) noexcept
-                : exception(message.c_str()),
-                m_error(error)
+                : exception(), m_message(message), m_error(error)
             {}
             variant_error error() const noexcept { return m_error; }
         protected:
+            std::string m_message;
             variant_error m_error;
         };
 

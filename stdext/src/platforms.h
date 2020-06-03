@@ -6,6 +6,10 @@
  */
 #pragma once
 
+#if defined(__MACHINEX86_X64) || defined(__x86_64__) || defined(__i386__)
+    #define __STDEXT_X86_X64_OR_I386
+#endif
+
 #if defined(WIN32) || defined(WIN64)
     #define __STDEXT_WINDOWS
 #elif defined(__linux__)
@@ -18,6 +22,7 @@
     #define __STDEXT_WCHAR_SIZE 2
 #elif defined(__STDEXT_LINUX)
     #define __STDEXT_WCHAR_SIZE 4
+    #define __STDEXT_USE_ICONV
 #else
     #error wchar_t size unknown
 #endif

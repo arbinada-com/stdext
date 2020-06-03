@@ -114,50 +114,86 @@ TEST_F(ParsersTest, TestMessages)
 
 TEST_F(ParsersTest, TestMessageCollector)
 {
-    auto check_size = [](test_msg_collector_t& collector, int total, int errors, int warns, int hints, wstring title)
+    auto check_size = [](test_msg_collector_t& collector, size_t total, size_t errors, size_t warns, size_t hints, size_t infos, wstring title)
     {
         title += L": ";
-        ASSERT_EQ(total, collector.size()) << title + L"total";
-        ASSERT_EQ(errors, collector.errors().size()) << title + L"errors";
-        ASSERT_EQ(warns, collector.warnings().size()) << title + L"warns";
-        ASSERT_EQ(hints, collector.hints().size()) << title + L"hints";
-        ASSERT_TRUE((total == 0 && !collector.has_messages()) || collector.has_messages()) << title + L"has_messages";
-        ASSERT_TRUE((errors == 0 && !collector.has_errors()) || collector.has_errors()) << title + L"has_errors";
-        ASSERT_TRUE((warns == 0 && !collector.has_warnings()) || collector.has_warnings()) << title + L"has_warnings";
-        ASSERT_TRUE((hints == 0 && !collector.has_hints()) || collector.has_hints()) << title + L"has_hints";
+        EXPECT_EQ(total, collector.size()) << title + L"total";
+        EXPECT_EQ(errors, collector.errors().size()) << title + L"errors";
+        EXPECT_EQ(warns, collector.warnings().size()) << title + L"warns";
+        EXPECT_EQ(hints, collector.hints().size()) << title + L"hints";
+        EXPECT_EQ(infos, collector.infos().size()) << title + L"infos";
+        EXPECT_TRUE((total == 0 && !collector.has_messages()) || collector.has_messages()) << title + L"has_messages";
+        EXPECT_TRUE((errors == 0 && !collector.has_errors()) || collector.has_errors()) << title + L"has_errors";
+        EXPECT_TRUE((warns == 0 && !collector.has_warnings()) || collector.has_warnings()) << title + L"has_warnings";
+        EXPECT_TRUE((hints == 0 && !collector.has_hints()) || collector.has_hints()) << title + L"has_hints";
+        EXPECT_TRUE((infos == 0 && !collector.has_infos()) || collector.has_hints()) << title + L"has_infos";
     };
 
     test_msg_collector_t collect1;
-    check_size(collect1, 0, 0, 0, 0, L"Size 1");
-    textpos pos1(11, 22);
-    collect1.add_error(msg_origin::parser, test_message_kind::e_error1, pos1, L"file1.txt", L"Error 1");
-    check_size(collect1, 1, 1, 0, 0, L"Size 2");
-    test_message_t* m1 = collect1.errors()[0];
-    ASSERT_TRUE(msg_origin::parser == m1->origin()) << L"Origin 1";
-    ASSERT_TRUE(msg_severity::error == m1->severity()) << L"Severity 1";
-    ASSERT_TRUE(test_message_kind::e_error1 == m1->kind()) << L"Kind 1";
-    ASSERT_TRUE(pos1 == m1->pos()) << L"Pos 1";
-    ASSERT_EQ(L"file1.txt", m1->source()) << L"Source 1";
-    ASSERT_EQ(L"Error 1", m1->text()) << L"Text 1";
-    textpos pos2(21, 32);
-    collect1.add_error(msg_origin::lexer, test_message_kind::e_error2, pos2, L"file1.txt", L"Error 2");
-    check_size(collect1, 2, 2, 0, 0, L"Size 3");
-    textpos pos3(33, 44);
-    collect1.add_warning(msg_origin::lexer, test_message_kind::w_warning1, pos3, L"file2.txt", L"Warn 1");
-    check_size(collect1, 3, 2, 1, 0, L"Size 4");
-    textpos pos4(55, 77);
-    collect1.add_hint(msg_origin::generator, test_message_kind::h_hint1, pos4, L"file3.txt", L"Hint 1");
-    check_size(collect1, 4, 2, 1, 1, L"Size 5");
+    check_size(collect1, 0, 0, 0, 0, 0, L"Size 0");
+    {
+        textpos pos(11, 22);
+        collect1.add_error(msg_origin::parser, test_message_kind::e_error1, pos, L"file1.txt", L"Error 1");
+        check_size(collect1, 1, 1, 0, 0, 0, L"Size 1");
+        test_message_t* msg = collect1.errors()[0];
+        EXPECT_EQ(msg_origin::parser, msg->origin()) << L"Error origin";
+        EXPECT_EQ(msg_severity::error, msg->severity()) << L"Error severity";
+        EXPECT_EQ(test_message_kind::e_error1, msg->kind()) << L"Error kind";
+        EXPECT_EQ(pos, msg->pos()) << L"Error pos";
+        EXPECT_EQ(L"file1.txt", msg->source()) << L"Error source";
+        EXPECT_EQ(L"Error 1", msg->text()) << L"Error text";
+    }
+    {
+        textpos pos(21, 32);
+        collect1.add_error(msg_origin::lexer, test_message_kind::e_error2, pos, L"file1.txt", L"Error 2");
+        check_size(collect1, 2, 2, 0, 0, 0, L"Size 2");
+    }
+    {
+        textpos pos(33, 44);
+        collect1.add_warning(msg_origin::lexer, test_message_kind::w_warning1, pos, L"file2.txt", L"Warn 1");
+        check_size(collect1, 3, 2, 1, 0, 0, L"Size 3");
+        test_message_t* msg = collect1.warnings()[0];
+        EXPECT_EQ(msg_origin::lexer, msg->origin()) << L"Warn origin";
+        EXPECT_EQ(msg_severity::warning, msg->severity()) << L"Warn severity";
+        EXPECT_EQ(test_message_kind::w_warning1, msg->kind()) << L"Warn kind";
+        EXPECT_EQ(pos, msg->pos()) << L"Warn pos";
+        EXPECT_EQ(L"file2.txt", msg->source()) << L"Warn source";
+        EXPECT_EQ(L"Warn 1", msg->text()) << L"Warn text";
+    }
+    {
+        textpos pos(55, 77);
+        collect1.add_hint(msg_origin::generator, test_message_kind::h_hint1, pos, L"file3.txt", L"Hint 1");
+        check_size(collect1, 4, 2, 1, 1, 0, L"Size 4");
+        test_message_t* msg = collect1.hints()[0];
+        EXPECT_EQ(msg_origin::generator, msg->origin()) << L"Hint origin";
+        EXPECT_EQ(msg_severity::hint, msg->severity()) << L"Hint severity";
+        EXPECT_EQ(test_message_kind::h_hint1, msg->kind()) << L"Hint kind";
+        EXPECT_EQ(pos, msg->pos()) << L"Hint pos";
+        EXPECT_EQ(L"file3.txt", msg->source()) << L"Hint source";
+        EXPECT_EQ(L"Hint 1", msg->text()) << L"Hint text";
+    }
+    {
+        textpos pos(57, 79);
+        collect1.add_info(msg_origin::generator, test_message_kind::info1, pos, L"file31.txt", L"Info 1");
+        check_size(collect1, 5, 2, 1, 1, 1, L"Size 5");
+        test_message_t* msg = collect1.infos()[0];
+        EXPECT_EQ(msg_origin::generator, msg->origin()) << L"Info origin";
+        EXPECT_EQ(msg_severity::info, msg->severity()) << L"Info severity";
+        EXPECT_EQ(test_message_kind::info1, msg->kind()) << L"Info kind";
+        EXPECT_EQ(pos, msg->pos()) << L"Info pos";
+        EXPECT_EQ(L"file31.txt", msg->source()) << L"Info source";
+        EXPECT_EQ(L"Info 1", msg->text()) << L"Info text";
+    }
     //
     textpos pos5(99, 88);
     collect1.add(new test_message_t(msg_origin::other, msg_severity::error, test_message_kind::e_error2, pos5, L"file41.txt", L"Msg 11"));
-    check_size(collect1, 5, 3, 1, 1, L"Size 6.1");
+    check_size(collect1, 6, 3, 1, 1, 1, L"Size 6.1");
     collect1.add(new test_message_t(msg_origin::other, msg_severity::warning, test_message_kind::w_warning2, pos5, L"file42.txt", L"Msg 12"));
-    check_size(collect1, 6, 3, 2, 1, L"Size 6.2");
+    check_size(collect1, 7, 3, 2, 1, 1, L"Size 6.2");
     collect1.add(new test_message_t(msg_origin::other, msg_severity::hint, test_message_kind::h_hint1, pos5, L"file43.txt", L"Msg 13"));
-    check_size(collect1, 7, 3, 2, 2, L"Size 6.3");
-    collect1.add(new test_message_t(msg_origin::other, msg_severity::none, test_message_kind::info1, pos5, L"file44.txt", L"Msg 14"));
-    check_size(collect1, 8, 3, 2, 2, L"Size 6.4");
+    check_size(collect1, 8, 3, 2, 2, 1, L"Size 6.3");
+    collect1.add(new test_message_t(msg_origin::other, msg_severity::info, test_message_kind::info1, pos5, L"file44.txt", L"Msg 14"));
+    check_size(collect1, 9, 3, 2, 2, 2, L"Size 6.4");
     //
     int count = 0;
     for (test_message_t* msg : collect1)
@@ -165,28 +201,39 @@ TEST_F(ParsersTest, TestMessageCollector)
         ASSERT_NE(msg, nullptr);
         count++;
     }
-    ASSERT_EQ(8, count) << L"Count 1";
+    EXPECT_EQ(9, count) << L"Count 1";
     count = 0;
     for (test_message_t* msg : collect1.errors())
     {
-        ASSERT_TRUE(msg_severity::error == msg->severity()) << L"Error count";
+        ASSERT_NE(msg, nullptr);
+        EXPECT_EQ(msg_severity::error, msg->severity()) << L"Error count";
         count++;
     }
-    ASSERT_EQ(3, count) << L"Count 2";
+    EXPECT_EQ(3, count) << L"Count 2";
     count = 0;
     for (test_message_t* msg : collect1.warnings())
     {
-        ASSERT_TRUE(msg_severity::warning == msg->severity()) << L"Warn count";
+        ASSERT_NE(msg, nullptr);
+        EXPECT_EQ(msg_severity::warning, msg->severity()) << L"Warn count";
         count++;
     }
-    ASSERT_EQ(2, count) << L"Count 3";
+    EXPECT_EQ(2, count) << L"Count 3";
     count = 0;
     for (test_message_t* msg : collect1.hints())
     {
-        ASSERT_TRUE(msg_severity::hint == msg->severity()) << L"Hint count";
+        ASSERT_NE(msg, nullptr);
+        EXPECT_EQ(msg_severity::hint, msg->severity()) << L"Hint count";
         count++;
     }
-    ASSERT_EQ(2, count) << L"Count 4";
+    EXPECT_EQ(2, count) << L"Count 4";
+    count = 0;
+    for (test_message_t* msg : collect1.infos())
+    {
+        ASSERT_NE(msg, nullptr);
+        EXPECT_EQ(msg_severity::info, msg->severity()) << L"Info count";
+        count++;
+    }
+    EXPECT_EQ(2, count) << L"Count 5";
 }
 
 }

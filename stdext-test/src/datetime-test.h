@@ -244,7 +244,7 @@ TEST_F(DatetimeTest, TestQuarterOfMonth)
     auto chkQuarter = [](datepart_t month, datepart_t quarter)
     {
         char s[] = "9999-99-99";
-        sprintf_s(s, sizeof(s), "2019-%2d-01", month);
+        snprintf(s, sizeof(s), "2019-%2d-01", month);
         datetime d(s);
         ASSERT_EQ(quarter, datetime::get_quarter_of_month(month)) << L"get_quarter_of_month";
     };

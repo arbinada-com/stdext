@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <gtest/gtest.h>
 #include <gmock/gmock-matchers.h>
+#include "platforms.h"
 #include "csvtools.h"
 #include "strutils.h"
 #include <fstream>
@@ -92,10 +93,10 @@ TEST_F(CsvToolsTest, TestEmptyStream)
     wstringstream ss(L"");
     csv::reader rd(ss);
     csv::row r;
-    ASSERT_FALSE(rd.next_row(r));
-    ASSERT_FALSE(rd.has_error());
-    ASSERT_EQ(0, rd.row_count()) << L"Row row";
-    ASSERT_EQ(0, r.field_count()) << L"Field row";
+    EXPECT_FALSE(rd.next_row(r));
+    EXPECT_FALSE(rd.has_error());
+    EXPECT_EQ(0, rd.row_count()) << "Row row";
+    EXPECT_EQ(0u, r.field_count()) << "Field row";
 }
 
 TEST_F(CsvToolsTest, TestStringStream)
@@ -162,7 +163,12 @@ TEST_F(CsvToolsTest, TestFiles)
         expected.push_back(csv_row_values_t({ L"1", L"2.345" }));
         expected.push_back(csv_row_values_t({ L"Non-ASCII текст", L"слово" }));
         expected.push_back(csv_row_values_t({ L"67,89", L"Multi line строка\nстрока 2\nстрока 3" }));
-        csv::reader rd(L"test01-ansi-1251.csv", ioutils::text_io_options_ansi(".1251"));
+#if defined(__STDEXT_USE_ICONV)
+        string encoding = "CP1251";
+#else
+        string encoding = ".1251";
+#endif
+        csv::reader rd(L"test01-ansi-1251.csv", ioutils::text_io_options_ansi(encoding));
         rd.separator(L',');
         CheckStreamReading(L"File ANSI 1251", rd, expected);
     }
@@ -171,7 +177,12 @@ TEST_F(CsvToolsTest, TestFiles)
         expected.push_back(csv_row_values_t({ L"1", L"2.345" }));
         expected.push_back(csv_row_values_t({ L"Non-ASCII déjà", L"élève" }));
         expected.push_back(csv_row_values_t({ L"67,89", L"Multi line à côté\ncôté 2\ncôté 3" }));
-        csv::reader rd(L"test01-ansi-1252.csv", ioutils::text_io_options_ansi(".1252"));
+#if defined(__STDEXT_USE_ICONV)
+        string encoding = "CP1252";
+#else
+        string encoding = ".1252";
+#endif
+        csv::reader rd(L"test01-ansi-1252.csv", ioutils::text_io_options_ansi(encoding));
         rd.separator(L',');
         CheckStreamReading(L"File ANSI 1252", rd, expected);
     }

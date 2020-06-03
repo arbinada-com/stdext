@@ -4,6 +4,9 @@
  */
 
 #include "locutils.h"
+#if defined(__STDEXT_USE_ICONV)
+    #include <iconv.h>
+#endif
 
 using namespace std;
 using namespace stdext;
@@ -72,7 +75,7 @@ bool utf16::is_noncharacter(const wchar_t c)
         || c == utf16::bom_le_value
         || c == 0xFFFF
 #if __STDEXT_WCHAR_SIZE > 2
-        || c > utf16::max_char
+        || c > (wchar_t)utf16::max_char
 #endif
         ;
 }
@@ -106,12 +109,16 @@ bool utf16::from_surrogate_pair(wchar_t high, wchar_t low, char32_t& c)
 
 char16_t utf16::swap_byte_order16(const char16_t c)
 {
-    return ((c & 0xFF00) >> 8) | ((c & 0xFF) << 8);
+    return ((c & 0xFF00) >> 8) |
+           ((c & 0x00FF) << 8);
 }
 
 char32_t utf16::swap_byte_order32(const char32_t c)
 {
-    return ((c & 0xFFFF0000) >> 16) | ((c & 0xFFFF) << 16);
+    return ((c & 0xFF000000) >> 24) |
+           ((c & 0x00FF0000) >> 8) |
+           ((c & 0x0000FF00) << 8) |
+           ((c & 0x000000FF) << 24);
 }
 
 std::wstring utf16::swap_byte_order(const std::wstring& ws)
@@ -158,36 +165,38 @@ bool utf16::try_detect_byte_order(const char* str, const size_t len, endianess::
     return true;
 }
 
-std::string utf16::wchar_to_multibyte(const std::wstring& ws, 
-    const endianess::byte_order wchar_order, 
-    const endianess::byte_order mbyte_order)
+std::string utf16::wchar_to_multibyte(const std::wstring& ws,
+                                      const endianess::byte_order to_order)
 {
-    return utf16::wchar_to_multibyte(ws.c_str(), ws.length(), wchar_order, mbyte_order);
+    return utf16::wchar_to_multibyte(ws.c_str(), ws.length(), to_order);
 }
 
 std::string utf16::wchar_to_multibyte(const std::wstring& ws)
 {
-    return utf16::wchar_to_multibyte(ws, endianess::platform_value(), endianess::platform_value());
+    return utf16::wchar_to_multibyte(ws, endianess::platform_value());
 }
 
-std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len, 
-    const endianess::byte_order wchar_order,
-    const endianess::byte_order mbyte_order)
+std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len,
+                                      const endianess::byte_order to_order)
 {
     string s;
-    s.reserve(len * sizeof(wchar_t));
+    s.reserve(len * utf16::bytes_per_character);
     for (size_t i = 0; i < len; i++)
     {
-        wchar_t c = ws[i];
+#if __STDEXT_WCHAR_SIZE == 2
+        char16_t c = (char16_t)ws[i];
+#else
+        char16_t c = (char16_t)(ws[i] < 0xFFFF ? ws[i] : L'?');
+#endif
         unsigned char* p = (unsigned char*)&c;
-        if (wchar_order == mbyte_order)
+        if (endianess::platform_value() == to_order)
         {
-            for (size_t j = 0; j < sizeof(wchar_t); j++)
+            for (size_t j = 0; j < utf16::bytes_per_character; j++)
                 s += p[j];
         }
         else
         {
-            for (int j = sizeof(wchar_t) - 1; j >= 0; j--)
+            for (int j = utf16::bytes_per_character - 1; j >= 0; j--)
                 s += p[j];
         }
     }
@@ -196,7 +205,7 @@ std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len,
 
 std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len)
 {
-    return utf16::wchar_to_multibyte(ws, len, endianess::platform_value(), endianess::platform_value());
+    return utf16::wchar_to_multibyte(ws, len, endianess::platform_value());
 }
 
 
@@ -214,7 +223,7 @@ void utf8::add_bom(string& mbs)
     }
 }
 
-bool utf8::is_noncharacter(const char c)
+bool utf8::is_noncharacter(const unsigned char c)
 {
     switch (c) 
     {
@@ -250,13 +259,12 @@ locale_guard::~locale_guard()
 codecvt_utf8_wchar_t::result_t 
 codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
 {
-    mbstate_t state;
-    memset(&state, 0, sizeof(state));
-    const char* first1 = utf8s.c_str();
+    mbstate_t state = {};
+    const char* first1 = utf8s.data();
     const char* last1 = first1 + utf8s.length();
     const char* next1 = nullptr;
     utf16s.resize(utf8s.length()); // potential maximum
-    wchar_t* first2 = &utf16s[0];
+    wchar_t* first2 = (wchar_t*)utf16s.data();
     wchar_t* last2 = first2 + utf16s.length();
     wchar_t* next2 = nullptr;
     result_t result = do_in(state, first1, last1, next1, first2, last2, next2);
@@ -268,13 +276,12 @@ codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
 codecvt_utf8_wchar_t::result_t 
 codecvt_utf8_wchar_t::to_utf8(const std::wstring& utf16s, std::string& utf8s)
 {
-    mbstate_t state;
-    memset(&state, 0, sizeof(state));
-    const wchar_t* first1 = utf16s.c_str();
+    mbstate_t state = {};
+    const wchar_t* first1 = utf16s.data();
     const wchar_t* last1 = first1 + utf16s.length();
     const wchar_t* next1 = nullptr;
     utf8s.resize(utf16s.length() * utf8::max_seq_length + sizeof(utf8::bom)); // potential maximum
-    char* first2 = &utf8s[0];
+    char* first2 = (char*)utf8s.data();
     char* last2 = first2 + utf8s.length();
     char* next2 = nullptr;
     result_t result = do_out(state, first1, last1, next1, first2, last2, next2);
@@ -295,6 +302,7 @@ codecvt_utf8_wchar_t::do_in(
     {
         *next2++ = c;
     };
+    mbstate_adapter state_adapter(state);
     next1 = first1;
     next2 = first2;
     while (next1 != last1 && next2 != last2)
@@ -346,9 +354,9 @@ codecvt_utf8_wchar_t::do_in(
                 --n;
             }
         }
-        if (state._State == codecvt_state::initial)
+        if (state_adapter.codecvt_state() == codecvt_state::initial)
         {	
-            state._State = codecvt_state::passed_once_or_more;
+            state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
             if (utf16::is_bom((intern_type)c2))
             {
                 if (!m_cvt_mode.consume_header())
@@ -384,6 +392,7 @@ codecvt_utf8_wchar_t::do_out(
     const intern_type* first1, const intern_type* last1, const intern_type*& next1,
     extern_type* first2, extern_type* last2, extern_type*& next2) const
 {
+    mbstate_adapter state_adapter(state);
     next1 = first1;
     next2 = first2;
     while (next1 != last1 && next2 != last2)
@@ -429,9 +438,9 @@ codecvt_utf8_wchar_t::do_out(
             c2 = (extern_type)(utf8::chk_seq6 | (c1 >> 30 & 0x03));
             n = 6;
         }
-        if (state._State == codecvt_state::initial)
+        if (state_adapter.codecvt_state() == codecvt_state::initial)
         {
-            state._State = codecvt_state::passed_once_or_more;
+            state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
             if (m_cvt_mode.generate_header())
             {
                 if (last2 - next2 < (int)sizeof(utf8::bom) + n)
@@ -515,16 +524,15 @@ int codecvt_utf8_wchar_t::do_length(mbstate_t& state, const extern_type* first1,
 codecvt_utf16_wchar_t::result_t 
 codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
 {
-    mbstate_t state;
-    memset(&state, 0, sizeof(state));
-    const char* first1 = &mbs[0];
+    mbstate_t state = {};
+    const char* first1 = mbs.data();
     const char* last1 = first1 + mbs.length();
     const char* next1 = nullptr;
-    size_t len2 = // mbstr length should be an even number
+    size_t len2 = // mbstr length should be an even number (binary stream of UTF-16 bytes)
         (mbs.length() % 2 == 0 ? mbs.length() : mbs.length() + 1) / bytes_per_character 
         + 1;  // BOM
     ws.resize(len2);
-    wchar_t* first2 = &ws[0];
+    wchar_t* first2 = (wchar_t*)ws.data();
     wchar_t* last2 = first2 + ws.length();
     wchar_t* next2 = nullptr;
     result_t result = do_in(state, first1, last1, next1, first2, last2, next2);
@@ -536,14 +544,13 @@ codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
 codecvt_utf16_wchar_t::result_t 
 codecvt_utf16_wchar_t::utf16_to_mb(const std::wstring& ws, std::string& mbs)
 {
-    mbstate_t state;
-    memset(&state, 0, sizeof(state));
-    const wchar_t* first1 = &ws[0];
+    mbstate_t state = {};
+    const wchar_t* first1 = ws.data();
     const wchar_t* last1 = first1 + ws.length();
     const wchar_t* next1 = nullptr;
     size_t len2 = (ws.length() + 1 /*BOM*/) * bytes_per_character;
     mbs.resize(len2);
-    char* first2 = &mbs[0];
+    char* first2 = (char*)mbs.data();
     char* last2 = first2 + mbs.length();
     char* next2 = nullptr;
     result_t result = do_out(state, first1, last1, next1, first2, last2, next2);
@@ -559,12 +566,18 @@ codecvt_utf16_wchar_t::do_in(
     const extern_type* first1, const extern_type* last1, const extern_type*& next1,
     intern_type* first2, intern_type* last2, intern_type*& next2) const
 {
-    auto get_next1 = [&](intern_type& c2, endianess::byte_order order)
+    auto get_next1 = [&](intern_type& c2, endianess::byte_order source_order)
     {
-        if (order == endianess::platform_value())
-            c2 = (((unsigned char)(*(next1 + 1))) << 8) | (unsigned char)(*next1);
-        else
-            c2 = (((unsigned char)(*next1)) << 8) | (unsigned char)(*(next1 + 1));
+        // Source byte order may be different from internal one (cf. "endianess")
+        // every byte pair should be converted to wchar_t (16/32 bit)
+        // Examples:
+        // Source LE "\x41\x04" (0x0441) --> Target 16 bit 0x0441 | 32 bit 0x00000441
+        // Source BE "\x04\x41" (0x0441) --> Target 16 bit 0x0441 | 32 bit 0x00000441
+        char16_t c = source_order == endianess::byte_order::little_endian ?
+                    (((unsigned char)(*(next1 + 1))) << 8) | (unsigned char)(*next1)
+                  :
+                    (((unsigned char)(*next1)) << 8) | (unsigned char)(*(next1 + 1));
+        c2 = (wchar_t)c;
         next1 += bytes_per_character;
     };
     auto put_next2 = [&](const intern_type& c2)
@@ -572,25 +585,23 @@ codecvt_utf16_wchar_t::do_in(
         *next2++ = c2;
     };
     //
+    mbstate_adapter state_adapter(state);
     next1 = first1;
     next2 = first2;
-    endianess::byte_order source_byte_order = m_cvt_mode.byte_order();
-    if (state._State != codecvt_state::initial)
-        source_byte_order = (endianess::byte_order)state._Byte;
     while (last1 - next1 >= bytes_per_character && next2 != last2)
     {
         intern_type c2;
-        if (state._State == codecvt_state::initial)
+        if (state_adapter.codecvt_state() == codecvt_state::initial)
         {
-            state._State = codecvt_state::passed_once_or_more;
-            state._Byte = (unsigned short)m_cvt_mode.byte_order();
+            state_adapter.byte_order(m_cvt_mode.byte_order());
+            state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
             if (!m_cvt_mode.is_byte_order_assigned())
             {
                 endianess::byte_order order;
                 if (utf16::try_detect_byte_order(first1, last1 - first1, order))
-                    state._Byte = (unsigned short)order;
+                    state_adapter.byte_order(order);
             }
-            get_next1(c2, source_byte_order);
+            get_next1(c2, state_adapter.byte_order());
             if (m_cvt_mode.generate_header())
             {
                 if (next2 != last2)
@@ -600,7 +611,7 @@ codecvt_utf16_wchar_t::do_in(
                 continue;
         }
         else
-            get_next1(c2, source_byte_order);
+            get_next1(c2, state_adapter.byte_order());
         // append character
         if (utf16::is_high_surrogate(c2))
         {
@@ -613,7 +624,7 @@ codecvt_utf16_wchar_t::do_in(
 #else
                 wchar_t high = c2, low;
                 char32_t c3;
-                get_next1(low, source_byte_order);
+                get_next1(low, state_adapter.byte_order());
                 if (utf16::from_surrogate_pair(high, low, c3))
                     put_next2((wchar_t)c3);
                 else
@@ -630,10 +641,9 @@ codecvt_utf16_wchar_t::do_in(
 
 // UTF-16 wchar_t* (intern) sequence --> multibyte char* (extern) sequence
 codecvt_utf16_wchar_t::result_t 
-codecvt_utf16_wchar_t::do_out(
-    mbstate_t& state,
-    const intern_type* first1, const intern_type* last1, const intern_type*& next1,
-    extern_type* first2, extern_type* last2, extern_type*& next2) const
+codecvt_utf16_wchar_t::do_out(mbstate_t& state,
+                              const intern_type* first1, const intern_type* last1, const intern_type*& next1,
+                              extern_type* first2, extern_type* last2, extern_type*& next2) const
 {
     auto put_char2 = [&](const intern_type& c2)
     {
@@ -648,11 +658,12 @@ codecvt_utf16_wchar_t::do_out(
             *next2++ = (unsigned char)(c2 & 0xFF);
         }
     };
+    mbstate_adapter state_adapter(state);
     next1 = first1;
     next2 = first2;
-    if (state._State == codecvt_state::initial)
+    if (state_adapter.codecvt_state() == codecvt_state::initial)
     {
-        state._State = codecvt_state::passed_once_or_more;
+        state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
         if (m_cvt_mode.generate_header())
         {
             if (last2 - next2 < bytes_per_character * 3)
@@ -733,10 +744,201 @@ int codecvt_utf16_wchar_t::do_length(mbstate_t& state, const extern_type* first1
 
 int codecvt_utf16_wchar_t::do_max_length() const noexcept
 {
-    return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? 3 * bytes_per_character : 6 * bytes_per_character);
+    return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? 2 * bytes_per_character : bytes_per_character);
 }
 
 int codecvt_utf16_wchar_t::do_encoding() const noexcept
 {
     return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? -1 : 0);
 }
+
+
+/*
+ * codecvt_ansi_utf16_wchar_t class
+ */
+#if defined(__STDEXT_USE_ICONV)
+
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::ansi_to_utf16(const std::string& ansi, std::wstring& ws) const
+{
+    mbstate_t state = {};
+    const char* first1 = ansi.data();
+    const char* last1 = first1 + ansi.length();
+    const char* next1 = nullptr;
+    size_t len2 = ansi.length() + (m_cvt_mode.generate_header() ? 1 : 0);
+    ws.resize(len2);
+    wchar_t* first2 = (wchar_t*)ws.data();
+    wchar_t* last2 = first2 + ws.length();
+    wchar_t* next2 = nullptr;
+    result_t result = do_in(state, first1, last1, next1, first2, last2, next2);
+    if (next2 != nullptr && next2 >= first2)
+        ws.resize(next2 - first2);
+    return result;
+}
+
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::utf16_to_ansi(const std::wstring& ws, std::string& ansi) const
+{
+    mbstate_t state = {};
+    const wchar_t* first1 = ws.data();
+    const wchar_t* last1 = first1 + ws.length();
+    const wchar_t* next1 = nullptr;
+    size_t len2 = ws.length() + 1 /*BOM*/;
+    ansi.resize(len2);
+    char* first2 = (char*)ansi.data();
+    char* last2 = first2 + ansi.length();
+    char* next2 = nullptr;
+    result_t result = do_out(state, first1, last1, next1, first2, last2, next2);
+    if (next2 != nullptr && next2 >= first2)
+        ansi.resize(next2 - first2);
+    return result;
+}
+
+// ANSI codepage (char*) --> UTF-16 (wchar_t*)
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
+                                  const extern_type* first1, const extern_type* last1, const extern_type*& next1,
+                                  intern_type* first2, intern_type* last2, intern_type*& next2) const
+{
+    iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name().c_str());
+    if (conv == (iconv_t) -1)
+        return codecvt_base_t::error;
+    mbstate_adapter state_adapter(state);
+    next1 = first1;
+    next2 = first2;
+    if (state_adapter.codecvt_state() == codecvt_state::initial)
+    {
+        state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
+        if (next2 < last2 && m_cvt_mode.generate_header())
+            *next2++ = utf16::bom_value();
+    }
+    result_t ret = codecvt_base_t::ok;
+    if (next1 < last1 && next2 < last2)
+    {
+        size_t size1 = last1 - next1;
+        size_t size2 = (last2 - next2) * sizeof(wchar_t);
+        char* ps1 = (char*)next1;
+        char* ps2 = (char*)next2;
+        size_t rc = iconv(conv, &ps1, &size1, &ps2, &size2);
+        if (rc == (size_t) -1)
+        {
+            switch (errno)
+            {
+            case E2BIG:
+                ret = codecvt_base_t::partial;
+                break;
+            case EILSEQ:
+            case EINVAL:
+                ret = codecvt_base_t::error;
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
+            next1 = last1 - size1;
+            next2 = last2 - (size2 / sizeof(wchar_t));
+            if (first1 == next1)
+                ret = codecvt_base_t::partial;
+        }
+    }
+    iconv_close(conv);
+    return ret;
+}
+
+// UTF-16 (wchar_t*) --> ANSI codepage (char*)
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::do_out(mbstate_t&,
+                                   const intern_type* first1, const intern_type* last1, const intern_type*& next1,
+                                   extern_type* first2, extern_type* last2, extern_type*& next2) const
+{
+    iconv_t conv = iconv_open(m_cvt_mode.encoding_name().c_str(), "WCHAR_T");
+    if (conv == (iconv_t) -1)
+        return codecvt_base_t::error;
+    next1 = first1;
+    next2 = first2;
+    if (next1 < last1 && utf16::is_bom(*next1))
+        ++next1;
+    result_t ret = codecvt_base_t::ok;
+    if (next1 < last1 && next2 < last2)
+    {
+        size_t size1 = (last1 - next1) * sizeof(wchar_t);
+        size_t size2 = last2 - next2;
+        char* ps1 = (char*)next1;
+        char* ps2 = next2;
+        size_t rc = iconv(conv, &ps1, &size1, &ps2, &size2);
+        if (rc == (size_t) -1)
+        {
+            switch (errno)
+            {
+            case E2BIG:
+                ret = codecvt_base_t::partial;
+                break;
+            case EILSEQ:
+            case EINVAL:
+                ret = codecvt_base_t::error;
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
+            next1 = last1 - (size1 / sizeof(wchar_t));
+            next2 = last2 - size2;
+            if (first1 == next1)
+                ret = codecvt_base_t::partial;
+        }
+    }
+    iconv_close(conv);
+    return ret;
+}
+
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::do_unshift(mbstate_t&, extern_type* first2, extern_type*, extern_type*& next2) const noexcept
+{
+    next2 = first2;
+    return codecvt_base_t::ok;
+}
+
+int codecvt_ansi_utf16_wchar_t::do_length(mbstate_t& state,
+                                          const extern_type* first1,
+                                          const extern_type* last1,
+                                          size_t maxlen2) const noexcept
+{
+    size_t len2 = 0;
+    mbstate_t curr_state = state;
+    while (len2 < maxlen2 && first1 != last1)
+    {
+        const extern_type* next1;
+        intern_type* next2;
+        intern_type buf2[2];
+        switch (do_in(curr_state, first1, last1, next1, buf2, buf2 + 1, next2))
+        {
+        case codecvt_base_t::noconv:
+            return (int)(len2 + (last1 - first1));
+        case codecvt_base_t::ok:
+            if (next2 == buf2 + 1)
+                ++len2;
+            first1 = next1;
+            break;
+        default:
+            return (int)len2;
+        }
+    }
+    return (int)len2;
+}
+
+int codecvt_ansi_utf16_wchar_t::do_max_length() const noexcept
+{
+    // 1 character of intern type (wchar_t) can be converted to maximum N characters of extern type (char)
+    return 1;
+}
+
+int codecvt_ansi_utf16_wchar_t::do_encoding() const noexcept
+{
+    return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? -1 : 0);
+}
+
+#endif

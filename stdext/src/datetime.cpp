@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cwchar>
 #include "datetime.h"
+#include "platforms.h"
 #include "strutils.h"
 
 using namespace std;
@@ -250,7 +251,11 @@ datetime datetime::now()
 #if defined(__BCPLUSPLUS__)
     localtime_s(&cur_time, &t);
 #else
+    #if defined(__STDEXT_WINDOWS)
     localtime_s(&t, &cur_time);
+    #else
+    localtime_r(&cur_time, &t);
+    #endif
 #endif
     return datetime(t);
 }
@@ -263,16 +268,16 @@ void datetime::parse(const char* str)
 	{
         // try to read date and time
         if (strchr(str, 'T') != NULL)
-            npos = sscanf_s(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = std::sscanf(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
         else
-            npos = sscanf_s(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = std::sscanf(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
         if (npos < 3 || npos == EOF || npos == 4)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
     }
 	else
 	{
 		// try to read time only
-        npos = sscanf_s(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
+        npos = std::sscanf(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
 		if (npos < 2 || npos == EOF)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
         datetime dt = datetime::now();
@@ -289,8 +294,8 @@ void datetime::parse(const char* str)
 string datetime::to_string()
 {
     char buf[64];
-	sprintf_s(buf, sizeof(buf) - 1, "%04hu-%02hu-%02hu %02hu:%02hu:%02hu.%03hu",
-            year(), month(), day(), hour(), minute(), second(), millisecond());
+    snprintf(buf, sizeof(buf) - 1, "%04u-%02u-%02u %02u:%02u:%02u.%03u",
+             year(), month(), day(), hour(), minute(), second(), millisecond());
 	return string(buf);
 }
 
