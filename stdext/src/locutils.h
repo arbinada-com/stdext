@@ -279,35 +279,72 @@ namespace stdext
             codecvt_mode_utf16 m_cvt_mode;
         };
 
-#if defined(__STDEXT_USE_ICONV)
         /*
          * codecvt_ansi_utf16_wchar_t
          * Facet class for converting between UTF-16 wchar_t and ANSI sequences
          */
+        enum class ansi_encoding
+        {
+            by_name,
+            cp1250,
+            cp1251,
+            cp1252
+        };
+        enum class ansi_encoding_naming
+        {
+            iconv,
+            windows
+        };
+        std::string to_encoding_name(const ansi_encoding encoding, const ansi_encoding_naming naming);
+
         class codecvt_mode_ansi : public codecvt_mode_base
         {
         public:
             codecvt_mode_ansi()
-                : codecvt_mode_base(),
-                  m_encoding_name("CP1252"), m_is_encoding_name_assigned(false)
+                : codecvt_mode_base()
             {}
-            codecvt_mode_ansi(const std::string encoding_name)
+            codecvt_mode_ansi(const ansi_encoding encoding)
                 : codecvt_mode_base(),
-                  m_encoding_name(encoding_name), m_is_encoding_name_assigned(true)
+                  m_encoding(encoding),
+                  m_encoding_assigned(true)
             {}
-            codecvt_mode_ansi(const std::string encoding_name, const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_ansi(const char* encoding_name)
+                : codecvt_mode_base(),
+                  m_encoding(ansi_encoding::by_name),
+                  m_encoding_name(encoding_name),
+                  m_encoding_assigned(true)
+            {}
+            codecvt_mode_ansi(const ansi_encoding encoding, const codecvt_mode_base::headers headers_mode)
                 : codecvt_mode_base(headers_mode),
-                  m_encoding_name(encoding_name), m_is_encoding_name_assigned(true)
+                  m_encoding(encoding),
+                  m_encoding_assigned(true)
+            {}
+            codecvt_mode_ansi(const char* encoding_name, const codecvt_mode_base::headers headers_mode)
+                : codecvt_mode_base(headers_mode),
+                  m_encoding(ansi_encoding::by_name),
+                  m_encoding_name(encoding_name),
+                  m_encoding_assigned(true)
             {}
         public:
-            std::string encoding_name() const { return m_encoding_name; }
-            void encoding_name(const std::string& value) { m_encoding_name = value; }
-            bool is_encoding_name_assigned() const noexcept { return m_is_encoding_name_assigned; }
+            inline static ansi_encoding default_encoding() noexcept { return ansi_encoding::cp1252; }
+            ansi_encoding encoding() const noexcept { return m_encoding; }
+            std::string encoding_name(const ansi_encoding_naming naming) const noexcept
+            {
+                if (m_encoding == ansi_encoding::by_name)
+                    return m_encoding_name;
+                else
+                    return to_encoding_name(m_encoding, naming);
+            }
+            std::string encoding_name_iconv() const noexcept { return encoding_name(ansi_encoding_naming::iconv); }
+            std::string encoding_name_windows() const noexcept { return encoding_name(ansi_encoding_naming::windows); }
+            bool encoding_assigned() const noexcept { return m_encoding_assigned; }
         protected:
+            ansi_encoding m_encoding = default_encoding();
             std::string m_encoding_name;
-            bool m_is_encoding_name_assigned = false;
+            bool m_encoding_assigned = false;
         };
 
+#if defined(__STDEXT_USE_ICONV)
         class codecvt_ansi_utf16_wchar_t : public codecvt<wchar_t, char, mbstate_t>
         {
         public:

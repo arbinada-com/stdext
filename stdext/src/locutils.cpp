@@ -756,6 +756,34 @@ int codecvt_utf16_wchar_t::do_encoding() const noexcept
 /*
  * codecvt_ansi_utf16_wchar_t class
  */
+std::string locutils::to_encoding_name(const ansi_encoding encoding, const ansi_encoding_naming naming)
+{
+    switch (naming)
+    {
+    case ansi_encoding_naming::iconv:
+    {
+        switch (encoding)
+        {
+        case ansi_encoding::cp1250: return "CP1250";
+        case ansi_encoding::cp1251: return "CP1251";
+        case ansi_encoding::cp1252: return "CP1252";
+        default: return "";
+        }
+    }
+    case ansi_encoding_naming::windows:
+        switch (encoding)
+        {
+        case ansi_encoding::cp1250: return ".1250";
+        case ansi_encoding::cp1251: return ".1251";
+        case ansi_encoding::cp1252: return ".1252";
+        default: return "";
+        }
+    default:
+        return "";
+    }
+}
+
+
 #if defined(__STDEXT_USE_ICONV)
 
 codecvt_ansi_utf16_wchar_t::result_t
@@ -800,7 +828,7 @@ codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
                                   const extern_type* first1, const extern_type* last1, const extern_type*& next1,
                                   intern_type* first2, intern_type* last2, intern_type*& next2) const
 {
-    iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name().c_str());
+    iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name_iconv().c_str());
     if (conv == (iconv_t) -1)
         return codecvt_base_t::error;
     mbstate_adapter state_adapter(state);
@@ -853,7 +881,7 @@ codecvt_ansi_utf16_wchar_t::do_out(mbstate_t&,
                                    const intern_type* first1, const intern_type* last1, const intern_type*& next1,
                                    extern_type* first2, extern_type* last2, extern_type*& next2) const
 {
-    iconv_t conv = iconv_open(m_cvt_mode.encoding_name().c_str(), "WCHAR_T");
+    iconv_t conv = iconv_open(m_cvt_mode.encoding_name_iconv().c_str(), "WCHAR_T");
     if (conv == (iconv_t) -1)
         return codecvt_base_t::error;
     next1 = first1;

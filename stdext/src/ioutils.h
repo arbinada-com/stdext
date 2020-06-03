@@ -13,20 +13,6 @@ namespace stdext
 {
     namespace ioutils
     {
-        enum class text_encoding
-        {
-            ansi,
-            utf8,
-            utf16
-        };
-
-        enum class file_encoding_utf16
-        {
-            autodetect,
-            big_endian,
-            little_endian
-        };
-
         class text_io_options
         {
         public:
@@ -36,34 +22,28 @@ namespace stdext
             text_io_options(text_io_options&&) = default;
             text_io_options& operator=(text_io_options&&) = default;
             virtual ~text_io_options() {}
-        protected:
-            text_io_options(const text_encoding enc)
-                : m_enc(enc)
-            { }
         public:
-            text_encoding encoding() const noexcept { return m_enc; }
-            void encoding(text_encoding enc) noexcept { m_enc = enc; }
             virtual void set_imbue_read(std::wistream&) const = 0;
             virtual void set_imbue_write(std::wostream&) const = 0;
-        protected:
-            text_encoding m_enc = text_encoding::utf8;
         };
 
         class text_io_options_ansi : public text_io_options
         {
         public:
             text_io_options_ansi()
-                : text_io_options(text_encoding::ansi)
+                : text_io_options()
             { }
+            text_io_options_ansi(const locutils::ansi_encoding encoding)
+                : text_io_options(), m_cvt_mode(encoding)
+            {}
             text_io_options_ansi(const char* encoding_name)
-                : text_io_options(text_encoding::ansi), m_cvt_mode(encoding_name)
+                : text_io_options(), m_cvt_mode(encoding_name)
             {}
             text_io_options_ansi(const locutils::codecvt_mode_ansi& cvt_mode)
-                : text_io_options(text_encoding::ansi), m_cvt_mode(cvt_mode)
+                : text_io_options(), m_cvt_mode(cvt_mode)
             { }
         public:
-            bool use_default_encoding() const noexcept { return !m_cvt_mode.is_encoding_name_assigned(); }
-            std::string ansi_encoding_name() const noexcept { return m_cvt_mode.encoding_name(); }
+            inline bool use_default_encoding() const noexcept { return !m_cvt_mode.encoding_assigned(); }
             locutils::codecvt_mode_ansi& cvt_mode() noexcept { return m_cvt_mode; }
             virtual void set_imbue_read(std::wistream& stream) const override;
             virtual void set_imbue_write(std::wostream& stream) const override;
@@ -75,10 +55,10 @@ namespace stdext
         {
         public:
             text_io_options_utf8()
-                : text_io_options(text_encoding::utf8), m_cvt_mode(locutils::codecvt_mode_utf8())
+                : text_io_options(), m_cvt_mode(locutils::codecvt_mode_utf8())
             { }
             text_io_options_utf8(const locutils::codecvt_mode_utf8& cvt_mode)
-                : text_io_options(text_encoding::utf8), m_cvt_mode(cvt_mode)
+                : text_io_options(), m_cvt_mode(cvt_mode)
             { }
         public:
             locutils::codecvt_mode_utf8& cvt_mode() noexcept { return m_cvt_mode; }
@@ -92,10 +72,10 @@ namespace stdext
         {
         public:
             text_io_options_utf16()
-                : text_io_options(text_encoding::utf16), m_cvt_mode(locutils::codecvt_mode_utf16())
+                : text_io_options(), m_cvt_mode(locutils::codecvt_mode_utf16())
             { }
             text_io_options_utf16(const locutils::codecvt_mode_utf16& cvt_mode)
-                : text_io_options(text_encoding::utf16), m_cvt_mode(cvt_mode)
+                : text_io_options(), m_cvt_mode(cvt_mode)
             { }
         public:
             locutils::codecvt_mode_utf16& cvt_mode() noexcept { return m_cvt_mode; }

@@ -163,12 +163,7 @@ TEST_F(CsvToolsTest, TestFiles)
         expected.push_back(csv_row_values_t({ L"1", L"2.345" }));
         expected.push_back(csv_row_values_t({ L"Non-ASCII текст", L"слово" }));
         expected.push_back(csv_row_values_t({ L"67,89", L"Multi line строка\nстрока 2\nстрока 3" }));
-#if defined(__STDEXT_USE_ICONV)
-        string encoding = "CP1251";
-#else
-        string encoding = ".1251";
-#endif
-        csv::reader rd(L"test01-ansi-1251.csv", ioutils::text_io_options_ansi(encoding));
+        csv::reader rd(L"test01-ansi-1251.csv", ioutils::text_io_options_ansi(locutils::ansi_encoding::cp1251));
         rd.separator(L',');
         CheckStreamReading(L"File ANSI 1251", rd, expected);
     }
@@ -182,7 +177,7 @@ TEST_F(CsvToolsTest, TestFiles)
 #else
         string encoding = ".1252";
 #endif
-        csv::reader rd(L"test01-ansi-1252.csv", ioutils::text_io_options_ansi(encoding));
+        csv::reader rd(L"test01-ansi-1252.csv", ioutils::text_io_options_ansi(encoding.c_str()));
         rd.separator(L',');
         CheckStreamReading(L"File ANSI 1252", rd, expected);
     }

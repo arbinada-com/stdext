@@ -50,18 +50,25 @@ protected:
 };
     TEST_F(IOUtilsTest, TestTextIOOptions)
     {
-        ioutils::text_io_options_ansi opt_ansi;
-        EXPECT_TRUE(opt_ansi.encoding() == ioutils::text_encoding::ansi) << L"ANSI encoding";
-        EXPECT_TRUE(opt_ansi.use_default_encoding()) << L"ANSI locale_default";
-        ioutils::text_io_options_ansi opt_ansi2(".1252");
-        EXPECT_FALSE(opt_ansi2.use_default_encoding()) << L"ANSI locale_default 2";
-        EXPECT_EQ(".1252", opt_ansi2.ansi_encoding_name()) << L"ANSI locale_name 2";
-        //
+        {
+            ioutils::text_io_options_ansi opt;
+            EXPECT_EQ(opt.cvt_mode().encoding(), locutils::codecvt_mode_ansi::default_encoding()) << L"ANSI encoding 1";
+            EXPECT_TRUE(opt.use_default_encoding()) << L"ANSI use default encoding 1";
+            EXPECT_EQ("CP1252", opt.cvt_mode().encoding_name_iconv()) << L"ANSI encoding name 1.1";
+            EXPECT_EQ(".1252", opt.cvt_mode().encoding_name_windows()) << L"ANSI encoding name 1.2";
+        }
+        {
+            ioutils::text_io_options_ansi opt(".1251");
+            EXPECT_FALSE(opt.use_default_encoding()) << L"ANSI use default encoding 2";
+            EXPECT_EQ(opt.cvt_mode().encoding(), locutils::ansi_encoding::by_name) << L"ANSI encoding 2";
+            EXPECT_EQ(".1251", opt.cvt_mode().encoding_name_iconv()) << L"ANSI encoding name 2.1";
+            EXPECT_EQ(".1251", opt.cvt_mode().encoding_name_windows()) << L"ANSI encoding name 2.2";
+        }
         ioutils::text_io_options_utf8 opt_utf8;
-        EXPECT_TRUE(opt_utf8.encoding() == ioutils::text_encoding::utf8) << L"UTF-8 encoding";
+        EXPECT_TRUE(opt_utf8.cvt_mode().consume_header()) << L"UTF-8 encoding";
         //
         ioutils::text_io_options_utf16 opt_utf16;
-        EXPECT_TRUE(opt_utf16.encoding() == ioutils::text_encoding::utf16) << L"UTF-16 encoding";
+        EXPECT_TRUE(opt_utf16.cvt_mode().consume_header()) << L"UTF-16 encoding";
     }
 
     TEST_F(IOUtilsTest, TestFileWriteAndRead_ANSI)
@@ -73,17 +80,11 @@ protected:
             wchar_t c = static_cast<wchar_t>(i);
             ws1 += c;
         }
-        CheckFileWriteAndRead(ws1, ws1, ioutils::text_io_options_ansi(), L"ASCII (default)");
+        CheckFileWriteAndRead(ws1, ws1, ioutils::text_io_options_ansi(), L"ASCII (default 1252)");
         wstring ws2 = /*ws1 +*/ L"éèçàùÈÉÀÇÙïÏ";
-        CheckFileWriteAndRead(ws2, ws2, ioutils::text_io_options_ansi(), L"ANSI (default)");
+        CheckFileWriteAndRead(ws2, ws2, ioutils::text_io_options_ansi(), L"ANSI (default 1252)");
         wstring ws3 = ws1 + L"АаБбВвГгДдЕеЁёЖжЗзИиКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЫыЭэЮюЯя";
-        string encoding =
-#if defined(__STDEXT_USE_ICONV)
-            "CP1251";
-#else
-            ".1251";
-#endif
-        CheckFileWriteAndRead(ws3, ws3, ioutils::text_io_options_ansi(encoding), L"ANSI (1251)");
+        CheckFileWriteAndRead(ws3, ws3, ioutils::text_io_options_ansi(locutils::ansi_encoding::cp1251), L"ANSI (1251)");
     }
 
     TEST_F(IOUtilsTest, TestFileWriteAndRead_Utf8)

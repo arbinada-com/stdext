@@ -77,12 +77,12 @@ protected:
         EXPECT_EQ(expected, mbs) << title + L": compare";
     }
 
-#if !defined(__STDEXT_WINDOWS)
+#if defined(__STDEXT_USE_ICONV)
     void CheckConverter_Ansi_Utf16ToAnsi(const string expected, const wstring ws, const codecvt_mode_ansi& mode, const wstring title)
     {
         locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
         string ansi;
-        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name()) + L": ";
+        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name_iconv()) + L": ";
         int result = cvt.utf16_to_ansi(ws, ansi);
         EXPECT_EQ(result, cvt.ok) << title2 + L"result";
         EXPECT_EQ(expected.length(), ansi.length()) << title2 + L"length";
@@ -93,7 +93,7 @@ protected:
     {
         locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
         wstring ws;
-        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name()) + L": ";
+        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name_iconv()) + L": ";
         int result = cvt.ansi_to_utf16(s, ws);
         EXPECT_EQ(result, cvt.ok) << title2 + L"result";
         EXPECT_EQ(expected.length(), ws.length()) << title2 + L"length";
@@ -371,7 +371,7 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_Memory)
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
 
-#if !defined(__STDEXT_WINDOWS)
+#if defined(__STDEXT_USE_ICONV)
 TEST_F(LocaleUtilsTest, TestStreamConverter_Ansi)
 {
     wstring ws1 = L"ABC déjà";

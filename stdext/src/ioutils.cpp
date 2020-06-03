@@ -3,6 +3,7 @@
  (c) 2001-2020 Serguei Tarassov (see license.txt)
  */
 #include "ioutils.h"
+#include "platforms.h"
 #include "strutils.h"
 #include <fstream>
 #include <sstream>
@@ -18,20 +19,20 @@ using namespace ioutils;
 void text_io_options_ansi::set_imbue_read(std::wistream& stream) const
 {
 #if defined(__STDEXT_USE_ICONV)
-    stream.imbue(std::locale(std::locale(""), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
 #elif defined(__STDEXT_WINDOWS)
-    if (m_cvt_mode.is_encoding_name_assigned())
-        stream.imbue(std::locale(m_cvt_mode.encoding_name()));
+    if (!use_default_encoding())
+        stream.imbue(std::locale(m_cvt_mode.encoding_name_windows()));
 #endif
 }
 
 void text_io_options_ansi::set_imbue_write(std::wostream& stream) const
 {
 #if defined(__STDEXT_USE_ICONV)
-    stream.imbue(std::locale(std::locale(""), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
+    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
 #elif defined(__STDEXT_WINDOWS)
-    if (m_cvt_mode.is_encoding_name_assigned())
-        stream.imbue(std::locale(m_cvt_mode.encoding_name()));
+    if (!use_default_encoding())
+        stream.imbue(std::locale(m_cvt_mode.encoding_name_windows()));
 #endif
 }
 
@@ -116,13 +117,9 @@ bool text_reader::is_next_char(std::initializer_list<wchar_t> chars) const
 
 void text_reader::read_all(std::wstring& s)
 {
-//    wstringstream wss;
-//    wss << m_stream->rdbuf();
-//    s = wss.str();
-    s.clear();
-    wchar_t c;
-    while (next_char(c))
-        s += c;
+    wstringstream wss;
+    wss << m_stream->rdbuf();
+    s = wss.str();
 }
 
 /*
