@@ -268,16 +268,28 @@ void datetime::parse(const char* str)
 	{
         // try to read date and time
         if (strchr(str, 'T') != NULL)
+#if defined(__STDEXT_WINDOWS)
+            npos = sscanf_s(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+#else
             npos = std::sscanf(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+#endif
         else
+#if defined(__STDEXT_WINDOWS)
+            npos = sscanf_s(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+#else
             npos = std::sscanf(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+#endif
         if (npos < 3 || npos == EOF || npos == 4)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
     }
 	else
 	{
 		// try to read time only
+#if defined(__STDEXT_WINDOWS)
+        npos = sscanf_s(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
+#else
         npos = std::sscanf(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
+#endif
 		if (npos < 2 || npos == EOF)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
         datetime dt = datetime::now();

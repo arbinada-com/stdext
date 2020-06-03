@@ -619,7 +619,7 @@ codecvt_utf16_wchar_t::do_in(
                 return codecvt_base_t::error; // must be a pair
 #if __STDEXT_WCHAR_SIZE == 2
                 put_next2(c2);
-                get_next1(c2, source_byte_order);
+                get_next1(c2, state_adapter.byte_order());
                 put_next2(c2);
 #else
                 wchar_t high = c2, low;

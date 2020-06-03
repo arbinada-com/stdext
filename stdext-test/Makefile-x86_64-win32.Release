@@ -189,7 +189,7 @@ release\x86_64\win32\stdext-test.exe: D:\Projects\stdext\stdext-test\..\stdext\r
 release\x86_64\win32\gtest-all.obj release\x86_64\win32\gmock-all.obj release\x86_64\win32\main.obj
 $(LIBS)
 <<
-	copy /y D:\Projects\stdext\stdext-test\data\* D:\Projects\stdext\stdext-test\release\x86_64\win32\* 
+	copy /y D:\Projects\stdext\stdext-test\data\*.* D:\Projects\stdext\stdext-test\release\x86_64\win32\ 
 
 
 qmake: FORCE

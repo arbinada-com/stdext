@@ -183,7 +183,7 @@ release\i386\win32\stdext.lib:  $(OBJECTS)
 <<
 
 qmake: FORCE
-	@$(QMAKE) -o Makefile-i386-win32.Release stdext.pro -spec win32-msvc
+	@$(QMAKE) -o Makefile-i386-win32.Release stdext.pro -spec win32-msvc "CONFIG+=debug"
 
 qmake_all: FORCE
 
@@ -225,11 +225,13 @@ release\i386\win32\csvtools.obj: src\csvtools.cpp src\csvtools.h \
 		src\ptr_vector.h
 
 release\i386\win32\datetime.obj: src\datetime.cpp src\datetime.h \
+		src\platforms.h \
 		src\strutils.h
 
 release\i386\win32\ioutils.obj: src\ioutils.cpp src\ioutils.h \
 		src\locutils.h \
-		src\platforms.h
+		src\platforms.h \
+		src\strutils.h
 
 release\i386\win32\jsoncommon.obj: src\jsoncommon.cpp src\jsoncommon.h \
 		src\parsers.h \
@@ -289,7 +291,8 @@ release\i386\win32\parsers.obj: src\parsers.cpp src\parsers.h \
 		src\strutils.h \
 		src\ptr_vector.h
 
-release\i386\win32\strutils.obj: src\strutils.cpp src\strutils.h
+release\i386\win32\strutils.obj: src\strutils.cpp src\strutils.h \
+		src\platforms.h
 
 release\i386\win32\testutils.obj: src\testutils.cpp src\testutils.h \
 		src\platforms.h

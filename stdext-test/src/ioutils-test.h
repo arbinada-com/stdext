@@ -74,16 +74,16 @@ protected:
     TEST_F(IOUtilsTest, TestFileWriteAndRead_ANSI)
     {
         wstring ws1;
-        ws1.reserve(255);
+        ws1.reserve(127);
         for (int i = 0x01; i <= 0x7F; i++)
         {
             wchar_t c = static_cast<wchar_t>(i);
             ws1 += c;
         }
         CheckFileWriteAndRead(ws1, ws1, ioutils::text_io_options_ansi(), L"ASCII (default 1252)");
-        wstring ws2 = /*ws1 +*/ L"éèçàùÈÉÀÇÙïÏ";
-        CheckFileWriteAndRead(ws2, ws2, ioutils::text_io_options_ansi(), L"ANSI (default 1252)");
-        wstring ws3 = ws1 + L"АаБбВвГгДдЕеЁёЖжЗзИиКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЫыЭэЮюЯя";
+        wstring ws2 = ws1 + L"\u00C0\u00C7\u00C8\u00C9\u00CF\u00D9\u00E0\u00E7\u00E8\u00E9\u00EF\u00F9"; // "ÀÇÈÉÏÙàçèéïù"
+        CheckFileWriteAndRead(ws2, ws2, ioutils::text_io_options_ansi(locutils::ansi_encoding::cp1252), L"ANSI (1252)");
+        wstring ws3 = ws1 + L"\u0410\u0411\u0412\u042E\u042F\u0430\u0431\u0432\u044E\u044F"; // "АБВЮЯабвюя"
         CheckFileWriteAndRead(ws3, ws3, ioutils::text_io_options_ansi(locutils::ansi_encoding::cp1251), L"ANSI (1251)");
     }
 
