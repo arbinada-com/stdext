@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    - cron: "0 2 * * 1-7"
+    - cron: "0 2 * * *"
 
 jobs:
   build:
@@ -15,7 +15,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: ./configure
     - name: make
       run: make -f ./stdext/Makefile-x86_64-linux.Debug
