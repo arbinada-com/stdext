@@ -129,7 +129,7 @@ void dom_literal::text(const std::wstring value) noexcept(false)
     else if (value == L"true")
         m_subtype = dom_literal_value_type::lvt_true;
     else
-        throw dom_exception(strutils::format(L"Invalid literal value '%s'", value.c_str()), dom_error::invalid_literal);
+        throw dom_exception(strutils::wformat(L"Invalid literal value '%ls'", value.c_str()), dom_error::invalid_literal);
     dom_value::text(value);
 }
 
@@ -163,7 +163,7 @@ dom_number::dom_number(dom_document* const doc, const double value)
     : dom_value(doc, dom_value_type::vt_number)
 {
     locutils::locale_guard lg(LC_NUMERIC, "C");
-    this->text(strutils::format(L"%g", value));
+    this->text(strutils::wformat(L"%g", value));
     m_subtype = dom_number_value_type::nvt_float;
 }
 
@@ -221,7 +221,7 @@ void dom_object_members::append(const name_t name, dom_value* const value) noexc
 void dom_object_members::check_name(const name_t name) const noexcept(false)
 {
     if (m_index.find(name) != m_index.end())
-        throw dom_exception(strutils::format(L"Duplicate name '%s'", name.c_str()), dom_error::duplicate_name);
+        throw dom_exception(strutils::wformat(L"Duplicate name '%ls'", name.c_str()), dom_error::duplicate_name);
 }
 
 void dom_object_members::clear() noexcept

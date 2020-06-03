@@ -14,8 +14,8 @@ namespace stdext
     {
         std::string format(const char* fmt, ...);
         std::string format(const std::string fmt, ...);
-        std::wstring format(const wchar_t* fmt, ...);
-        std::wstring format(const std::wstring fmt, ...);
+        std::wstring wformat(const wchar_t* fmt, ...);
+        std::wstring wformat(const std::wstring fmt, ...);
 
         std::string ltrim(const std::string& s);
         std::wstring ltrim(const std::wstring& s);

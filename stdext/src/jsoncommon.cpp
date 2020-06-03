@@ -25,7 +25,7 @@ bool json::is_unescaped(const wchar_t c)
 std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
 {
     if (force_to_numeric)
-        return strutils::format(L"\\u%0.4X", c);
+        return strutils::wformat(L"\\u%0.4X", c);
     switch (c)
     {
     case L'\"': return L"\\\"";
@@ -37,7 +37,7 @@ std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
     case L'\r': return L"\\r";
     case L'\t': return L"\\t";
     default:
-        return strutils::format(L"\\u%0.4X", c);
+        return strutils::wformat(L"\\u%0.4X", c);
     }
 }
 
@@ -47,14 +47,14 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     switch (kind)
     {
         // lexer
-    case parser_msg_kind::err_invalid_literal_fmt: return L"Invalid literal '%s'. Expected 'false', 'true' or 'null'";
+    case parser_msg_kind::err_invalid_literal_fmt: return L"Invalid literal '%ls'. Expected 'false', 'true' or 'null'";
     case parser_msg_kind::err_invalid_number: return L"Invalid number";
     case parser_msg_kind::err_reader_io: return L"Text reader I/O error";
     case parser_msg_kind::err_unallowed_char_fmt: return L"Unallowed character: %c (0x%x)";
     case parser_msg_kind::err_unallowed_escape_seq: return L"Invalid escape sequence. Expected '\\u' terminated with 4 hexadecimal digits '\\uXXXX'";
     case parser_msg_kind::err_unclosed_string: return L"Unclosed string";
     case parser_msg_kind::err_unexpected_char_fmt: return L"Unexpected character: %c (0x%x)";
-    case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %s";
+    case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %ls";
         // parser
     case parser_msg_kind::err_expected_array: return L"Array expected";
     case parser_msg_kind::err_expected_array_item: return L"Array item expected";
@@ -65,17 +65,17 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_expected_object: return L"Object expected";
     case parser_msg_kind::err_expected_string: return L"String expected";
     case parser_msg_kind::err_expected_value: return L"Expected value";
-    case parser_msg_kind::err_expected_value_but_found_fmt: return L"Expected value but '%s' found";
-    case parser_msg_kind::err_member_name_duplicate_fmt: return L"Duplicate member name '%s'";
+    case parser_msg_kind::err_expected_value_but_found_fmt: return L"Expected value but '%ls' found";
+    case parser_msg_kind::err_member_name_duplicate_fmt: return L"Duplicate member name '%ls'";
     case parser_msg_kind::err_member_name_is_empty: return L"Member name is empty";
     case parser_msg_kind::err_parent_is_not_container: return L"Parent DOM value is not container";
     case parser_msg_kind::err_unclosed_array: return L"Unclosed array";
     case parser_msg_kind::err_unclosed_object: return L"Unclosed object";
-    case parser_msg_kind::err_unexpected_lexeme_fmt: return L"Unexpected '%s'";
+    case parser_msg_kind::err_unexpected_lexeme_fmt: return L"Unexpected '%ls'";
     case parser_msg_kind::err_unexpected_text_end: return L"Unexpected end of text";
-    case parser_msg_kind::err_unsupported_dom_value_type_fmt: return L"Unsupported DOM value type: %s";
+    case parser_msg_kind::err_unsupported_dom_value_type_fmt: return L"Unsupported DOM value type: %ls";
     default:
-        return strutils::format(L"Unsupported message %d", static_cast<int>(kind));
+        return strutils::wformat(L"Unsupported message %d", static_cast<int>(kind));
     }
 }
 

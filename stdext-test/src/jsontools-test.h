@@ -123,7 +123,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocFileWriter(doc, L"\"ABC été déjà строка\"", L"Doc 3");
     doc.clear();
     doc.root(doc.create_string(L"\x1 \x2 \xFFFE \xFFFF"));
-    wstring expected = strutils::format(L"\"\\u0001 \\u0002 \\u%0.4X \\u%0.4X\"",
+    wstring expected = strutils::wformat(L"\"\\u0001 \\u0002 \\u%0.4X \\u%0.4X\"",
                                         utf16::replacement_character, utf16::replacement_character);
     CheckDocStringWriter(doc, expected, L"Str 4");
     CheckDocFileWriter(doc, expected, L"Doc 4");

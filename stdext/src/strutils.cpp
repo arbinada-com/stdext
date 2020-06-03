@@ -51,9 +51,8 @@ StringT basic_format(const CharT* fmt, va_list args)
     {
         StringT s;
         s.resize(size);
-//        s.assign(0, size);
         va_list args2;
-        va_copy(args2, args); // On Linux/gcc args va_list pointer may be changed (checked with StrUtilsTest, TestFormat)
+        va_copy(args2, args); // On Linux/gcc args va_list pointer may be changed so use the copy
         int n = basic_vsnprintf_s(s, fmt, args2);
         if (n > -1 && (size_t)n < size)
         {
@@ -65,7 +64,6 @@ StringT basic_format(const CharT* fmt, va_list args)
         else
             size *= 2;
     }
-//    return s;
 }
 
 std::string strutils::format(const char* fmt, ...)
@@ -86,7 +84,7 @@ string strutils::format(const std::string fmt, ...)
     return s;
 }
 
-std::wstring strutils::format(const wchar_t* fmt, ...)
+std::wstring strutils::wformat(const wchar_t* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -95,7 +93,7 @@ std::wstring strutils::format(const wchar_t* fmt, ...)
     return s;
 }
 
-wstring strutils::format(const std::wstring fmt, ...)
+wstring strutils::wformat(const std::wstring fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

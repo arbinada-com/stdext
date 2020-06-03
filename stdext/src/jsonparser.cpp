@@ -107,7 +107,7 @@ bool json::parser::accept_value(json::dom_value* const parent, dom_value_ptr& no
             if (obj->cmembers()->contains_name(ctx.member_name()))
             {
                 add_error(parser_msg_kind::err_member_name_duplicate_fmt, pos(),
-                    strutils::format(
+                    strutils::wformat(
                         json::to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
                         m_curr.text().c_str()));
 
@@ -151,7 +151,7 @@ bool json::parser::parse_doc()
         result = !next();
         if (!result)
             add_error(parser_msg_kind::err_unexpected_lexeme_fmt, pos(),
-                strutils::format(
+                strutils::wformat(
                     json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
                     m_curr.text().c_str()));
     }
@@ -184,7 +184,7 @@ bool json::parser::parse_value(json::dom_value* const parent, const context& ctx
         break;
     default:
         add_error(parser_msg_kind::err_expected_value_but_found_fmt, pos(),
-            strutils::format(
+            strutils::wformat(
                 json::to_wmessage(parser_msg_kind::err_expected_value_but_found_fmt).c_str(),
                 m_curr.text().c_str()));
         break;

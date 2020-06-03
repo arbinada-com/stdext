@@ -16,20 +16,20 @@ TEST(StrUtilsTest, TestFormat)
     EXPECT_EQ("The value is 123456789 12345.6789", strutils::format("%s %d %5.4f", s, i, f));
     const wchar_t ws[] = L"The value is";
     EXPECT_STREQ(s, strutils::format("%S", ws).c_str());
-    EXPECT_STREQ(ws, strutils::format(L"%ls", ws).c_str());
-    EXPECT_STREQ(ws, strutils::format(L"%hs", s).c_str());
+    EXPECT_STREQ(ws, strutils::wformat(L"%ls", ws).c_str());
+    EXPECT_STREQ(ws, strutils::wformat(L"%hs", s).c_str());
 #if defined(__STDEXT_WINDOWS)
     // Safe versions of formatting functions (xxxprintf_s) are used on Windows
-    EXPECT_STREQ(ws, strutils::format(L"%s", ws).c_str());
-    EXPECT_STREQ(ws, strutils::format(L"%S", s).c_str());
+    EXPECT_STREQ(ws, strutils::wformat(L"%s", ws).c_str());
+    EXPECT_STREQ(ws, strutils::wformat(L"%S", s).c_str());
 #endif
-    EXPECT_EQ(L"The value is 123456789 12345.6789", strutils::format(L"%ls %d %5.4f", ws, i, f));
+    EXPECT_EQ(L"The value is 123456789 12345.6789", strutils::wformat(L"%ls %d %5.4f", ws, i, f));
 }
 
 TEST(StrUtilsTest, TestConvertion)
 {
-    wstring ws = L"123 %d %s %i";
-    ASSERT_EQ(strutils::to_string(ws), "123 %d %s %i");
+    wstring ws = L"123 %d %ls %i";
+    ASSERT_EQ(strutils::to_string(ws), "123 %d %ls %i");
     ws = L"Aa\u263AE";
     ASSERT_EQ(strutils::to_string(ws), "Aa:E");
     string s1   =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";

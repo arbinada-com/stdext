@@ -152,9 +152,9 @@ public:
                 test_b_not(test);
                 break;
             default:
-                FAIL() << strutils::format(L"Unsupported operation %s (%d)",
-                                           strutils::to_wstring(variants::to_string(test.operation())).c_str(),
-                                           static_cast<int>(test.operation()));
+                FAIL() << strutils::wformat(L"Unsupported operation %ls (%d)",
+                                            strutils::to_wstring(variants::to_string(test.operation())).c_str(),
+                                            static_cast<int>(test.operation()));
             }
         }
         ASSERT_TRUE(count > 0) << L"No tests performed";
@@ -162,7 +162,7 @@ public:
 protected:
     std::wstring make_title(test_data_t& test, const wchar_t* msg)
     {
-        return strutils::format(L"%s[%s] - %s", m_tests.title().c_str(), test.title().c_str(), msg);
+        return strutils::wformat(L"%ls[%ls] - %ls", m_tests.title().c_str(), test.title().c_str(), msg);
     }
     virtual void test_assignments(test_data_t& test)
     {
@@ -484,7 +484,7 @@ TEST(VariantsTest, TestOperationNames)
     for (operation op = first_operation(); op != last_operation(); op = (operation)(static_cast<int>(op) + 1))
     {
         string s = variants::to_string(op);
-        ASSERT_FALSE(s == "unsupported") << strutils::format(L"Undefined name for operation %d", static_cast<int>(op));
+        ASSERT_FALSE(s == "unsupported") << strutils::wformat(L"Undefined name for operation %d", static_cast<int>(op));
     }
 }
 
@@ -493,7 +493,7 @@ TEST(VariantsTest, TestVTypeNames)
     for (value_type vtype = first_value_type(); vtype != last_value_type(); vtype = (value_type)(static_cast<int>(vtype) + 1))
     {
         string s = variants::to_string(vtype);
-        ASSERT_FALSE(s == "unsupported") << strutils::format(L"Undefined name for value_type %d", static_cast<int>(vtype));
+        ASSERT_FALSE(s == "unsupported") << strutils::wformat(L"Undefined name for value_type %d", static_cast<int>(vtype));
     }
 }
 

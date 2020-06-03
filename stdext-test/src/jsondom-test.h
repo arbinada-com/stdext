@@ -128,7 +128,7 @@ TEST_F(JsonDomTest, TestValueTypeNames)
          vtype = (json::dom_value_type)(static_cast<int>(vtype) + 1))
     {
         string s = json::to_string(vtype);
-        ASSERT_NE(s, "unsupported") << strutils::format(L"Undefined name for value_type %d", static_cast<int>(vtype));
+        ASSERT_NE(s, "unsupported") << strutils::wformat(L"Undefined name for value_type %d", static_cast<int>(vtype));
     }
 }
 
@@ -229,16 +229,16 @@ TEST_F(JsonDomTest, TestDomMembers)
     for (size_t i = 0; i < test_data.size(); i++)
     {
         json::dom_object_member::name_t name = make_name(i + 1);
-        ASSERT_EQ(name, o1->members()->at(i)->name()) << strutils::format(L"Name %d", i);
-        ASSERT_TRUE(test_data[i] == (*o1)[i]->value()) << strutils::format(L"Value ptr %d", i);
-        ASSERT_TRUE(test_data[i]->type() == (*o1)[i]->value()->type()) << strutils::format(L"Value type %d", i);
-        ASSERT_TRUE(test_data[i]->text() == (*o1)[i]->value()->text()) << strutils::format(L"Value %d", i);
+        ASSERT_EQ(name, o1->members()->at(i)->name()) << strutils::wformat(L"Name %d", i);
+        ASSERT_TRUE(test_data[i] == (*o1)[i]->value()) << strutils::wformat(L"Value ptr %d", i);
+        ASSERT_TRUE(test_data[i]->type() == (*o1)[i]->value()->type()) << strutils::wformat(L"Value type %d", i);
+        ASSERT_TRUE(test_data[i]->text() == (*o1)[i]->value()->text()) << strutils::wformat(L"Value %d", i);
         json::dom_value* v = o1->find(name);
-        ASSERT_TRUE(o1->contains_member(name)) << strutils::format(L"Value2 name %d", i);
-        ASSERT_FALSE(v == nullptr) << strutils::format(L"Value2 %d", i);
-        ASSERT_EQ(test_data[i], v) << strutils::format(L"Value2 ptr %d", i);
-        ASSERT_EQ(test_data[i]->type(), v->type()) << strutils::format(L"Value2 type %d", i);
-        ASSERT_EQ(test_data[i]->text(), v->text()) << strutils::format(L"Value2 %d", i);
+        ASSERT_TRUE(o1->contains_member(name)) << strutils::wformat(L"Value2 name %d", i);
+        ASSERT_FALSE(v == nullptr) << strutils::wformat(L"Value2 %d", i);
+        ASSERT_EQ(test_data[i], v) << strutils::wformat(L"Value2 ptr %d", i);
+        ASSERT_EQ(test_data[i]->type(), v->type()) << strutils::wformat(L"Value2 type %d", i);
+        ASSERT_EQ(test_data[i]->text(), v->text()) << strutils::wformat(L"Value2 %d", i);
     }
 }
 

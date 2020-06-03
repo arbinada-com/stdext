@@ -146,7 +146,7 @@ bool json::lexer::handle_literal(lexeme& lex)
     {
         add_error(parser_msg_kind::err_invalid_literal_fmt,
             pos,
-            strutils::format(
+            strutils::wformat(
                 json::to_wmessage(parser_msg_kind::err_invalid_literal_fmt),
                 value.c_str()));
         return false;
@@ -277,14 +277,14 @@ bool json::lexer::handle_string(lexeme& lex)
                 s += m_c;
                 add_error(parser_msg_kind::err_unrecognized_escape_seq_fmt,
                     pos,
-                    strutils::format(json::to_wmessage(parser_msg_kind::err_unrecognized_escape_seq_fmt), s.c_str()));
+                    strutils::wformat(json::to_wmessage(parser_msg_kind::err_unrecognized_escape_seq_fmt), s.c_str()));
                 return false;
             }
         }
         else
         {
             add_error(parser_msg_kind::err_unallowed_char_fmt,
-                strutils::format(
+                strutils::wformat(
                     json::to_wmessage(parser_msg_kind::err_unallowed_char_fmt),
                     m_c, static_cast<unsigned int>(m_c)));
         }
@@ -388,7 +388,7 @@ bool json::lexer::next_lexeme(lexeme& lex)
             return handle_number(lex);
         default:
             add_error(parser_msg_kind::err_unexpected_char_fmt,
-                strutils::format(
+                strutils::wformat(
                     json::to_wmessage(parser_msg_kind::err_unexpected_char_fmt),
                     m_c, static_cast<unsigned int>(m_c)));
             break;
