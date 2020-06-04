@@ -16,4 +16,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make
-      run: cd ./stdext && make staticlib -f Makefile-x86_64-linux.Debug
+      run: cd ./stdext && make staticlib --trace -f Makefile-x86_64-linux.Debug
