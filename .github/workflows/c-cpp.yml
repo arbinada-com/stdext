@@ -16,4 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make
-      run: cd ./stdext && make staticlib --trace -f Makefile-x86_64-linux.Debug
+      working-directory: ./stdext
+      # Prevent to remake makefile (qmake is required for this)
+      # Other option: copy 'Makefile-xxx' to 'Makefile' ('Makefile' will be always newer)
+      run: echo "Makefile-x86_64-linux.Debug:;@:" | make -f Makefile-x86_64-linux.Debug staticlib -f -
