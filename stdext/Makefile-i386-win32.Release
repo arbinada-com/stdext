@@ -183,7 +183,7 @@ release\i386\win32\stdext.lib:  $(OBJECTS)
 <<
 
 qmake: FORCE
-	@$(QMAKE) -o Makefile-i386-win32.Release stdext.pro -spec win32-msvc "CONFIG+=debug"
+	@$(QMAKE) -o Makefile-i386-win32.Release stdext.pro -spec win32-msvc "CONFIG+=debug" -nocache -nodepend
 
 qmake_all: FORCE
 
@@ -216,86 +216,43 @@ compiler_clean:
 
 ####### Compile
 
-release\i386\win32\csvtools.obj: src\csvtools.cpp src\csvtools.h \
-		src\ioutils.h \
-		src\locutils.h \
-		src\platforms.h \
-		src\parsers.h \
-		src\strutils.h \
-		src\ptr_vector.h
+release\i386\win32\csvtools.obj: src\csvtools.cpp src\csvtools.h
 
 release\i386\win32\datetime.obj: src\datetime.cpp src\datetime.h \
 		src\platforms.h \
 		src\strutils.h
 
 release\i386\win32\ioutils.obj: src\ioutils.cpp src\ioutils.h \
-		src\locutils.h \
 		src\platforms.h \
 		src\strutils.h
 
 release\i386\win32\jsoncommon.obj: src\jsoncommon.cpp src\jsoncommon.h \
-		src\parsers.h \
 		src\strutils.h \
-		src\ptr_vector.h \
-		src\locutils.h \
-		src\platforms.h
+		src\locutils.h
 
 release\i386\win32\jsondom.obj: src\jsondom.cpp src\jsondom.h \
-		src\jsonexceptions.h \
 		src\strutils.h \
-		src\ptr_vector.h \
 		src\locutils.h \
-		src\platforms.h \
 		src\jsoncommon.h \
-		src\parsers.h \
 		src\testutils.h
 
 release\i386\win32\jsonlexer.obj: src\jsonlexer.cpp src\jsonlexer.h \
-		src\parsers.h \
-		src\strutils.h \
-		src\ptr_vector.h \
-		src\ioutils.h \
-		src\locutils.h \
-		src\platforms.h \
-		src\jsoncommon.h \
-		src\jsonexceptions.h
+		src\strutils.h
 
 release\i386\win32\jsonparser.obj: src\jsonparser.cpp src\jsonparser.h \
-		src\jsonexceptions.h \
-		src\strutils.h \
-		src\jsonlexer.h \
-		src\parsers.h \
-		src\ptr_vector.h \
-		src\ioutils.h \
-		src\locutils.h \
-		src\platforms.h \
-		src\jsoncommon.h \
-		src\jsondom.h
+		src\strutils.h
 
-release\i386\win32\jsontools.obj: src\jsontools.cpp src\jsontools.h \
-		src\jsoncommon.h \
-		src\parsers.h \
-		src\strutils.h \
-		src\ptr_vector.h \
-		src\jsondom.h \
-		src\jsonexceptions.h \
-		src\locutils.h \
-		src\platforms.h \
-		src\ioutils.h \
-		src\testutils.h
+release\i386\win32\jsontools.obj: src\jsontools.cpp src\jsontools.h
 
-release\i386\win32\locutils.obj: src\locutils.cpp src\locutils.h \
-		src\platforms.h
+release\i386\win32\locutils.obj: src\locutils.cpp src\locutils.h
 
 release\i386\win32\parsers.obj: src\parsers.cpp src\parsers.h \
-		src\strutils.h \
-		src\ptr_vector.h
+		src\strutils.h
 
 release\i386\win32\strutils.obj: src\strutils.cpp src\strutils.h \
 		src\platforms.h
 
-release\i386\win32\testutils.obj: src\testutils.cpp src\testutils.h \
-		src\platforms.h
+release\i386\win32\testutils.obj: src\testutils.cpp src\testutils.h
 
 release\i386\win32\variants.obj: src\variants.cpp src\variants.h \
 		src\strutils.h
