@@ -1,7 +1,5 @@
-#pragma once
 #include <cstdlib>
 #include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
 #include "datetime.h"
 
 using namespace std;

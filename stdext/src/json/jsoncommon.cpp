@@ -4,8 +4,8 @@
  */
 
 #include "jsoncommon.h"
-#include "strutils.h"
-#include "locutils.h"
+#include "../strutils.h"
+#include "../locutils.h"
 
 using namespace std;
 using namespace stdext;

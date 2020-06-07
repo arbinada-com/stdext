@@ -12,9 +12,9 @@
 #include <limits>
 #include "jsoncommon.h"
 #include "jsondom.h"
-#include "locutils.h"
-#include "ioutils.h"
-#include "testutils.h"
+#include "../locutils.h"
+#include "../ioutils.h"
+#include "../testutils.h"
 
 namespace stdext
 {

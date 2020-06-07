@@ -6,7 +6,7 @@
 #include "jsonparser.h"
 #include <locale>
 #include <memory>
-#include "strutils.h"
+#include "../strutils.h"
 
 using namespace std;
 using namespace stdext;

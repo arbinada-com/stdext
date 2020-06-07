@@ -5,7 +5,7 @@
 
 #include "jsonlexer.h"
 #include <locale>
-#include "strutils.h"
+#include "../strutils.h"
 
 using namespace std;
 using namespace stdext;

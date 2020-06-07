@@ -5,7 +5,9 @@ TEMPLATE = app
 CONFIG += console c++11
 CONFIG += thread
 
-INCLUDEPATH += ../stdext/src
+INCLUDEPATH += \
+    ../stdext/src \
+    ../stdext/src/json
 
 LIBS_DIR = $$PWD/../stdext/$${DESTDIR_SUBDIR}
 win32: LIBS += -L$$LIBS_DIR/ -lstdext
@@ -16,24 +18,21 @@ unix: PRE_TARGETDEPS += $$LIBS_DIR/libstdext.a
 message(Uses libs: $$LIBS)
 message(Pre targetdeps: $$PRE_TARGETDEPS)
 
-
-HEADERS += \
-    src/containers-test.h \
-    src/csvtools-test.h \
-    src/datetime-test.h \
-    src/ioutils-test.h \
-    src/jsondom-test.h \
-    src/jsonlexer-test.h \
-    src/jsonparser-test.h \
-    src/jsontools-test.h \
-    src/locutils-test.h \
-    src/parsers-test.h \
-    src/platforms-test.h \
-    src/strutils-test.h \
-    src/trees-test.h \
-    src/variants-test.h
-
 SOURCES += \
-    src/main.cpp
+    src/main.cpp \
+    src/containers-test.cpp \
+    src/csvtools-test.cpp \
+    src/datetime-test.cpp \
+    src/ioutils-test.cpp \
+    src/jsondom-test.cpp \
+    src/jsonlexer-test.cpp \
+    src/jsonparser-test.cpp \
+    src/jsontools-test.cpp \
+    src/locutils-test.cpp \
+    src/parsers-test.cpp \
+    src/platforms-test.cpp \
+    src/strutils-test.cpp \
+    src/trees-test.cpp \
+    src/variants-test.cpp
 
 PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)

@@ -1,6 +1,4 @@
-#pragma once
 #include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
 #include "variants.h"
 #include "strutils.h"
 #include "testutils.h"

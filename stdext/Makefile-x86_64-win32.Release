@@ -50,11 +50,11 @@ OBJECTS_DIR   = release\x86_64\win32
 SOURCES       = src\csvtools.cpp \
 		src\datetime.cpp \
 		src\ioutils.cpp \
-		src\jsoncommon.cpp \
-		src\jsondom.cpp \
-		src\jsonlexer.cpp \
-		src\jsonparser.cpp \
-		src\jsontools.cpp \
+		src\json\jsoncommon.cpp \
+		src\json\jsondom.cpp \
+		src\json\jsonlexer.cpp \
+		src\json\jsonparser.cpp \
+		src\json\jsontools.cpp \
 		src\locutils.cpp \
 		src\parsers.cpp \
 		src\strutils.cpp \
@@ -77,13 +77,13 @@ OBJECTS       = release\x86_64\win32\csvtools.obj \
 DIST          =  src/csvtools.h \
 		src/datetime.h \
 		src/ioutils.h \
-		src/json.h \
-		src/jsoncommon.h \
-		src/jsondom.h \
-		src/jsonexceptions.h \
-		src/jsonlexer.h \
-		src/jsonparser.h \
-		src/jsontools.h \
+		src/json/json.h \
+		src/json/jsoncommon.h \
+		src/json/jsondom.h \
+		src/json/jsonexceptions.h \
+		src/json/jsonlexer.h \
+		src/json/jsonparser.h \
+		src/json/jsontools.h \
 		src/locutils.h \
 		src/parsers.h \
 		src/platforms.h \
@@ -94,11 +94,11 @@ DIST          =  src/csvtools.h \
 		src/variants.h src\csvtools.cpp \
 		src\datetime.cpp \
 		src\ioutils.cpp \
-		src\jsoncommon.cpp \
-		src\jsondom.cpp \
-		src\jsonlexer.cpp \
-		src\jsonparser.cpp \
-		src\jsontools.cpp \
+		src\json\jsoncommon.cpp \
+		src\json\jsondom.cpp \
+		src\json\jsonlexer.cpp \
+		src\json\jsonparser.cpp \
+		src\json\jsontools.cpp \
 		src\locutils.cpp \
 		src\parsers.cpp \
 		src\strutils.cpp \
@@ -112,6 +112,26 @@ DESTDIR_TARGET = release\x86_64\win32\stdext.lib
 ####### Implicit rules
 
 .SUFFIXES: .c .cpp .cc .cxx
+
+{src\json}.cpp{release\x86_64\win32\}.obj::
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\x86_64\win32\ @<<
+	$<
+<<
+
+{src\json}.cc{release\x86_64\win32\}.obj::
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\x86_64\win32\ @<<
+	$<
+<<
+
+{src\json}.cxx{release\x86_64\win32\}.obj::
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\x86_64\win32\ @<<
+	$<
+<<
+
+{src\json}.c{release\x86_64\win32\}.obj::
+	$(CC) -c $(CFLAGS) $(INCPATH) -Forelease\x86_64\win32\ @<<
+	$<
+<<
 
 {release/x86_64/win32/ui}.cpp{release\x86_64\win32\}.obj::
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -Forelease\x86_64\win32\ @<<
@@ -221,23 +241,23 @@ release\x86_64\win32\ioutils.obj: src\ioutils.cpp src\ioutils.h \
 		src\platforms.h \
 		src\strutils.h
 
-release\x86_64\win32\jsoncommon.obj: src\jsoncommon.cpp src\jsoncommon.h \
+release\x86_64\win32\jsoncommon.obj: src\json\jsoncommon.cpp src\json\jsoncommon.h \
 		src\strutils.h \
 		src\locutils.h
 
-release\x86_64\win32\jsondom.obj: src\jsondom.cpp src\jsondom.h \
+release\x86_64\win32\jsondom.obj: src\json\jsondom.cpp src\json\jsondom.h \
 		src\strutils.h \
 		src\locutils.h \
-		src\jsoncommon.h \
-		src\testutils.h
+		src\testutils.h \
+		src\json\jsoncommon.h
 
-release\x86_64\win32\jsonlexer.obj: src\jsonlexer.cpp src\jsonlexer.h \
+release\x86_64\win32\jsonlexer.obj: src\json\jsonlexer.cpp src\json\jsonlexer.h \
 		src\strutils.h
 
-release\x86_64\win32\jsonparser.obj: src\jsonparser.cpp src\jsonparser.h \
+release\x86_64\win32\jsonparser.obj: src\json\jsonparser.cpp src\json\jsonparser.h \
 		src\strutils.h
 
-release\x86_64\win32\jsontools.obj: src\jsontools.cpp src\jsontools.h
+release\x86_64\win32\jsontools.obj: src\json\jsontools.cpp src\json\jsontools.h
 
 release\x86_64\win32\locutils.obj: src\locutils.cpp src\locutils.h
 

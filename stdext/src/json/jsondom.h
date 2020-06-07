@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <limits>
 #include "jsonexceptions.h"
-#include "ptr_vector.h"
+#include "../ptr_vector.h"
 
 namespace stdext
 {

@@ -1,6 +1,4 @@
-#pragma once
 #include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
 #include "parsers.h"
 #include <fstream>
 #include <limits>

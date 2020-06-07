@@ -1,13 +1,10 @@
-﻿#pragma once
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
+﻿#include <gtest/gtest.h>
 #include "json.h"
 #include "jsontools.h"
 #include <fstream>
 #include <limits>
 #include "strutils.h"
 #include "testutils.h"
-#include "parsers-test.h"
 
 using namespace std;
 using namespace stdext;

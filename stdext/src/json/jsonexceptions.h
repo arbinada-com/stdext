@@ -8,7 +8,7 @@
 
 #pragma once
 #include <exception>
-#include "strutils.h"
+#include "../strutils.h"
 
 namespace stdext
 {

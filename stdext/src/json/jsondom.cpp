@@ -7,10 +7,10 @@
 #include <memory>
 #include <sstream>
 #include <stack>
-#include "strutils.h"
-#include "locutils.h"
+#include "../strutils.h"
+#include "../locutils.h"
+#include "../testutils.h"
 #include "jsoncommon.h"
-#include "testutils.h"
 
 using namespace std;
 using namespace stdext;

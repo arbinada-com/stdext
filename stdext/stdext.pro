@@ -28,11 +28,11 @@ SOURCES += \
     src/csvtools.cpp \
     src/datetime.cpp \
     src/ioutils.cpp \
-    src/jsoncommon.cpp \
-    src/jsondom.cpp \
-    src/jsonlexer.cpp \
-    src/jsonparser.cpp \
-    src/jsontools.cpp \
+    src/json/jsoncommon.cpp \
+    src/json/jsondom.cpp \
+    src/json/jsonlexer.cpp \
+    src/json/jsonparser.cpp \
+    src/json/jsontools.cpp \
     src/locutils.cpp \
     src/parsers.cpp \
     src/strutils.cpp \
@@ -43,13 +43,13 @@ HEADERS += \
     src/csvtools.h \
     src/datetime.h \
     src/ioutils.h \
-    src/json.h \
-    src/jsoncommon.h \
-    src/jsondom.h \
-    src/jsonexceptions.h \
-    src/jsonlexer.h \
-    src/jsonparser.h \
-    src/jsontools.h \
+    src/json/json.h \
+    src/json/jsoncommon.h \
+    src/json/jsondom.h \
+    src/json/jsonexceptions.h \
+    src/json/jsonlexer.h \
+    src/json/jsonparser.h \
+    src/json/jsontools.h \
     src/locutils.h \
     src/parsers.h \
     src/platforms.h \
