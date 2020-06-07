@@ -23,29 +23,27 @@ std::wstring dom_document_writer::escape(const std::wstring s) const
 {
     wstring es;
     es.reserve(s.length());
-    wchar_t high_surrogate = 0;
-    for (const wchar_t& c : s)
+    for (size_t i = 0; i < s.length(); i++)
     {
-        if (high_surrogate != 0)
+        wchar_t c = s[i];
+        if (utf16::is_high_surrogate(c))
         {
-            if (utf16::is_low_surrogate(c))
-                es += json::to_escaped(high_surrogate, true) + json::to_escaped(c, true);
-            else
+            if ( i + 1 < s.length())
             {
-                es += utf16::replacement_character; // invalid high surrogate detected
-                es += c;
+                if (utf16::is_low_surrogate(s[i + 1]))
+                    es += json::to_escaped(c, true) + json::to_escaped(s[++i], true);
+                else // invalid pair, try to use the second character only
+                    es += utf16::replacement_character;
             }
-            high_surrogate = 0;
+            else // incomplete pair
+                es += utf16::replacement_character;
         }
+        else if (utf16::is_low_surrogate(c))
+            es += utf16::replacement_character;
         else
         {
             if (json::is_unescaped(c))
-            {
-                if (utf16::is_high_surrogate(c))
-                    high_surrogate = c;
-                else
                     es += c;
-            }
             else
             {
                 if (utf16::is_noncharacter(c))
@@ -55,8 +53,6 @@ std::wstring dom_document_writer::escape(const std::wstring s) const
             }
         }
     }
-    if (high_surrogate != 0)
-        es += high_surrogate;
     return es;
 }
 
@@ -153,9 +149,7 @@ dom_document_generator::dom_document_generator(json::dom_document& doc)
 
 void dom_document_generator::run()
 {
-    int level_count = m_rnd.random_range(conf().min_depth(), conf().max_depth());
-    if (level_count < 1)
-        level_count = 1;
+    int level_count = conf().depth();
     if (level_count == 1)
     {
         m_doc.root(generate_value(random_value_type()));
@@ -171,30 +165,33 @@ void dom_document_generator::run()
 
 void dom_document_generator::generate_level(const int curr_level, const int level_count, const containers_t& parents)
 {
-    if (curr_level >= level_count)
-        return;
-    bool container_required = (curr_level < level_count);
-    for (dom_value* cont : parents)
+    bool is_last_level = curr_level == level_count;
+    bool no_more_containers = is_last_level;
+    bool container_required = !is_last_level;
+    for (dom_value* parent : parents)
     {
         containers_t conts;
-        int value_count = m_rnd.random_range(conf().min_depth(), conf().max_depth());
+        int value_count = m_rnd.random_range(1, conf().avg_children() * 2);
         for (int i = 0; i < value_count; i++)
         {
-            dom_value_type type = random_value_type();
-            if (container_required && conts.empty() && i == value_count - 1)
-                type = random_value_container_type();
-            dom_value* value = generate_value(type);
-            if (value->is_container())
-                conts.push_back(value);
-            if (cont->type() == dom_value_type::vt_array)
-                dynamic_cast<dom_array*>(cont)->append(value);
+            dom_value* child;
+            if (i == value_count - 1 && conts.empty() && container_required)
+                child = generate_value(random_value_container_type());
             else
-            { 
-                wstring name = m_rnd.random_wstring(3, 32, testutils::rnd_helper::char_range(0x21, 0xFF));
-                dynamic_cast<dom_object*>(cont)->append_member(name, value);
+            {
+                if (no_more_containers)
+                    child = generate_value(random_value_scalar_type());
+                else
+                    child = generate_value(random_value_type());
             }
+            if (child->is_container())
+                conts.push_back(child);
+            wstring name = m_rnd.random_wstring(3, 32, m_config.name_char_range());
+            dom_append_child_visitor creator(name, child);
+            parent->accept(creator);
         }
-        generate_level(curr_level + 1, level_count, conts);
+        if (!is_last_level)
+            generate_level(curr_level + 1, level_count, conts);
     }
 }
 
@@ -221,11 +218,12 @@ json::dom_value* dom_document_generator::generate_value(json::dom_value_type typ
     case dom_value_type::vt_number:
         if (m_rnd.random_bool())
             return m_doc.create_number(m_rnd.random_range(numeric_limits<int>::min(), numeric_limits<int>::max()));
-        return m_doc.create_number(1E10 * (m_rnd.random_float() - 0.5));
+        return m_doc.create_number(std::pow(10.0, m_rnd.random_range(-20, 20)) * (m_rnd.random_float() - 0.5));
     case dom_value_type::vt_object:
         return generate_object();
-    default: //dom_value_type::vt_string
-        return m_doc.create_string(m_rnd.random_wstring(conf().avg_string_length()));
+    case dom_value_type::vt_string:
+    default:
+        return m_doc.create_string(m_rnd.random_wstring(conf().avg_string_length(), conf().value_char_range()));
     }
 }
 
@@ -247,6 +245,16 @@ json::dom_value_type dom_document_generator::random_value_type()
     case 2: return dom_value_type::vt_literal;
     case 3: return dom_value_type::vt_number;
     case 4: return dom_value_type::vt_object;
+    default: return dom_value_type::vt_string;
+    }
+}
+
+json::dom_value_type dom_document_generator::random_value_scalar_type()
+{
+    switch (m_rnd.random_range(1, 3))
+    {
+    case 1: return dom_value_type::vt_literal;
+    case 2: return dom_value_type::vt_number;
     default: return dom_value_type::vt_string;
     }
 }

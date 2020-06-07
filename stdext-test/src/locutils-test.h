@@ -104,12 +104,21 @@ protected:
 
 TEST_F(LocaleUtilsTest, TestSurrogatePair)
 {
+    EXPECT_LT(utf16::high_surrogate_min, utf16::high_surrogate_max);
+    ASSERT_TRUE(utf16::is_high_surrogate(utf16::high_surrogate_min));
+    ASSERT_TRUE(utf16::is_high_surrogate(utf16::high_surrogate_max));
+    ASSERT_TRUE(utf16::is_high_surrogate(utf16::high_surrogate_min + 1));
+    ASSERT_TRUE(utf16::is_low_surrogate(utf16::low_surrogate_min));
+    ASSERT_TRUE(utf16::is_low_surrogate(utf16::low_surrogate_max));
+    ASSERT_TRUE(utf16::is_low_surrogate(utf16::low_surrogate_min + 1));
     wchar_t high = 0, low = 0;
     char32_t c = 0x10437;
     ASSERT_TRUE(utf16::is_surrogate_pair(c)) << L"1.1";
     ASSERT_TRUE(utf16::to_surrogate_pair(c, high, low)) << L"1.2";
     EXPECT_EQ((wchar_t)0xD801u, high) << L"1.3";
     EXPECT_EQ((wchar_t)0xDC37u, low) << L"1.4";
+    EXPECT_TRUE(utf16::is_surrogate_pair(high, low)) << L"1.5";
+    EXPECT_FALSE(utf16::is_surrogate_pair(low, high)) << L"1.6";
     c = 0;
     ASSERT_TRUE(utf16::from_surrogate_pair(high, low, c)) << L"2.1";
     EXPECT_EQ(0x10437u, c) << L"2.2";
@@ -175,6 +184,36 @@ TEST_F(LocaleUtilsTest, TestSwapByteOrder)
     EXPECT_EQ(s1, utf16::swap_byte_order(utf16::swap_byte_order(s1))) << L"3";
 }
 
+TEST_F(LocaleUtilsTest, TestCharRanges)
+{
+    locutils::wchar_range wcr1;
+    EXPECT_EQ(wcr1.min(), 0x0001);
+    EXPECT_EQ(wcr1.max(), 0xFFFF);
+    EXPECT_TRUE(wcr1.contains(1));
+    EXPECT_TRUE(wcr1.contains(100));
+    EXPECT_TRUE(wcr1.contains(0xFFFF - 1));
+    EXPECT_TRUE(wcr1.contains(0xFFFF));
+    wstring ws;
+    for (int i = wcr1.min(); i <= wcr1.max(); i++)
+        ws += (wchar_t)i;
+    EXPECT_TRUE(wcr1.contains_all(ws.c_str(), ws.length()));
+    EXPECT_TRUE(wcr1.contains_all(ws));
+    wcr1.min(32);
+    wcr1.max(127);
+    EXPECT_EQ(wcr1.min(), 32);
+    EXPECT_EQ(wcr1.max(), 127);
+    EXPECT_TRUE(wcr1.contains(33));
+    EXPECT_FALSE(wcr1.contains(255));
+    ws.clear();
+    for (int i = wcr1.min(); i <= wcr1.max(); i++)
+        ws += (wchar_t)i;
+    EXPECT_TRUE(wcr1.contains_all(ws.c_str(), ws.length()));
+    EXPECT_TRUE(wcr1.contains_all(ws));
+}
+
+/*
+ * Converters
+ */
 TEST_F(LocaleUtilsTest, TestUtf16_WCharToMbytes)
 {
     wstring ws1 = L"ABC déjà строка";

@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 #include "locutils.h"
 #include "strutils.h"
 #include "testutils.h"
@@ -31,23 +32,34 @@ protected:
         w.write_to_file(file_name, ioutils::text_io_options_utf8());
     }
 
-    void CheckDocFileWriter(json::dom_document& doc, wstring expected, wstring title)
+    void CompareDocStrings(const wstring ws, const wstring& expected, const wstring& title)
+    {
+        EXPECT_EQ(ws.length(), expected.length()) << title + L": length";
+        if (ws.length() < 100)
+            EXPECT_EQ(expected, ws) << title + L": content";
+        for (size_t i = 0; i < ws.length() && i < expected.length(); i++)
+        {
+            ASSERT_EQ(ws[i], expected[i]) << strutils::wformat(L"%ls: char[%d]", title.c_str(), i);
+        }
+    }
+
+    void CheckDocFileWriter(json::dom_document& doc, const wstring& expected, const wstring& title)
     {
         const wstring file_name = default_test_file_name;
         SaveDoc(doc, file_name);
         ioutils::text_reader r(file_name, ioutils::text_io_options_utf8());
         wstring s;
         r.read_all(s);
-        ASSERT_EQ(expected, s) << title + L": content";
+        CompareDocStrings(s, expected, title);
     }
 
-    void CheckDocStringWriter(json::dom_document& doc, wstring expected, wstring title)
+    void CheckDocStringWriter(json::dom_document& doc, const wstring& expected, const wstring& title)
     {
         json::dom_document_writer w(doc);
         w.conf().pretty_print(false);
         wstring s;
         w.write(s);
-        ASSERT_EQ(expected, s) << title + L": output";
+        CompareDocStrings(s, expected, title);
     }
 };
 
@@ -85,25 +97,29 @@ TEST_F(JsonToolsTest, TestStringEscape)
 {
     json::dom_document doc;
     json::dom_document_writer w(doc);
-    ASSERT_EQ(L"", w.escape(L"")) << L"1";
-    ASSERT_EQ(L"\\\"", w.escape(L"\"")) << L"2.1";
-    ASSERT_EQ(L"\\\\", w.escape(L"\\")) << L"2.2";
-    ASSERT_EQ(L"/", w.escape(L"/")) << L"2.3";
-    ASSERT_EQ(L"\\b", w.escape(L"\b")) << L"2.4";
-    ASSERT_EQ(L"\\f", w.escape(L"\f")) << L"2.5";
-    ASSERT_EQ(L"\\n", w.escape(L"\n")) << L"2.6";
-    ASSERT_EQ(L"\\r", w.escape(L"\r")) << L"2.7";
-    ASSERT_EQ(L"\\t", w.escape(L"\t")) << L"2.8";
+    EXPECT_EQ(L"", w.escape(L"")) << "1";
+    EXPECT_EQ(L"\\\"", w.escape(L"\"")) << "2.1";
+    EXPECT_EQ(L"\\\\", w.escape(L"\\")) << "2.2";
+    EXPECT_EQ(L"/", w.escape(L"/")) << "2.3";
+    EXPECT_EQ(L"\\b", w.escape(L"\b")) << "2.4";
+    EXPECT_EQ(L"\\f", w.escape(L"\f")) << "2.5";
+    EXPECT_EQ(L"\\n", w.escape(L"\n")) << "2.6";
+    EXPECT_EQ(L"\\r", w.escape(L"\r")) << "2.7";
+    EXPECT_EQ(L"\\t", w.escape(L"\t")) << "2.8";
     //
-    ASSERT_EQ(L"\\u0001", w.escape(L"\x0001")) << L"3.1";
-    ASSERT_EQ(L"\\u001F", w.escape(L"\x001F")) << L"3.2";
+    EXPECT_EQ(L"\\u0001", w.escape(L"\x0001")) << "3.1";
+    EXPECT_EQ(L"\\u001F", w.escape(L"\x001F")) << "3.2";
+    wstring ws = {utf16::replacement_character};
+    ASSERT_EQ(L"\xFFFD", w.escape(ws)) << "3.3";
     //
-    ASSERT_EQ(L"\\uD834\\uDD1E", w.escape(L"\xD834\xDD1E")) << L"Surrogate pair 'G clef' 1";
-    ASSERT_EQ(L"==\\uD834\\uDD1E==", w.escape(L"==\xD834\xDD1E==")) << L"Surrogate pair 'G clef' 2";
-    wstring expected;
-    expected += utf16::replacement_character;
-    expected += L"-\xDD1E";
-    ASSERT_EQ(expected, w.escape(L"\xD834-\xDD1E")) << L"Surrogate pair 2";
+    EXPECT_EQ(L"\\uD834\\uDD1E", w.escape(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
+    EXPECT_EQ(L"==\\uD834\\uDD1E==", w.escape(L"==\xD834\xDD1E==")) << "Surrogate pair 'G clef' 2";
+    wstring expected = {utf16::replacement_character};
+    EXPECT_EQ(expected, w.escape(L"\xD834")) << "Surrogate pair 2.1";
+    expected += L"-\x1234";
+    EXPECT_EQ(expected, w.escape(L"\xD834-\x1234")) << "Surrogate pair 2.2";
+    expected = {utf16::replacement_character, L'-', utf16::replacement_character};
+    EXPECT_EQ(expected, w.escape(L"\xD834-\xDD1E")) << "Surrogate pair 2.3";
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
@@ -130,10 +146,12 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     //
     wstring s;
     expected.clear();
-    for (int i = 0x1; i <= 0xFFFF; i++)
+    for (int i = 0x1; i < 0xFFFF; i++)
     {
         wchar_t c = static_cast<wchar_t>(i);
-        if (utf16::is_noncharacter(c) || utf16::is_high_surrogate(c))
+        if (utf16::is_high_surrogate(c) || utf16::is_low_surrogate(c))
+            continue;
+        if (utf16::is_noncharacter(c))
             c = utf16::replacement_character;
         s += c;
         if (json::is_unescaped(c))
@@ -146,6 +164,19 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     doc.root(doc.create_string(s));
     CheckDocStringWriter(doc, expected, L"Str 5");
     CheckDocFileWriter(doc, expected, L"Doc 5");
+    //
+    s = {utf16::high_surrogate_min};
+    expected = {L'"', utf16::replacement_character, L'"'};
+    doc.clear();
+    doc.root(doc.create_string(s));
+    CheckDocStringWriter(doc, expected, L"Str 6.1");
+    CheckDocFileWriter(doc, expected, L"Doc 6.1");
+    s = {utf16::high_surrogate_min, L'A'};
+    expected = {L'"', utf16::replacement_character, L'A', L'"'};
+    doc.clear();
+    doc.root(doc.create_string(s));
+    CheckDocStringWriter(doc, expected, L"Str 6.2");
+    CheckDocFileWriter(doc, expected, L"Doc 6.2");
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentWriter_Array)
@@ -255,61 +286,48 @@ TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
     json::dom_document_generator::config& conf = gen.conf();
     using config_t = json::dom_document_generator::config;
     //
-    ASSERT_EQ(1, conf.min_depth()) << L"min_depth 1";
-    ASSERT_EQ(1, conf.max_depth()) << L"max_depth 1";
-    ASSERT_EQ(1, conf.min_values_by_level()) << L"min_values_by_level 1";
-    ASSERT_EQ(1, conf.max_values_by_level()) << L"max_values_by_level 1";
-    ASSERT_EQ(config_t::default_avg_array_items(), conf.avg_array_items()) << L"avg_array_items 1";
-    ASSERT_EQ(config_t::default_avg_object_members(), conf.avg_object_members()) << L"avg_object_members 1";
-    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << L"avg_string_length 1";
+    ASSERT_EQ(1, conf.depth()) << "depth 1";
+    ASSERT_EQ(config_t::default_avg_children(), conf.avg_children()) << "avg_array_items 1";
+    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << "avg_string_length 1";
     //
-    conf.max_depth(conf.min_depth() - 1);
-    ASSERT_EQ(conf.min_depth(), conf.max_depth()) << L"max_depth 2";
-    conf.max_values_by_level(conf.min_values_by_level() - 1);
-    ASSERT_EQ(conf.min_values_by_level(), conf.max_values_by_level()) << L"max_values_by_level 2";
-    conf.avg_array_items(0);
-    ASSERT_EQ(config_t::default_avg_array_items(), conf.avg_array_items()) << L"avg_array_items 2";
-    conf.avg_object_members(-1);
-    ASSERT_EQ(config_t::default_avg_object_members(), conf.avg_object_members()) << L"avg_object_members 2";
-    conf.avg_string_length(-2);
-    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << L"avg_string_length 2";
+    conf.avg_children(0);
+    ASSERT_EQ(config_t::default_avg_children(), conf.avg_children()) << "avg_array_items 2";
+    conf.avg_string_length(0);
+    ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << "avg_string_length 2";
     //
-    conf.min_depth(-1);
-    ASSERT_EQ(1, conf.min_depth()) << L"min_depth 2";
-    conf.min_values_by_level(-1);
-    ASSERT_EQ(1, conf.min_values_by_level()) << L"min_values_by_level 2";
-    //
-    conf.min_depth(2);
-    ASSERT_EQ(2, conf.min_depth()) << L"min_depth 3";
-    ASSERT_EQ(2, conf.max_depth()) << L"max_depth 3";
-    conf.min_values_by_level(4);
-    ASSERT_EQ(4, conf.min_values_by_level()) << L"min_values_by_level 3";
-    ASSERT_EQ(4, conf.max_values_by_level()) << L"max_values_by_level 3";
-    //
-    conf.max_depth(7);
-    ASSERT_EQ(2, conf.min_depth()) << L"min_depth 4";
-    ASSERT_EQ(7, conf.max_depth()) << L"max_depth 4";
-    conf.max_values_by_level(9);
-    ASSERT_EQ(4, conf.min_values_by_level()) << L"min_values_by_level 4";
-    ASSERT_EQ(9, conf.max_values_by_level()) << L"max_values_by_level 4";
+    conf.depth(0);
+    ASSERT_EQ(1, conf.depth()) << "depth 2";
+    conf.depth(7);
+    ASSERT_EQ(7, conf.depth()) << "depth 3";
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentGenerator)
 {
     json::dom_document doc;
     json::dom_document_generator gen(doc);
-    gen.conf().min_depth(5);
-    gen.conf().max_values_by_level(2);
+    gen.conf().depth(5);
+    gen.conf().avg_children(3);
     gen.run();
     SaveDoc(doc, default_test_file_name);
-    int count = 0;
-    for (const auto& value : doc)
+    unsigned int item_count = 0;
+    size_t level_count = 0, max_children = gen.conf().avg_children() * 2;
+    for (json::dom_document::const_iterator it = doc.begin(); it != doc.end(); it++)
     {
-        EXPECT_EQ(value->document(), &doc);
-        count++;
+        if (it.level() > level_count)
+            level_count = it.level();
+        if (it->type() == json::dom_value_type::vt_string)
+            EXPECT_TRUE(gen.conf().value_char_range().contains_all(it->text()));
+        if (it->member() != nullptr)
+            EXPECT_TRUE(gen.conf().name_char_range().contains_all(it->member()->name()));
+        if (it->is_container())
+            EXPECT_LE(it->as_container()->count(), max_children);
+        EXPECT_EQ(it->document(), &doc);
+        item_count++;
     }
-    ASSERT_TRUE(count >= gen.conf().min_depth() * gen.conf().min_values_by_level()) << L"Count 1";
-    ASSERT_TRUE(count <= gen.conf().max_depth() * gen.conf().max_values_by_level()) << L"Count 2";
+    EXPECT_GE(level_count, 1u) << "Min depth";
+    EXPECT_LE(level_count, gen.conf().depth()) << "Max depth";
+    EXPECT_GE(item_count, gen.conf().depth()) << "Count min";
+    EXPECT_LE(item_count, std::pow(gen.conf().avg_children(), gen.conf().depth())) << "Count max";
 }
 
 }

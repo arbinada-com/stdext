@@ -85,11 +85,42 @@ namespace stdext
         std::string to_string(const dom_value_type type);
         std::wstring to_wstring(const dom_value_type type);
 
+
         class dom_array;
+        class dom_literal;
+        class dom_number;
         class dom_object;
+        class dom_string;
+
+        class dom_value_visitor
+        {
+        public:
+            dom_value_visitor() = default;
+            dom_value_visitor(const dom_value_visitor&) = default;
+            dom_value_visitor& operator =(const dom_value_visitor&) = default;
+            dom_value_visitor(dom_value_visitor&&) = default;
+            dom_value_visitor& operator =(dom_value_visitor&&) = default;
+            virtual ~dom_value_visitor() = default;
+        public:
+            virtual void visit(json::dom_array& value) = 0;
+            virtual void visit(json::dom_literal& value) = 0;
+            virtual void visit(json::dom_number& value) = 0;
+            virtual void visit(json::dom_object& value) = 0;
+            virtual void visit(json::dom_string& value) = 0;
+        };
+
+
+        class dom_value;
         class dom_document;
         class dom_object_member;
         class dom_object_members;
+
+        class container_intf
+        {
+        public:
+            virtual dom_value* get_value(const std::size_t i) = 0;
+            virtual std::size_t count() const = 0;
+        };
 
         class dom_value
         {
@@ -104,12 +135,15 @@ namespace stdext
             dom_value& operator =(dom_value&&) = delete;
             virtual ~dom_value();
         public:
+            virtual container_intf* as_container() { return nullptr; }
+            virtual bool is_container() const noexcept { return false; }
+        public:
+            virtual void accept(dom_value_visitor& visitor) = 0;
             void assert_same_doc(dom_document* doc) const noexcept(false);
             void assert_no_parent() const noexcept(false);
             void assert_same_doc_no_parent(dom_document* doc) const noexcept(false);
             virtual void clear() { m_text.clear(); }
             dom_document* document() const noexcept { return m_doc; }
-            bool is_container() const noexcept { return m_type == dom_value_type::vt_array || m_type == dom_value_type::vt_object; }
             dom_object_member* member() const noexcept { return m_member; }
             dom_value* parent() const noexcept { return m_parent; }
             virtual std::wstring text() const noexcept { return m_text; }
@@ -128,6 +162,7 @@ namespace stdext
             dom_value_type m_type;
         };
 
+
         enum class dom_literal_value_type
         {
             lvt_false,
@@ -140,6 +175,7 @@ namespace stdext
         public:
             dom_literal(dom_document* const doc, const std::wstring text);
         public:
+            void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
             dom_literal_value_type subtype() const noexcept { return m_subtype; }
             virtual std::wstring text() const noexcept override 
             { return dom_value::text(); } // prevent error C2660 function does not take 0 arguments
@@ -162,6 +198,7 @@ namespace stdext
             dom_number(dom_document* const doc, const int64_t value);
             dom_number(dom_document* const doc, const double value);
         public:
+            void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
             dom_number_value_type subtype() const noexcept { return m_subtype; }
             void subtype(const dom_number_value_type value) noexcept { m_subtype = value; }
         protected:
@@ -173,6 +210,8 @@ namespace stdext
         public:
             dom_string(dom_document* const doc, const wchar_t* text);
             dom_string(dom_document* const doc, const std::wstring& text);
+        public:
+            void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
         };
 
 
@@ -238,14 +277,7 @@ namespace stdext
             data_index_t m_index;
         };
 
-        class indexer_intf
-        {
-        public:
-            virtual dom_value* get_value(const std::size_t i) = 0;
-            virtual std::size_t value_count() const = 0;
-        };
-
-        class dom_object : public dom_value, public indexer_intf
+        class dom_object : public dom_value, public container_intf
         {
         public:
             typedef dom_object_member::name_t name_t;
@@ -254,6 +286,7 @@ namespace stdext
             dom_object(dom_document* const doc);
             ~dom_object() override;
         public:
+            void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
             void clear() override;
             dom_object_members* members() { return m_members; }
             const dom_object_members* cmembers() const { return m_members; }
@@ -263,14 +296,17 @@ namespace stdext
             inline bool contains_member(const name_t name) const noexcept { return m_members->contains_name(name); }
             inline dom_value* find(const name_t name) const noexcept { return m_members->find(name); }
             size_type size() const { return m_members->size(); }
-        public: // indexer_intf implementation
+        public: // container_intf implementation
+            container_intf* as_container() override { return dynamic_cast<json::container_intf*>(this); }
+            bool is_container() const noexcept override { return true; }
             dom_value* get_value(const std::size_t i) override { return m_members->at(i)->value(); };
-            std::size_t value_count() const override { return m_members->size(); }
+            std::size_t count() const override { return m_members->size(); }
         private:
             dom_object_members* m_members = nullptr;
         };
 
-        class dom_array : public dom_value, public indexer_intf
+
+        class dom_array : public dom_value, public container_intf
         {
         public:
             typedef stdext::ptr_vector<dom_value> data_t;
@@ -281,6 +317,7 @@ namespace stdext
             dom_array(dom_document* const doc);
             ~dom_array() override;
         public:
+            void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
             void clear() noexcept override { m_data->clear(); }
             dom_value* at(const size_type i) { return m_data->at(i); }
             dom_value* operator [](const size_type i) { return m_data->at(i); }
@@ -291,9 +328,11 @@ namespace stdext
             void append(dom_value* const value) noexcept;
             bool empty() const noexcept { return m_data->empty(); }
             size_type size() const { return m_data->size(); }
-        public: // indexer_intf implementation
+        public: // container_intf implementation
+            container_intf* as_container() override { return dynamic_cast<json::container_intf*>(this); }
+            bool is_container() const noexcept override { return true; }
             dom_value* get_value(const std::size_t i) override { return m_data->at(i); };
-            std::size_t value_count() const override { return m_data->size(); }
+            std::size_t count() const override { return m_data->size(); }
         private:
             data_t* m_data = nullptr;
         };
@@ -346,6 +385,7 @@ namespace stdext
                         ((is_end() && rhs.is_end()) || m_current == rhs.m_current); 
                 }
                 inline bool operator !=(const const_iterator& rhs) { return !(*this == rhs); }
+                inline dom_value* operator ->() const noexcept { return m_current; }
                 inline const dom_value* operator *() const { return m_current; }
                 inline const dom_value* value() const noexcept { return m_current; }
                 inline std::size_t level() const noexcept { return m_path.size(); }
@@ -376,6 +416,36 @@ namespace stdext
         private:
             dom_value* m_root = nullptr;
         };
+
+
+        class dom_append_child_visitor : public dom_value_visitor
+        {
+        public:
+            typedef dom_object_member::name_t name_t;
+        public:
+            dom_append_child_visitor(dom_value* child)
+                : dom_value_visitor(), m_child(child)
+            {}
+            dom_append_child_visitor(name_t name, dom_value* child)
+                : dom_value_visitor(), m_name(name), m_child(child)
+            {}
+        public:
+            virtual void visit(json::dom_literal&) override {}
+            virtual void visit(json::dom_number&) override {}
+            virtual void visit(json::dom_string&) override {}
+            void visit(dom_array& value) override
+            {
+                value.append(m_child);
+            }
+            void visit(dom_object& value) override
+            {
+                value.append_member(m_name, m_child);
+            }
+        private:
+            name_t m_name;
+            dom_value* m_child;
+        };
+
 
         bool equal(const dom_value& v1, const dom_value& v2);
         bool equal(const dom_document& doc1, const dom_document& doc2);

@@ -65,48 +65,28 @@ namespace stdext
             dom_document_generator& operator=(dom_document_generator&&) = delete;
         public:
             typedef std::vector<json::dom_value*> containers_t;
+
             class config
             {
             public:
-                static int default_avg_array_items() noexcept { return 10; }
-                static int default_avg_object_members() noexcept { return 10; }
-                static int default_avg_string_length() noexcept { return 50; }
-                int avg_array_items() const noexcept { return m_avg_array_items; }
-                void avg_array_items(const int value) noexcept { m_avg_array_items = (value > 0 ? value : m_avg_array_items); }
-                int avg_object_members() const noexcept { return m_avg_object_members; }
-                void avg_object_members(const int value) noexcept { m_avg_object_members = (value > 0 ? value : m_avg_object_members); }
-                int avg_string_length() const noexcept { return m_avg_string_length; }
-                void avg_string_length(const int value) noexcept { m_avg_string_length = (value > 0 ? value : m_avg_string_length); }
-                int min_depth() const { return m_min_depth; }
-                void min_depth(const int value) { set_min(value, m_min_depth, m_max_depth); }
-                int max_depth() const { return m_max_depth; }
-                void max_depth(const int value) { set_max(value, m_min_depth, m_max_depth); }
-                int max_values_by_level() const { return m_max_values_by_level; }
-                void max_values_by_level(const int value) { set_max(value, m_min_values_by_level, m_max_values_by_level); }
-                int min_values_by_level() const { return m_min_values_by_level; }
-                void min_values_by_level(const int value) { set_min(value, m_min_values_by_level, m_max_values_by_level); }
+                inline static unsigned int default_avg_children() noexcept { return 5; }
+                inline static unsigned int default_avg_string_length() noexcept { return 50; }
+                unsigned int avg_children() const noexcept { return m_avg_children; }
+                void avg_children(const unsigned int value) noexcept { m_avg_children = (value > 0 ? value : m_avg_children); }
+                unsigned int avg_string_length() const noexcept { return m_avg_string_length; }
+                void avg_string_length(const unsigned int value) noexcept { m_avg_string_length = (value > 0 ? value : m_avg_string_length); }
+                unsigned int depth() const { return m_depth; }
+                void depth(const int value) { m_depth = value > 0 ? value : 1; }
+                locutils::wchar_range& name_char_range() noexcept { return m_name_char_range; }
+                locutils::wchar_range& value_char_range() noexcept { return m_value_char_range; }
             private:
-                void set_min(const int value, int& min_value, int& max_value, const int min_limit = 1)
-                {
-                    min_value = value >= min_limit ? value : min_limit;
-                    if (max_value < min_value)
-                        max_value = min_value;
-                }
-                void set_max(const int value, int& min_value, int& max_value, const int max_limit = std::numeric_limits<int>::max())
-                {
-                    max_value = value <= max_limit ? value : max_limit;
-                    if (max_value < min_value)
-                        max_value = min_value;
-                }
-            private:
-                int m_avg_array_items = config::default_avg_array_items();
-                int m_avg_object_members = config::default_avg_object_members();
-                int m_avg_string_length = config::default_avg_string_length();
-                int m_min_depth = 1;
-                int m_max_depth = 1;
-                int m_min_values_by_level = 1;
-                int m_max_values_by_level = 1;
+                unsigned int m_avg_children = config::default_avg_children();
+                unsigned int m_avg_string_length = config::default_avg_string_length();
+                unsigned int m_depth = 1;
+                locutils::wchar_range m_name_char_range{0x21, 0x7E};
+                locutils::wchar_range m_value_char_range;
             };
+
         public:
             dom_document_generator::config& conf() { return m_config; }
             json::dom_document& doc() const { return m_doc; }
@@ -119,6 +99,7 @@ namespace stdext
             std::wstring random_literal_name();
             json::dom_value_type random_value_type();
             json::dom_value_type random_value_container_type();
+            json::dom_value_type random_value_scalar_type();
         private:
             dom_document_generator::config m_config;
             json::dom_document& m_doc;

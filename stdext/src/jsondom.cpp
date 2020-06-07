@@ -362,7 +362,7 @@ dom_document::iterator dom_document::begin()
 {
     return iterator(this); 
 }
-dom_document::const_iterator dom_document::begin() const 
+dom_document::const_iterator dom_document::begin() const
 { 
     return const_iterator(this); 
 }
@@ -404,8 +404,8 @@ dom_value* dom_document::const_iterator::next()
 {
     if (m_current != nullptr)
     {
-        indexer_intf* idx = dynamic_cast<indexer_intf*>(m_current);
-        if (idx != nullptr && idx->value_count() > 0)
+        container_intf* idx = dynamic_cast<container_intf*>(m_current);
+        if (idx != nullptr && idx->count() > 0)
         {
             m_path.push_back(0);
             m_current = idx->get_value(0);
@@ -417,8 +417,8 @@ dom_value* dom_document::const_iterator::next()
             {
                 std::size_t next_index = m_path.back() + 1;
                 m_path.pop_back();
-                idx = dynamic_cast<indexer_intf*>(m_current);
-                if (idx != nullptr && next_index < idx->value_count())
+                idx = dynamic_cast<container_intf*>(m_current);
+                if (idx != nullptr && next_index < idx->count())
                 {
                     m_path.push_back(next_index);
                     m_current = idx->get_value(next_index);

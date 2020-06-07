@@ -85,6 +85,11 @@ bool utf16::is_surrogate_pair(const char32_t c)
     return c > 0xFFFF && c <= max_char;
 }
 
+bool utf16::is_surrogate_pair(const wchar_t high, const wchar_t low)
+{
+    return utf16::is_high_surrogate(high) && utf16::is_low_surrogate(low);
+}
+
 bool utf16::to_surrogate_pair(const char32_t c, wchar_t& high, wchar_t& low)
 {
     if (is_surrogate_pair(c))

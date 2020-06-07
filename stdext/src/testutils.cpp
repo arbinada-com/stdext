@@ -63,10 +63,10 @@ double rnd_helper::random_float() // [0, 1)
 
 std::wstring rnd_helper::random_wstring(const int avg_length)
 {
-    return random_wstring(avg_length, char_range());
+    return random_wstring(avg_length, locutils::wchar_range());
 }
 
-std::wstring rnd_helper::random_wstring(const int avg_length, const char_range& range)
+std::wstring rnd_helper::random_wstring(const int avg_length, const locutils::wchar_range& range)
 {
     int length = abs(avg_length);
     int deviation = random_range(0, length);
@@ -75,10 +75,10 @@ std::wstring rnd_helper::random_wstring(const int avg_length, const char_range& 
 
 std::wstring rnd_helper::random_wstring(const int min_length, const int max_length)
 {
-    return random_wstring(min_length, max_length, char_range());
+    return random_wstring(min_length, max_length, locutils::wchar_range());
 }
 
-std::wstring rnd_helper::random_wstring(const int min_length, const int max_length, const char_range& range)
+std::wstring rnd_helper::random_wstring(const int min_length, const int max_length, const locutils::wchar_range& range)
 {
     const int min_limit = 1;
     constexpr int max_limit = 1024 * 1024 * 1024;
@@ -90,7 +90,12 @@ std::wstring rnd_helper::random_wstring(const int min_length, const int max_leng
     s.resize(length);
     for (int i = 0; i < length; i++)
     {
-        s[i] = static_cast<wchar_t>(random_range(range.min(), range.max()));
+        wchar_t c;
+        do
+        {
+            c = static_cast<wchar_t>(random_range(range.min(), range.max()));
+        } while (locutils::utf16::is_noncharacter(c));
+        s[i] = c;
     }
     return s;
 }

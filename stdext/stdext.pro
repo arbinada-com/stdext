@@ -1,8 +1,5 @@
 include(stdext-common.pri)
 
-CONFIG -= qt
-CONFIG -= app_bundle
-
 TEMPLATE = lib
 TARGET = stdext
 CONFIG += staticlib
@@ -67,4 +64,3 @@ unix {
     target.path = $$[QT_INSTALL_PLUGINS]/generic
 }
 !isEmpty(target.path): INSTALLS += target
-

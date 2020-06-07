@@ -1,6 +1,15 @@
 # QMake common settings for both library and test projects
 #
 
+CONFIG -= qmake_use
+CONFIG -= qtc_run
+CONFIG -= debug_and_release
+CONFIG -= debug_and_release_target
+CONFIG -= qt
+CONFIG -= app_bundle
+CONFIG -= lex yacc
+CONFIG += no_autoqmake
+
 STDEXT_ARCH = $$QT_ARCH
 STDEXT_PLATFORM = unknown
 win32: STDEXT_PLATFORM = win32
@@ -25,7 +34,7 @@ MOC_DIR = $${DESTDIR_SUBDIR}/moc
 RCC_DIR = $${DESTDIR_SUBDIR}/rcc
 UI_DIR = $${DESTDIR_SUBDIR}/ui
 
-win32:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}
+win32:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_TARGET}
 linux:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_TARGET}
 
 message(DESTDIR: $$DESTDIR)

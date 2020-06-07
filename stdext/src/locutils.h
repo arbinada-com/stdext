@@ -58,6 +58,7 @@ namespace stdext
             static bool is_low_surrogate(const wchar_t c);
             static bool is_noncharacter(const wchar_t c);
             static bool is_surrogate_pair(const char32_t c);
+            static bool is_surrogate_pair(const wchar_t high, const wchar_t low);
             static bool to_surrogate_pair(const char32_t c, wchar_t& high, wchar_t& low);
             static bool from_surrogate_pair(wchar_t high, wchar_t low, char32_t& c);
             static std::wstring swap_byte_order(const std::wstring& ws);
@@ -100,7 +101,47 @@ namespace stdext
             static bool is_noncharacter(const unsigned char c);
         };
 
+        template <class CharT, CharT default_min, CharT default_max>
+        class char_range_base
+        {
+        public:
+            char_range_base() {};
+            char_range_base(const CharT min, const CharT max)
+                : m_min(min), m_max(max)
+            { }
+            char_range_base(const char_range_base&) = default;
+            char_range_base& operator=(const char_range_base&) = default;
+            char_range_base(char_range_base&&) = default;
+            char_range_base& operator=(char_range_base&&) = default;
+        public:
+            bool contains(const CharT c) const noexcept { return c >= m_min && c <= m_max; }
+            bool contains_all(const CharT* str, const size_t length)
+            {
+                for(size_t i = 0; i != length; i++)
+                {
+                    if (!contains(str[i]))
+                        return false;
+                }
+                return true;
+            }
+            bool contains_all(const std::basic_string<CharT>& str) { return contains_all(str.c_str(), str.length()); }
+            CharT min() const noexcept { return m_min; }
+            void min(const CharT c) noexcept { m_min = c; }
+            CharT max() const noexcept { return m_max; }
+            void max(const CharT c) noexcept { m_max = c; }
+        protected:
+            CharT m_min = default_min;
+            CharT m_max = default_max;
+        };
 
+        typedef char_range_base<char, -0x7F, 0x7F> char_range;
+        typedef char_range_base<unsigned char, 0x01, 0xFF> uchar_range;
+        typedef char_range_base<wchar_t, 0x0001, 0xFFFF> wchar_range;
+
+
+        /*
+         * Converters
+         */
         class codecvt_mode_base
         {
         public:

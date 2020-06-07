@@ -45,9 +45,9 @@ protected:
         if (path == L"0")
         {
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
-            ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            EXPECT_EQ(3u, idx->value_count()) << title + L"count";
+            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+            EXPECT_EQ(3u, cont->count()) << title + L"count";
         }
         else if (path == L"0.0")
         {
@@ -59,14 +59,14 @@ protected:
             ASSERT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type 1.1";
             ASSERT_TRUE(json::dom_literal_value_type::lvt_null == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype 1.1";
             ASSERT_TRUE(nullptr == dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
-            ASSERT_TRUE(nullptr == dynamic_cast<json::indexer_intf*>(v1)) << title + L"cast 2";
+            ASSERT_TRUE(nullptr == dynamic_cast<json::container_intf*>(v1)) << title + L"cast 2";
         }
         else if (path == L"0.2")
         {
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
-            json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
-            ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            EXPECT_EQ(5u, idx->value_count()) << title + L"count";
+            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+            EXPECT_EQ(5u, cont->count()) << title + L"count";
         }
         else if (path == L"0.2.0")
         {
@@ -86,9 +86,9 @@ protected:
         else if (path == L"0.2.2")
         {
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
-            ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            EXPECT_EQ(0u, idx->value_count()) << title + L"count";
+            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+            EXPECT_EQ(0u, cont->count()) << title + L"count";
             ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
             EXPECT_EQ(L"Arr 1", v1->member()->name()) << title + L"member name";
         }
@@ -103,9 +103,9 @@ protected:
         else if (path == L"0.2.4")
         {
             ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::indexer_intf* idx = dynamic_cast<json::indexer_intf*>(v1);
-            ASSERT_TRUE(idx != nullptr) << title + L"cast 2";
-            EXPECT_EQ(1u, idx->value_count()) << title + L"count";
+            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+            EXPECT_EQ(1u, cont->count()) << title + L"count";
             ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
             EXPECT_EQ(L"Arr 2", v1->member()->name()) << title + L"member name";
         }
@@ -242,39 +242,39 @@ TEST_F(JsonDomTest, TestDomMembers)
     }
 }
 
-TEST_F(JsonDomTest, TestDomIndexers)
+TEST_F(JsonDomTest, TestDomContainers)
 {
     json::dom_document doc;
     FillTestDoc(doc);
     //
     CheckTestDocValue(L"0", doc.root());
-    json::indexer_intf* idx1 = dynamic_cast<json::indexer_intf*>(doc.root());
-    ASSERT_NE(idx1, nullptr);
-    json::dom_value* v1 = idx1->get_value(0);
+    json::container_intf* cont1 = dynamic_cast<json::container_intf*>(doc.root());
+    ASSERT_NE(cont1, nullptr);
+    json::dom_value* v1 = cont1->get_value(0);
     CheckTestDocValue(L"0.0", v1);
-    v1 = idx1->get_value(1);
+    v1 = cont1->get_value(1);
     CheckTestDocValue(L"0.1", v1);
-    v1 = idx1->get_value(2);
+    v1 = cont1->get_value(2);
     CheckTestDocValue(L"0.2", v1);
     //
-    json::indexer_intf* idx2 = dynamic_cast<json::indexer_intf*>(v1);
-    ASSERT_NE(idx2, nullptr);
-    v1 = idx2->get_value(0);
+    json::container_intf* cont2 = dynamic_cast<json::container_intf*>(v1);
+    ASSERT_NE(cont2, nullptr);
+    v1 = cont2->get_value(0);
     CheckTestDocValue(L"0.2.0", v1);
-    v1 = idx2->get_value(1);
+    v1 = cont2->get_value(1);
     CheckTestDocValue(L"0.2.1", v1);
-    v1 = idx2->get_value(2);
+    v1 = cont2->get_value(2);
     CheckTestDocValue(L"0.2.2", v1);
-    json::indexer_intf* idx3 = dynamic_cast<json::indexer_intf*>(v1);
-    ASSERT_NE(idx3, nullptr);
-    EXPECT_EQ(idx3->value_count(), 0u);
-    v1 = idx2->get_value(3);
+    json::container_intf* cont3 = dynamic_cast<json::container_intf*>(v1);
+    ASSERT_NE(cont3, nullptr);
+    EXPECT_EQ(cont3->count(), 0u);
+    v1 = cont2->get_value(3);
     CheckTestDocValue(L"0.2.3", v1);
-    v1 = idx2->get_value(4);
+    v1 = cont2->get_value(4);
     CheckTestDocValue(L"0.2.4", v1);
-    json::indexer_intf* idx4 = dynamic_cast<json::indexer_intf*>(v1);
-    ASSERT_NE(idx4, nullptr);
-    v1 = idx4->get_value(0);
+    json::container_intf* cont4 = dynamic_cast<json::container_intf*>(v1);
+    ASSERT_NE(cont4, nullptr);
+    v1 = cont4->get_value(0);
     CheckTestDocValue(L"0.2.4.0", v1);
 }
 
