@@ -15,8 +15,8 @@ unix: LIBS += -L$$LIBS_DIR/ -lstdext
 DEPENDPATH += $$LIBS_DIR
 win32: PRE_TARGETDEPS += $$LIBS_DIR/stdext.lib
 unix: PRE_TARGETDEPS += $$LIBS_DIR/libstdext.a
-message(Uses libs: $$LIBS)
-message(Pre targetdeps: $$PRE_TARGETDEPS)
+#message(Uses libs: $$LIBS)
+#message(Pre targetdeps: $$PRE_TARGETDEPS)
 
 SOURCES += \
     src/main.cpp \

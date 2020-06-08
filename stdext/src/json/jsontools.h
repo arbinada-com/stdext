@@ -76,7 +76,7 @@ namespace stdext
                 unsigned int avg_string_length() const noexcept { return m_avg_string_length; }
                 void avg_string_length(const unsigned int value) noexcept { m_avg_string_length = (value > 0 ? value : m_avg_string_length); }
                 unsigned int depth() const { return m_depth; }
-                void depth(const int value) { m_depth = value > 0 ? value : 1; }
+                void depth(const unsigned int value) { m_depth = value > 0 ? value : 1; }
                 locutils::wchar_range& name_char_range() noexcept { return m_name_char_range; }
                 locutils::wchar_range& value_char_range() noexcept { return m_value_char_range; }
             private:

@@ -1,6 +1,7 @@
 # QMake common settings for both library and test projects
 #
 
+CONFIG -= qmake_use
 CONFIG -= qtc_run
 CONFIG -= debug_and_release
 CONFIG -= debug_and_release_target

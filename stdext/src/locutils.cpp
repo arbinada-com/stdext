@@ -16,9 +16,18 @@ using namespace locutils;
  * utf16 utils
  */
 const char utf16::bom_le[] = { '\xFF', '\xFE' };
-std::string utf16::bom_le_str() { return string(utf16::bom_le, 2); }
-
 const char utf16::bom_be[] = { '\xFE', '\xFF' };
+const uint16_t utf16::bom_be_value;
+const uint16_t utf16::bom_le_value;
+const uint16_t utf16::high_surrogate_min;
+const uint16_t utf16::high_surrogate_max;
+const uint16_t utf16::low_surrogate_min;
+const uint16_t utf16::low_surrogate_max;
+const char32_t utf16::max_char;
+const wchar_t utf16::replacement_character;
+const int utf16::bytes_per_character;
+
+std::string utf16::bom_le_str() { return string(utf16::bom_le, 2); }
 std::string utf16::bom_be_str() { return string(utf16::bom_be, 2); }
 
 bool utf16::is_bom(wchar_t c)
@@ -218,6 +227,20 @@ std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len)
  * utf8 utils
  */
 const char utf8::bom[] = { '\xEF', '\xBB', '\xBF' };
+const int utf8::max_seq_length;
+const unsigned char utf8::chk_seq1;
+const unsigned char utf8::chk_seq2;
+const unsigned char utf8::chk_seq3;
+const unsigned char utf8::chk_seq4;
+const unsigned char utf8::chk_seq5;
+const unsigned char utf8::chk_seq6;
+// code points
+const char32_t utf8::code_point1;
+const char32_t utf8::code_point2;
+const char32_t utf8::code_point3;
+const char32_t utf8::code_point4;
+const char32_t utf8::code_point5;
+
 std::string utf8::bom_str() { return string(utf8::bom, 3); } // "\xEF\xBB\xBF"
 
 void utf8::add_bom(string& mbs)

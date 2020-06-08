@@ -284,7 +284,7 @@ TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
     json::dom_document_generator::config& conf = gen.conf();
     using config_t = json::dom_document_generator::config;
     //
-    ASSERT_EQ(1, conf.depth()) << "depth 1";
+    ASSERT_EQ(1u, conf.depth()) << "depth 1";
     ASSERT_EQ(config_t::default_avg_children(), conf.avg_children()) << "avg_array_items 1";
     ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << "avg_string_length 1";
     //
@@ -294,9 +294,9 @@ TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
     ASSERT_EQ(config_t::default_avg_string_length(), conf.avg_string_length()) << "avg_string_length 2";
     //
     conf.depth(0);
-    ASSERT_EQ(1, conf.depth()) << "depth 2";
+    ASSERT_EQ(1u, conf.depth()) << "depth 2";
     conf.depth(7);
-    ASSERT_EQ(7, conf.depth()) << "depth 3";
+    ASSERT_EQ(7u, conf.depth()) << "depth 3";
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentGenerator)
