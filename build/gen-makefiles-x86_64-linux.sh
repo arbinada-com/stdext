@@ -11,18 +11,18 @@ function check_last()
 
 echo "Generating stdext library makefiles..."
 pushd ../stdext > /dev/null
-qmake stdext.pro -spec linux-clang CONFIG+=debug -nocache -nodepend
+qmake stdext.pro -spec linux-clang "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 check_last $?
-qmake stdext.pro -spec linux-clang -nocache -nodepend
+qmake stdext.pro -spec linux-clang "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 check_last $?
 echo "Done"
 
 echo
 echo "Generating stdext tests makefiles..."
 cd ../stdext-test
-qmake stdext-test.pro -spec linux-clang CONFIG+=debug -nocache -nodepend
+qmake stdext-test.pro -spec linux-clang "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 check_last $?
-qmake stdext-test.pro -spec linux-clang -nocache -nodepend
+qmake stdext-test.pro -spec linux-clang "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 check_last $?
 echo "Done"
 

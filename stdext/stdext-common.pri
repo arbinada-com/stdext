@@ -1,14 +1,9 @@
 # QMake common settings for both library and test projects
 #
 
-CONFIG -= qmake_use
-CONFIG -= qtc_run
-CONFIG -= debug_and_release
-CONFIG -= debug_and_release_target
 CONFIG -= qt
 CONFIG -= app_bundle
 CONFIG -= lex yacc
-CONFIG += no_autoqmake
 
 STDEXT_ARCH = $$QT_ARCH
 STDEXT_PLATFORM = unknown
@@ -16,16 +11,16 @@ win32: STDEXT_PLATFORM = win32
 win64: STDEXT_PLATFORM = win32
 linux: STDEXT_PLATFORM = linux
 
-STDEXT_TARGET =
-# Set destination directories and makefile name
+STDEXT_CONF =
+# Set destination directories
 DESTDIR_SUBDIR = $${STDEXT_ARCH}/$${STDEXT_PLATFORM}
 CONFIG(debug, debug|release) {
     DESTDIR_SUBDIR = debug/$${STDEXT_ARCH}/$${STDEXT_PLATFORM}
-    STDEXT_TARGET = Debug
+    STDEXT_CONF = Debug
 }
 CONFIG(release, debug|release) {
     DESTDIR_SUBDIR = release/$${STDEXT_ARCH}/$${STDEXT_PLATFORM}
-    STDEXT_TARGET = Release
+    STDEXT_CONF = Release
 }
 
 DESTDIR = $${DESTDIR_SUBDIR}
@@ -33,12 +28,19 @@ OBJECTS_DIR = $${DESTDIR_SUBDIR}
 MOC_DIR = $${DESTDIR_SUBDIR}/moc
 RCC_DIR = $${DESTDIR_SUBDIR}/rcc
 UI_DIR = $${DESTDIR_SUBDIR}/ui
+#message(DESTDIR ($$TARGET): $$DESTDIR)
 
-win32:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_TARGET}
-linux:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_TARGET}
-
-message(DESTDIR: $$DESTDIR)
-message(MAKEFILE: $$MAKEFILE)
+CONFIG(stdext_gen_makefile) {
+    CONFIG -= qmake_use
+    CONFIG -= qtc_run
+    CONFIG -= debug_and_release
+    CONFIG -= debug_and_release_target
+    CONFIG += no_autoqmake
+    # Set specific makefile name
+    win32:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_CONF}
+    linux:MAKEFILE = Makefile-$${STDEXT_ARCH}-$${STDEXT_PLATFORM}.$${STDEXT_CONF}
+    message(MAKEFILE: $$MAKEFILE)
+}
 
 # Copies the given file to the destination directory after link event
 defineTest(PostLink_CopyFile) {

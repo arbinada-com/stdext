@@ -352,3 +352,8 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 .qmake.stash
+
+# Qt Creator default generated makefiles
+Makefile.Release
+Makefile.Debug
+Makefile

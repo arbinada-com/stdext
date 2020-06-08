@@ -7,17 +7,17 @@ if "%QMAKE_EXE%"=="" (
 
 echo.Generating stdext library makefiles...
 pushd ..\stdext > nul
-"%QMAKE_EXE%" stdext.pro -spec win32-msvc "CONFIG+=debug" -nocache -nodepend
+"%QMAKE_EXE%" stdext.pro -spec win32-msvc "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 if errorlevel 1 goto error
-"%QMAKE_EXE%" stdext.pro -spec win32-msvc -nocache -nodepend
+"%QMAKE_EXE%" stdext.pro -spec win32-msvc "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 if errorlevel 1 goto error
 
 echo.
 echo.Generating stdext tests makefiles...
 cd ..\stdext-test
-"%QMAKE_EXE%" stdext-test.pro -spec win32-msvc "CONFIG+=debug" -nocache -nodepend
+"%QMAKE_EXE%" stdext-test.pro -spec win32-msvc "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 if errorlevel 1 goto error
-"%QMAKE_EXE%" stdext-test.pro -spec win32-msvc -nocache -nodepend
+"%QMAKE_EXE%" stdext-test.pro -spec win32-msvc "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 if errorlevel 1 goto error
 
 popd
