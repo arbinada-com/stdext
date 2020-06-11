@@ -30,7 +30,7 @@ std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
     {
     case L'\"': return L"\\\"";
     case L'\\': return L"\\\\";
-        //case L'/': return L"\\/";
+    case L'/': return L"\\/";
     case L'\b': return L"\\b";
     case L'\f': return L"\\f";
     case L'\n': return L"\\n";
@@ -41,12 +41,20 @@ std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
     }
 }
 
+std::wstring json::to_escaped(const std::wstring ws, const bool force_to_numeric)
+{
+    wstring ws2;
+    ws2.reserve(ws.length() * (force_to_numeric ? 6 : 2));
+    for (const wchar_t c : ws)
+        ws2 += to_escaped(c, force_to_numeric);
+    return ws2;
+}
 
 std::wstring json::to_wmessage(const parser_msg_kind kind)
 {
     switch (kind)
     {
-        // lexer
+    // lexer
     case parser_msg_kind::err_invalid_literal_fmt: return L"Invalid literal '%ls'. Expected 'false', 'true' or 'null'";
     case parser_msg_kind::err_invalid_number: return L"Invalid number";
     case parser_msg_kind::err_reader_io: return L"Text reader I/O error";
@@ -55,7 +63,7 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     case parser_msg_kind::err_unclosed_string: return L"Unclosed string";
     case parser_msg_kind::err_unexpected_char_fmt: return L"Unexpected character: %c (0x%x)";
     case parser_msg_kind::err_unrecognized_escape_seq_fmt: return L"Unrecognized character escape sequence: %ls";
-        // parser
+    // parser
     case parser_msg_kind::err_expected_array: return L"Array expected";
     case parser_msg_kind::err_expected_array_item: return L"Array item expected";
     case parser_msg_kind::err_expected_literal: return L"Literal expected";

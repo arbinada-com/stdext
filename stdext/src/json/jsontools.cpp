@@ -12,10 +12,84 @@ using namespace stdext;
 using namespace json;
 using namespace locutils;
 
+
+class dom_append_child_visitor : public dom_value_visitor
+{
+public:
+    typedef dom_object_member::name_t name_t;
+public:
+    dom_append_child_visitor(dom_value* child)
+        : dom_value_visitor(), m_child(child)
+    {}
+    dom_append_child_visitor(name_t name, dom_value* child)
+        : dom_value_visitor(), m_name(name), m_child(child)
+    {}
+public:
+    virtual void visit(json::dom_literal&) override {}
+    virtual void visit(json::dom_number&) override {}
+    virtual void visit(json::dom_string&) override {}
+    void visit(dom_array& value) override
+    {
+        value.append(m_child);
+    }
+    void visit(dom_object& value) override
+    {
+        value.append_member(m_name, m_child);
+    }
+private:
+    name_t m_name;
+    dom_value* m_child;
+};
+
+/*
+ * dom_document_writer_visitor class
+ */
+class dom_document_writer_visitor : public dom_value_visitor
+{
+public:
+    typedef stack<wstring> endings_t;
+public:
+    dom_document_writer_visitor(dom_document_writer& doc_writer,
+                                ioutils::text_writer& text_writer,
+                                endings_t& endings)
+        : dom_value_visitor(),
+          m_doc_writer(doc_writer),
+          m_text_writer(text_writer),
+          m_endings(endings)
+    {}
+public:
+    virtual void visit(json::dom_literal& value) override { m_text_writer.write(value.text()); }
+    virtual void visit(json::dom_number& value) override { m_text_writer.write(value.text()); }
+    virtual void visit(json::dom_string& value) override
+    {
+        m_text_writer.write(L"\"").write(m_doc_writer.escape(value.text())).write(L"\"");
+    }
+    void visit(dom_array& value) override
+    {
+        m_text_writer.write(L"[");
+        if (value.empty())
+            m_text_writer.write(L"]");
+        else
+            m_endings.push(L"]");
+    }
+    void visit(dom_object& value) override
+    {
+        m_text_writer.write(L"{");
+        if (value.cmembers()->empty())
+            m_text_writer.write(L"}");
+        else
+            m_endings.push(L"}");
+    }
+private:
+    dom_document_writer& m_doc_writer;
+    ioutils::text_writer& m_text_writer;
+    endings_t& m_endings;
+};
+
 /*
  * dom_document_writer class
  */
-dom_document_writer::dom_document_writer(const json::dom_document& doc)
+dom_document_writer::dom_document_writer(json::dom_document& doc)
     : m_doc(doc)
 { }
 
@@ -26,31 +100,14 @@ std::wstring dom_document_writer::escape(const std::wstring s) const
     for (size_t i = 0; i < s.length(); i++)
     {
         wchar_t c = s[i];
-        if (utf16::is_high_surrogate(c))
-        {
-            if ( i + 1 < s.length())
-            {
-                if (utf16::is_low_surrogate(s[i + 1]))
-                    es += json::to_escaped(c, true) + json::to_escaped(s[++i], true);
-                else // invalid pair, try to use the second character only
-                    es += utf16::replacement_character;
-            }
-            else // incomplete pair
-                es += utf16::replacement_character;
-        }
-        else if (utf16::is_low_surrogate(c))
-            es += utf16::replacement_character;
+        if (json::is_unescaped(c))
+            es += c;
         else
         {
-            if (json::is_unescaped(c))
-                    es += c;
+            if (utf16::is_noncharacter(c))
+                es += utf16::replacement_character;
             else
-            {
-                if (utf16::is_noncharacter(c))
-                    es += json::to_escaped(utf16::replacement_character);
-                else
-                    es += json::to_escaped(c);
-            }
+                es += json::to_escaped(c);
         }
     }
     return es;
@@ -66,9 +123,9 @@ void dom_document_writer::write(ioutils::text_writer& w)
         return s;
     };
     stack<wstring> endings;
-    dom_document::const_iterator doc_begin = m_doc.begin();
-    dom_document::const_iterator doc_end = m_doc.end();
-    dom_document::const_iterator it = doc_begin;
+    dom_document::iterator doc_begin = m_doc.begin();
+    dom_document::iterator doc_end = m_doc.end();
+    dom_document::iterator it = doc_begin;
     while (it != doc_end)
     {
         if (it.has_prev_sibling())
@@ -77,33 +134,11 @@ void dom_document_writer::write(ioutils::text_writer& w)
             w.write_endl();
         if (m_conf.pretty_print())
             w.write(indent(it.level()));
-        const dom_value* v = *it;
+        dom_value* v = *it;
         if (v->member() != nullptr)
-            w.write(L"\"").write(v->member()->name()).write(L"\"").write(m_conf.pretty_print() ? L": " : L":");
-        switch (v->type())
-        {
-        case dom_value_type::vt_literal:
-        case dom_value_type::vt_number:
-            w.write(v->text());
-            break;
-        case dom_value_type::vt_string:
-            w.write(L"\"").write(escape(v->text())).write(L"\"");
-            break;
-        case dom_value_type::vt_array:
-            w.write(L"[");
-            if (dynamic_cast<const json::dom_array*>(v)->empty())
-                w.write(L"]");
-            else
-                endings.push(L"]");
-            break;
-        case dom_value_type::vt_object:
-            w.write(L"{");
-            if (dynamic_cast<const json::dom_object*>(v)->cmembers()->empty())
-                w.write(L"}");
-            else
-                endings.push(L"}");
-            break;
-        }
+            w.write(L"\"").write(escape(v->member()->name())).write(L"\"").write(m_conf.pretty_print() ? L": " : L":");
+        dom_document_writer_visitor visitor(*this, w, endings);
+        v->accept(visitor);
         dom_document::const_iterator::path_t prev_path = it.path();
         ++it;
         size_t curr_level = it.level();
@@ -264,4 +299,82 @@ json::dom_value_type dom_document_generator::random_value_container_type()
     if (m_rnd.random_range(1, 2) == 1)
         return dom_value_type::vt_array;
     return dom_value_type::vt_object;
+}
+
+/*
+ * Document diff
+ */
+std::string json::to_string(const dom_document_diff_kind value)
+{
+    switch(value)
+    {
+    case dom_document_diff_kind::count_diff: return "count";
+    case dom_document_diff_kind::path_diff: return "path";
+    case dom_document_diff_kind::type_diff: return "type";
+    case dom_document_diff_kind::value_diff: return "value";
+    default: return "unknown";
+    }
+}
+
+std::string json::dom_document_diff_item::to_string() const
+{
+    return strutils::to_string(this->to_wstring());
+}
+
+std::wstring json::dom_document_diff_item::to_wstring() const
+{
+    return strutils::wformat(L"Kind: %s\nLeft value:\n\tlength: %d\n\ttext: %ls\n\tencoded:%ls\nRight value:\n\tlength: %d\n\ttext: %ls\n\tencoded:%ls",
+                             json::to_string(m_kind).c_str(),
+                             m_lval->text().length(),
+                             m_lval->text().c_str(),
+                             json::to_escaped(m_lval->text(), true).c_str(),
+                             m_rval->text().length(),
+                             m_rval->text().c_str(),
+                             json::to_escaped(m_rval->text(), true).c_str());
+}
+
+
+json::dom_document_diff json::make_diff(const json::dom_document& ldoc, const json::dom_document& rdoc)
+{
+    json::dom_document_diff_options options;
+    return json::make_diff(ldoc, rdoc, options);
+}
+
+json::dom_document_diff json::make_diff(const json::dom_document& ldoc,
+                                        const json::dom_document& rdoc,
+                                        const dom_document_diff_options& options)
+{
+    json::dom_document_diff diff;
+    dom_document::const_iterator l_it = ldoc.begin();
+    dom_document::const_iterator l_end = ldoc.end();
+    dom_document::const_iterator r_it = rdoc.begin();
+    dom_document::const_iterator r_end = rdoc.end();
+    while (l_it != l_end && r_it != r_end && (!diff.has_differences() || options.compare_all()))
+    {
+        if (l_it->type() != r_it->type())
+            diff.append(dom_document_diff_item(dom_document_diff_kind::type_diff, l_it.value(), r_it.value()));
+        if (l_it.path() != r_it.path())
+            diff.append(dom_document_diff_item(dom_document_diff_kind::path_diff, l_it.value(), r_it.value()));
+        if (l_it->is_container())
+        {
+            if (l_it->as_container()->count() != r_it->as_container()->count())
+                diff.append(dom_document_diff_item(dom_document_diff_kind::count_diff, l_it.value(), r_it.value()));
+        }
+        if (l_it->member() != nullptr)
+        {
+            bool are_equal = options.case_sensitive() ?
+                (l_it->member()->name() == r_it->member()->name()) :
+                utf16::equal_ci(l_it->member()->name(), r_it->member()->name());
+            if (!are_equal)
+                diff.append(dom_document_diff_item(dom_document_diff_kind::member_name_diff, l_it.value(), r_it.value()));
+        }
+        bool are_equal = options.case_sensitive() ?
+                    (l_it->text() == r_it->text()) :
+                    utf16::equal_ci(l_it->text(), r_it->text());
+        if (!are_equal)
+            diff.append(dom_document_diff_item(dom_document_diff_kind::value_diff, l_it.value(), r_it.value()));
+        ++l_it;
+        ++r_it;
+    }
+    return diff;
 }

@@ -7,11 +7,11 @@
  */
 #pragma once
 
-#include "json/jsonexceptions.h"
-#include "json/jsoncommon.h"
-#include "json/jsondom.h"
-#include "json/jsonparser.h"
-#include "json/jsontools.h"
+#include "jsonexceptions.h"
+#include "jsoncommon.h"
+#include "jsondom.h"
+#include "jsonparser.h"
+#include "jsontools.h"
 
 namespace stdext
 {

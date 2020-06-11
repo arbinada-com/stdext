@@ -4,6 +4,8 @@
  */
 
 #include "locutils.h"
+#include <algorithm>
+#include <functional>
 #if defined(__STDEXT_USE_ICONV)
     #include <iconv.h>
 #endif
@@ -222,6 +224,29 @@ std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len)
     return utf16::wchar_to_multibyte(ws, len, endianess::platform_value());
 }
 
+std::wstring utf16::to_lower(const std::wstring& ws)
+{
+    locale loc("");
+    const ctype<wchar_t>& ct = use_facet<ctype<wchar_t> >(loc);
+    wstring ws2(ws.length(), 0);
+    transform(ws.begin(), ws.end(), ws2.begin(), std::bind1st(std::mem_fun(&ctype<wchar_t>::tolower), &ct));
+    return ws2;
+}
+
+std::wstring utf16::to_upper(const std::wstring& ws)
+{
+    locale loc("");
+    const ctype<wchar_t>& ct = use_facet<ctype<wchar_t> >(loc);
+    wstring ws2(ws.length(), 0);
+    transform(ws.begin(), ws.end(), ws2.begin(), std::bind1st(std::mem_fun(&ctype<wchar_t>::toupper), &ct));
+    return ws2;
+}
+
+bool utf16::equal_ci(const std::wstring& ws1, const std::wstring& ws2)
+{
+    return utf16::to_lower(ws1) == utf16::to_lower(ws2);
+}
+
 
 /*
  * utf8 utils
@@ -430,12 +455,13 @@ codecvt_utf8_wchar_t::do_out(
         char32_t c1 = *next1;
         if (utf16::is_high_surrogate(*next1))
         {
-            if (last1 - next1 < 1)
-                return codecvt_base_t::error;
-            wchar_t high = *next1++;
-            wchar_t low = *next1;
-            if (!utf16::from_surrogate_pair(high, low, c1))
-                return codecvt_base::error;
+            if (last1 - next1 > 0)
+            {
+                wchar_t high = *next1;
+                wchar_t low = *(next1 + 1);
+                if (utf16::from_surrogate_pair(high, low, c1))
+                    ++next1;
+            }
         }
         if (c1 > utf16::max_char)
             return codecvt_base_t::error;
@@ -641,28 +667,10 @@ codecvt_utf16_wchar_t::do_in(
         else
             get_next1(c2, state_adapter.byte_order());
         // append character
-        if (utf16::is_high_surrogate(c2))
-        {
-            if (last1 - next1 < bytes_per_character)
-                return codecvt_base_t::error; // must be a pair
-#if __STDEXT_WCHAR_SIZE == 2
-                put_next2(c2);
-                get_next1(c2, state_adapter.byte_order());
-                put_next2(c2);
-#else
-                wchar_t high = c2, low;
-                char32_t c3;
-                get_next1(low, state_adapter.byte_order());
-                if (utf16::from_surrogate_pair(high, low, c3))
-                    put_next2((wchar_t)c3);
-                else
-                    return codecvt_base_t::error;
-#endif
-        }
-        else if (!utf16::is_noncharacter(c2))
+        if (!utf16::is_noncharacter(c2))
             put_next2(c2);
         else
-            return codecvt_base_t::error;
+            put_next2(utf16::replacement_character);
     }
     return (first1 == next1 ? codecvt_base_t::partial : codecvt_base_t::ok);
 }

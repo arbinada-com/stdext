@@ -76,6 +76,10 @@ namespace stdext
                                                   const endianess::byte_order to_order);
             static std::string wchar_to_multibyte(const wchar_t* ws, const size_t len);
             static bool try_detect_byte_order(const char* str, const size_t len, endianess::byte_order& order);
+            // String functions
+            static std::wstring to_lower(const std::wstring& ws);
+            static std::wstring to_upper(const std::wstring& ws);
+            static bool equal_ci(const std::wstring& ws1, const std::wstring& ws2);
         };
         
         struct utf8

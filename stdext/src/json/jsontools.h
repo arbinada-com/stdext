@@ -23,7 +23,7 @@ namespace stdext
         class dom_document_writer
         {
         public:
-            dom_document_writer(const json::dom_document& doc);
+            dom_document_writer(json::dom_document& doc);
             dom_document_writer() = delete;
             dom_document_writer(const dom_document_writer&) = delete;
             dom_document_writer& operator=(const dom_document_writer&) = delete;
@@ -50,7 +50,7 @@ namespace stdext
             void write_to_file(const std::wstring file_name, const ioutils::text_io_options& options);
         private:
             config m_conf;
-            const json::dom_document& m_doc;
+            json::dom_document& m_doc;
         };
 
 
@@ -105,6 +105,92 @@ namespace stdext
             json::dom_document& m_doc;
             testutils::rnd_helper m_rnd;
         };
+
+
+        /*
+         * Document diff functions
+         */
+        enum class dom_document_diff_kind
+        {
+            count_diff,
+            member_name_diff,
+            path_diff,
+            type_diff,
+            value_diff
+        };
+        std::string to_string(const dom_document_diff_kind value);
+
+        class dom_document_diff_item
+        {
+        public:
+            dom_document_diff_item(const dom_document_diff_kind kind,
+                                   const dom_value* lval,
+                                   const dom_value* rval)
+                : m_kind(kind), m_lval(lval), m_rval(rval)
+            {}
+            dom_document_diff_item(const dom_document_diff_item&) = default;
+            dom_document_diff_item& operator=(const dom_document_diff_item&) = default;
+            dom_document_diff_item(dom_document_diff_item&&) = default;
+            dom_document_diff_item& operator=(dom_document_diff_item&&) = default;
+        public:
+            dom_document_diff_kind kind() const noexcept { return m_kind; }
+            const dom_value* rval() const noexcept { return m_rval; }
+            const dom_value* lval() const noexcept { return m_lval; }
+            std::string to_string() const;
+            std::wstring to_wstring() const;
+        private:
+            dom_document_diff_kind m_kind;
+            const dom_value* m_lval;
+            const dom_value* m_rval;
+        };
+
+        class dom_document_diff
+        {
+        public:
+            typedef std::vector<dom_document_diff_item> items_t;
+        public:
+            dom_document_diff() {}
+            dom_document_diff(const dom_document_diff&) = default;
+            dom_document_diff& operator=(const dom_document_diff&) = default;
+            dom_document_diff(dom_document_diff&&) = default;
+            dom_document_diff& operator=(dom_document_diff&&) = default;
+        public:
+            void append(const dom_document_diff_item& item) { m_items.push_back(item); }
+            bool has_differences() const noexcept { return m_items.size() > 0; }
+            const items_t& items() const noexcept { return m_items; }
+        private:
+            items_t m_items;
+        };
+
+        class dom_document_diff_options
+        {
+        public:
+            dom_document_diff_options() {}
+            dom_document_diff_options(const dom_document_diff_options&) = default;
+            dom_document_diff_options& operator=(const dom_document_diff_options&) = default;
+            dom_document_diff_options(dom_document_diff_options&&) = default;
+            dom_document_diff_options& operator=(dom_document_diff_options&&) = default;
+        public:
+            bool case_sensitive() const noexcept { return m_case_sensitive; }
+            void case_sensitive(const bool value) noexcept { m_case_sensitive = value; }
+            bool compare_all() const noexcept { return m_compare_all; }
+            void compare_all(const bool value) noexcept { m_compare_all = value; }
+        private:
+            bool m_case_sensitive = true;
+            bool m_compare_all = false;
+        };
+
+        /**
+         * @brief make_diff
+         * @param ldoc
+         * @param rdoc
+         * @param options
+         * @return
+         */
+        dom_document_diff make_diff(const json::dom_document& ldoc,
+                                    const json::dom_document& rdoc,
+                                    const dom_document_diff_options& options);
+        dom_document_diff make_diff(const json::dom_document& ldoc, const json::dom_document& rdoc);
 
     }
 }
