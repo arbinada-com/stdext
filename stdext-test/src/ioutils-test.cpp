@@ -23,7 +23,7 @@ protected:
         for (int i = 0x1; i <= 0xFFFF; i++)
         {
             wchar_t c = static_cast<wchar_t>(i);
-            if (utf16::is_noncharacter(c) || utf16::is_high_surrogate(c))
+            if (utf16::is_noncharacter(c))
                 c = utf16::replacement_character;
             ws += c;
         }
@@ -115,6 +115,22 @@ protected:
             ws1_bom, ws1_bom, 
             ioutils::text_io_options_utf8(locutils::codecvt_mode_utf8(codecvt_mode_base::headers::generate)), 
             L"UTF-8 (BOM, generate)");
+    }
+
+    TEST_F(IOUtilsTest, TestFileWriteAndRead_Utf8_SurrogatePair)
+    {
+        // 'G clef' symbol (U+1D11E)
+        // UTF-16: 0xD834 0xDD1E
+        wstring ws1 = L"ABC \xD834\xDD1E";
+        CheckFileWriteAndRead(
+            ws1, ws1,
+            ioutils::text_io_options_utf8(codecvt_mode_base::headers::consume),
+            L"Pair (NoBOM, consume)");
+        wstring ws2 = L"\xD834 ABC \xDD1E";
+        CheckFileWriteAndRead(
+            ws1, ws1,
+            ioutils::text_io_options_utf8(codecvt_mode_base::headers::consume),
+            L"Unpaired (NoBOM, consume)");
     }
 
     TEST_F(IOUtilsTest, TestFileWriteAndRead_Utf16)

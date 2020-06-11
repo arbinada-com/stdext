@@ -150,6 +150,30 @@ TEST_F(LocaleUtilsTest, TestUtf16_DetectEndianess)
     CheckDetectEndianess(L"Mix déjà строка", L"4");
 }
 
+TEST_F(LocaleUtilsTest, TestUtf16_ChangeCase)
+{
+    EXPECT_EQ(L"", utf16::to_upper(L""));
+    EXPECT_EQ(L"", utf16::to_lower(L""));
+    EXPECT_EQ(L"ABC1", utf16::to_upper(L"abc1"));
+    EXPECT_EQ(L"abc1", utf16::to_lower(L"ABC1"));
+    // French  ÀÇÈÉ <-> àçèé
+    EXPECT_EQ(L"ABC \x00C0\x00C7\x00C8\x00C9", utf16::to_upper(L"abc \x00E0\x00E7\x00E8\x00E9"));
+    EXPECT_EQ(L"abc \x00E0\x00E7\x00E8\x00E9", utf16::to_lower(L"ABC \x00C0\x00C7\x00C8\x00C9"));
+    // Cyrillic ЭЮЯ <-> эюя
+    EXPECT_EQ(L"ABC \x042D\x042E\x042F", utf16::to_upper(L"abc \x044D\x044E\x044F"));
+    EXPECT_EQ(L"abc \x044D\x044E\x044F", utf16::to_lower(L"ABC \x042D\x042E\x042F"));
+}
+
+TEST_F(LocaleUtilsTest, TestUtf16_EqualCaseInsensitive)
+{
+    EXPECT_TRUE(utf16::equal_ci(L"", L""));
+    EXPECT_TRUE(utf16::equal_ci(L"ABC123", L"abc123"));
+    // French  ÀÇÈÉ == àçèé
+    EXPECT_TRUE(utf16::equal_ci(L"\x00C0\x00C7\x00C8\x00C9", L"\x00E0\x00E7\x00E8\x00E9"));
+    // Cyrillic ЭЮЯ == эюя
+    EXPECT_TRUE(utf16::equal_ci(L"\x042D\x042E\x042F", L"\x044D\x044E\x044F"));
+}
+
 TEST_F(LocaleUtilsTest, TestUtf8_BOM)
 {
     ASSERT_EQ(3u, utf8::bom_str().length()) << L"BOM length";
@@ -312,6 +336,22 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8)
     }
 }
 
+TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_SurrogatePair)
+{
+    // 'G clef' symbol (U+1D11E)
+    // UTF-8: 0xF0 0x9D 0x84 0x9E
+    // UTF-16: 0xD834 0xDD1E
+    wstring ws1 = L"ABC \xD834\xDD1E";
+    string s1 = "ABC \xF0\x9D\x84\x9E";
+    codecvt_mode_utf8 cm(codecvt_mode_utf8::headers::consume);
+    CheckConverter_Utf8_8to16(ws1, s1, cm, L"1.1 - NoBOM (consume)");
+    CheckConverter_Utf8_16to8(s1, ws1, cm, L"1.2 - NoBOM (consume)");
+    wstring ws2 = L"\xD834 ABC \xDD1E";
+    string s2 = "\xED\xA0\xB4 ABC \xED\xB4\x9E";
+    CheckConverter_Utf8_8to16(ws2, s2, cm, L"2.1 - NoBOM (consume)");
+    CheckConverter_Utf8_16to8(s2, ws2, cm, L"2.2 - NoBOM (consume)");
+}
+
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_Memory)
 {
     string s1 = u8"ABC déjà строка";
@@ -385,6 +425,39 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16)
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_be_bom, cm, L"11.2 - BOM (BE, generate)");
         CheckConverter_Utf16_16toMb(s1_be_bom, ws1, cm, L"12.1 - NoBOM (BE, generate)");
         CheckConverter_Utf16_16toMb(s1_be_bom, ws1_bom, cm, L"12.2 - BOM (BE, generate)");
+    }
+}
+
+TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_SurrogatePair)
+{
+    // 'G clef' symbol (U+1D11E)
+    // UTF-16: 0xD834 0xDD1E
+    // UTF-16 multybyte LE: 0x 34 D8 1E DD
+    wstring ws1 = L"ABC \xD834\xDD1E";
+    string s1_le = utf16::wchar_to_multibyte(ws1, endianess::byte_order::little_endian);
+    string s1_be = utf16::wchar_to_multibyte(ws1, endianess::byte_order::big_endian);
+    {
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf8::headers::consume);
+        CheckConverter_Utf16_Mbto16(ws1, s1_le, cm, L"1.1 - NoBOM (LE, consume)");
+        CheckConverter_Utf16_16toMb(s1_le, ws1, cm, L"1.2 - NoBOM (LE, consume)");
+    }
+    {
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf8::headers::consume);
+        CheckConverter_Utf16_Mbto16(ws1, s1_be, cm, L"2.1 - NoBOM (BE, consume)");
+        CheckConverter_Utf16_16toMb(s1_be, ws1, cm, L"2.2 - NoBOM (BE, consume)");
+    }
+    wstring ws2 = L"\xD834 ABC \xDD1E";
+    string s2_le = utf16::wchar_to_multibyte(ws2, endianess::byte_order::little_endian);
+    string s2_be = utf16::wchar_to_multibyte(ws2, endianess::byte_order::big_endian);
+    {
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf8::headers::consume);
+        CheckConverter_Utf16_Mbto16(ws2, s2_le, cm, L"3.1 - NoBOM (LE, consume)");
+        CheckConverter_Utf16_16toMb(s2_le, ws2, cm, L"3.2 - NoBOM (LE, consume)");
+    }
+    {
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf8::headers::consume);
+        CheckConverter_Utf16_Mbto16(ws2, s2_be, cm, L"4.1 - NoBOM (BE, consume)");
+        CheckConverter_Utf16_16toMb(s2_be, ws2, cm, L"4.2 - NoBOM (BE, consume)");
     }
 }
 

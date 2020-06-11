@@ -1,5 +1,4 @@
-﻿#include <gtest/gtest.h>
-#include "json.h"
+﻿#include "jsondom-test.h"
 #include <fstream>
 #include <vector>
 #include <algorithm>
@@ -16,108 +15,103 @@ using namespace testutils;
 namespace jsondom_test
 {
 
-class JsonDomTest : public testing::Test
+void JsonDomTest::FillTestDoc(json::dom_document& doc)
 {
-protected:
-    void FillTestDoc(json::dom_document& doc)
-    {
-        json::dom_array* a1 = doc.create_array();
-        doc.root(a1);
-        a1->append(doc.create_string(L"Hello"));
-        a1->append(doc.create_literal(L"null"));
-        json::dom_object* o1 = doc.create_object();
-        a1->append(o1);
-        o1->append_member(L"Str 1", doc.create_string(L"World"));
-        o1->append_member(L"Num 1", doc.create_number(123));
-        json::dom_array* a2 = doc.create_array();
-        o1->append_member(L"Arr 1", a2);
-        o1->append_member(L"Literal 1", doc.create_literal(L"false"));
-        json::dom_array* a3 = doc.create_array();
-        o1->append_member(L"Arr 2", a3);
-        a3->append(doc.create_number(456.78));
-    }
+    json::dom_array* a1 = doc.create_array();
+    doc.root(a1);
+    a1->append(doc.create_string(L"Hello"));
+    a1->append(doc.create_literal(L"null"));
+    json::dom_object* o1 = doc.create_object();
+    a1->append(o1);
+    o1->append_member(L"Str 1", doc.create_string(L"World"));
+    o1->append_member(L"Num 1", doc.create_number(123));
+    json::dom_array* a2 = doc.create_array();
+    o1->append_member(L"Arr 1", a2);
+    o1->append_member(L"Literal 1", doc.create_literal(L"false"));
+    json::dom_array* a3 = doc.create_array();
+    o1->append_member(L"Arr 2", a3);
+    a3->append(doc.create_number(456.78));
+}
 
-    void CheckTestDocValue(wstring path, json::dom_value* v1)
+void JsonDomTest::CheckTestDocValue(wstring path, json::dom_value* v1)
+{
+    wstring title = path + L": ";
+    if (path == L"0")
     {
-        wstring title = path + L": ";
-        if (path == L"0")
-        {
-            ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
-            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
-            EXPECT_EQ(3u, cont->count()) << title + L"count";
-        }
-        else if (path == L"0.0")
-        {
-            ASSERT_TRUE(json::dom_value_type::vt_string == v1->type()) << title + L"type";
-            ASSERT_EQ(L"Hello", dynamic_cast<json::dom_string*>(v1)->text()) << title + L"text";
-        }
-        else if (path == L"0.1")
-        {
-            ASSERT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type 1.1";
-            ASSERT_TRUE(json::dom_literal_value_type::lvt_null == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype 1.1";
-            ASSERT_TRUE(nullptr == dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
-            ASSERT_TRUE(nullptr == dynamic_cast<json::container_intf*>(v1)) << title + L"cast 2";
-        }
-        else if (path == L"0.2")
-        {
-            ASSERT_TRUE(nullptr != dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
-            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
-            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
-            EXPECT_EQ(5u, cont->count()) << title + L"count";
-        }
-        else if (path == L"0.2.0")
-        {
-            ASSERT_TRUE(json::dom_value_type::vt_string == v1->type()) << title + L"type";
-            ASSERT_EQ(L"World", dynamic_cast<json::dom_string*>(v1)->text()) << title + L"text";
-            ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            ASSERT_EQ(L"Str 1", v1->member()->name()) << title + L"member name";
-        }
-        else if (path == L"0.2.1")
-        {
-            ASSERT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
-            ASSERT_TRUE(json::dom_number_value_type::nvt_int == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
-            ASSERT_EQ(L"123", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
-            ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            ASSERT_EQ(L"Num 1", v1->member()->name()) << title + L"member name";
-        }
-        else if (path == L"0.2.2")
-        {
-            ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
-            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
-            EXPECT_EQ(0u, cont->count()) << title + L"count";
-            ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            EXPECT_EQ(L"Arr 1", v1->member()->name()) << title + L"member name";
-        }
-        else if (path == L"0.2.3")
-        {
-            EXPECT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type";
-            EXPECT_TRUE(json::dom_literal_value_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype";
-            EXPECT_EQ(L"false", dynamic_cast<json::dom_literal*>(v1)->text()) << title + L"text";
-            ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            EXPECT_EQ(L"Literal 1", v1->member()->name()) << title + L"member name";
-        }
-        else if (path == L"0.2.4")
-        {
-            ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
-            json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
-            ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
-            EXPECT_EQ(1u, cont->count()) << title + L"count";
-            ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
-            EXPECT_EQ(L"Arr 2", v1->member()->name()) << title + L"member name";
-        }
-        else if (path == L"0.2.4.0")
-        {
-            EXPECT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
-            EXPECT_TRUE(json::dom_number_value_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
-            EXPECT_EQ(L"456.78", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
-        }
-        else
-            FAIL() << title + L"unsupported path";
+        ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
+        json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+        ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+        EXPECT_EQ(3u, cont->count()) << title + L"count";
     }
-
-};
+    else if (path == L"0.0")
+    {
+        ASSERT_TRUE(json::dom_value_type::vt_string == v1->type()) << title + L"type";
+        ASSERT_EQ(L"Hello", dynamic_cast<json::dom_string*>(v1)->text()) << title + L"text";
+    }
+    else if (path == L"0.1")
+    {
+        ASSERT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type 1.1";
+        ASSERT_TRUE(json::dom_literal_value_type::lvt_null == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype 1.1";
+        ASSERT_TRUE(nullptr == dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
+        ASSERT_TRUE(nullptr == dynamic_cast<json::container_intf*>(v1)) << title + L"cast 2";
+    }
+    else if (path == L"0.2")
+    {
+        ASSERT_TRUE(nullptr != dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
+        json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+        ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+        EXPECT_EQ(5u, cont->count()) << title + L"count";
+    }
+    else if (path == L"0.2.0")
+    {
+        ASSERT_TRUE(json::dom_value_type::vt_string == v1->type()) << title + L"type";
+        ASSERT_EQ(L"World", dynamic_cast<json::dom_string*>(v1)->text()) << title + L"text";
+        ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
+        ASSERT_EQ(L"Str 1", v1->member()->name()) << title + L"member name";
+    }
+    else if (path == L"0.2.1")
+    {
+        ASSERT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
+        ASSERT_TRUE(json::dom_number_value_type::nvt_int == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
+        ASSERT_EQ(L"123", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
+        ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
+        ASSERT_EQ(L"Num 1", v1->member()->name()) << title + L"member name";
+    }
+    else if (path == L"0.2.2")
+    {
+        ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
+        json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+        ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+        EXPECT_EQ(0u, cont->count()) << title + L"count";
+        ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
+        EXPECT_EQ(L"Arr 1", v1->member()->name()) << title + L"member name";
+    }
+    else if (path == L"0.2.3")
+    {
+        EXPECT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type";
+        EXPECT_TRUE(json::dom_literal_value_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype";
+        EXPECT_EQ(L"false", dynamic_cast<json::dom_literal*>(v1)->text()) << title + L"text";
+        ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
+        EXPECT_EQ(L"Literal 1", v1->member()->name()) << title + L"member name";
+    }
+    else if (path == L"0.2.4")
+    {
+        ASSERT_TRUE(nullptr != dynamic_cast<json::dom_array*>(v1)) << title + L"cast 1";
+        json::container_intf* cont = dynamic_cast<json::container_intf*>(v1);
+        ASSERT_TRUE(cont != nullptr) << title + L"cast 2";
+        EXPECT_EQ(1u, cont->count()) << title + L"count";
+        ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
+        EXPECT_EQ(L"Arr 2", v1->member()->name()) << title + L"member name";
+    }
+    else if (path == L"0.2.4.0")
+    {
+        EXPECT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
+        EXPECT_TRUE(json::dom_number_value_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
+        EXPECT_EQ(L"456.78", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
+    }
+    else
+        FAIL() << title + L"unsupported path";
+}
 
 TEST_F(JsonDomTest, TestValueTypeNames)
 {

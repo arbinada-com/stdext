@@ -1,6 +1,5 @@
 ﻿#include <gtest/gtest.h>
 #include "json.h"
-#include "jsontools.h"
 #include <fstream>
 #include <limits>
 #include "strutils.h"
@@ -39,14 +38,21 @@ protected:
         if (!result && !parser.has_errors())
             FAIL() << title2 + L"failed without errors:" + err_text;
         ASSERT_FALSE(parser.has_errors()) << title2 + L"errors:" + err_text;
-        bool doc_are_equal = json::equal(expected, doc);
-        if (!doc_are_equal)
+        json::dom_document_diff diff = json::make_diff(doc, expected);
+        if (diff.has_differences())
         {
             json::dom_document_writer w1(doc);
+            w1.conf().pretty_print(true);
             w1.write_to_file(L"parser_current.json", ioutils::text_io_options_utf8());
             json::dom_document_writer w2(expected);
+            w2.conf().pretty_print(true);
             w2.write_to_file(L"parser_expected.json", ioutils::text_io_options_utf8());
-            FAIL() << title2 + L"docs are different";
+            wstring msg = L"Docs are different: ";
+            for (const json::dom_document_diff_item& item : diff.items())
+            {
+                msg += item.to_wstring() + L"\n";
+            }
+            FAIL() << title2 + msg;
         }
     }
 
@@ -180,6 +186,26 @@ TEST_F(JsonParserTest, TestObjectErrors)
     CheckError(L"{null", json::parser_msg_kind::err_expected_member_name, textpos(1, 2), L"2.1");
     CheckError(L"{\"Member1\"", json::parser_msg_kind::err_expected_name_separator, textpos(1, 10), L"3.1");
     CheckError(L"{\"Member1\":", json::parser_msg_kind::err_expected_value, textpos(1, 11), L"4.1");
+}
+
+TEST_F(JsonParserTest, TestGeneratedDocs)
+{
+    const int max_test_count = 100;
+    for (int i = 1; i <= max_test_count; i++)
+    {
+        json::dom_document doc;
+        json::dom_document_generator gen(doc);
+        gen.conf().depth(7);
+        gen.conf().avg_children(5);
+        gen.run();
+        json::dom_document_writer w(doc);
+        w.conf().pretty_print(true);
+        wstring s;
+        w.write(s);
+        CheckParseText(s, doc, strutils::wformat(L"Test_%d", i));
+        if (this->HasFailure())
+            break;
+    }
 }
 
 }

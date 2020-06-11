@@ -15,6 +15,5 @@ exit /b 0
 
 :error
 set err=errorlevel
-popd
 echo.FAILED
 exit /b %err%

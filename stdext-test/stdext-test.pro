@@ -36,3 +36,6 @@ SOURCES += \
     src/variants-test.cpp
 
 PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)
+
+HEADERS += \
+    src/jsondom-test.h

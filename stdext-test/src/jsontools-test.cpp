@@ -1,5 +1,4 @@
 ﻿#include <gtest/gtest.h>
-#include "json.h"
 #include "jsontools.h"
 #include <fstream>
 #include <vector>
@@ -9,6 +8,7 @@
 #include "locutils.h"
 #include "strutils.h"
 #include "testutils.h"
+#include "jsondom-test.h"
 
 using namespace std;
 using namespace stdext;
@@ -109,15 +109,15 @@ TEST_F(JsonToolsTest, TestStringEscape)
     EXPECT_EQ(L"\\u001F", w.escape(L"\x001F")) << "3.2";
     wstring ws = {utf16::replacement_character};
     ASSERT_EQ(L"\xFFFD", w.escape(ws)) << "3.3";
-    //
-    EXPECT_EQ(L"\\uD834\\uDD1E", w.escape(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
-    EXPECT_EQ(L"==\\uD834\\uDD1E==", w.escape(L"==\xD834\xDD1E==")) << "Surrogate pair 'G clef' 2";
     wstring expected = {utf16::replacement_character};
-    EXPECT_EQ(expected, w.escape(L"\xD834")) << "Surrogate pair 2.1";
-    expected += L"-\x1234";
-    EXPECT_EQ(expected, w.escape(L"\xD834-\x1234")) << "Surrogate pair 2.2";
-    expected = {utf16::replacement_character, L'-', utf16::replacement_character};
-    EXPECT_EQ(expected, w.escape(L"\xD834-\xDD1E")) << "Surrogate pair 2.3";
+    EXPECT_TRUE(utf16::is_noncharacter(L'\xFDD0'));
+    ASSERT_EQ(expected, w.escape(L"\xFDD0")) << "3.4";
+    //
+    EXPECT_EQ(L"\xD834\xDD1E", w.escape(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
+    EXPECT_EQ(L"==\xD834\xDD1E==", w.escape(L"==\xD834\xDD1E==")) << "Surrogate pair 'G clef' 2";
+    EXPECT_EQ(L"\xD834", w.escape(L"\xD834")) << "Incomplete surrogate pair";
+    EXPECT_EQ(L"\xD834-\x1234", w.escape(L"\xD834-\x1234")) << "Invalid surrogate pair 1";
+    EXPECT_EQ(L"\xD834-\xDD1E", w.escape(L"\xD834-\xDD1E")) << "Invalid surrogate pair 2";
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
@@ -129,18 +129,24 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocFileWriter(doc, L"\"Hello world!\"", L"Doc 1");
     doc.clear();
     doc.root(doc.create_string(L"Quick\r\nbrown\tfox\t\xD834\xDD1E\n"));
-    CheckDocStringWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Str 2");
-    CheckDocFileWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\\uD834\\uDD1E\\n\"", L"Doc 2");
+    CheckDocStringWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\xD834\xDD1E\\n\"", L"Str 2");
+    CheckDocFileWriter(doc, L"\"Quick\\r\\nbrown\\tfox\\t\xD834\xDD1E\\n\"", L"Doc 2");
     doc.clear();
     doc.root(doc.create_string(L"ABC été déjà строка"));
     CheckDocStringWriter(doc, L"\"ABC été déjà строка\"", L"Str 3");
     CheckDocFileWriter(doc, L"\"ABC été déjà строка\"", L"Doc 3");
     doc.clear();
     doc.root(doc.create_string(L"\x1 \x2 \xFFFE \xFFFF"));
-    wstring expected = strutils::wformat(L"\"\\u0001 \\u0002 \\u%0.4X \\u%0.4X\"",
-                                        utf16::replacement_character, utf16::replacement_character);
+    wstring expected = strutils::wformat(L"\"\\u0001 \\u0002 %lc %lc\"",
+                                         utf16::replacement_character, utf16::replacement_character);
     CheckDocStringWriter(doc, expected, L"Str 4");
     CheckDocFileWriter(doc, expected, L"Doc 4");
+    // Non-existing escape sequences
+    doc.clear();
+    doc.root(doc.create_string(L"\\a\n\\x\\y"));
+    expected = L"\"\\\\a\\n\\\\x\\\\y\"";
+    CheckDocStringWriter(doc, expected, L"Str 5");
+    CheckDocFileWriter(doc, expected, L"Doc 5");
     //
     wstring s;
     expected.clear();
@@ -164,12 +170,12 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocFileWriter(doc, expected, L"Doc 5");
     //
     s = {utf16::high_surrogate_min};
-    expected = {L'"', utf16::replacement_character, L'"'};
+    expected = {L'"', utf16::high_surrogate_min, L'"'};
     doc.clear();
     doc.root(doc.create_string(s));
     CheckDocStringWriter(doc, expected, L"Str 6.1");
     CheckDocFileWriter(doc, expected, L"Doc 6.1");
-    s = {utf16::high_surrogate_min, L'A'};
+    s = {L'\xFDD0', L'A'};
     expected = {L'"', utf16::replacement_character, L'A', L'"'};
     doc.clear();
     doc.root(doc.create_string(s));
@@ -188,12 +194,19 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Array)
     doc.clear();
     json::dom_array* a = doc.create_array();
     doc.root(a);
+    a->append(doc.create_number(12345));
+    CheckDocStringWriter(doc, L"[12345]", L"Str 2");
+    CheckDocFileWriter(doc, L"[\n\t12345\n]", L"Doc 2");
+    //
+    doc.clear();
+    a = doc.create_array();
+    doc.root(a);
     a->append(doc.create_array());
-    CheckDocStringWriter(doc, L"[[]]", L"Str 2");
-    CheckDocFileWriter(doc, L"[\n\t[]\n]", L"Doc 2");
+    CheckDocStringWriter(doc, L"[[]]", L"Str 3.1");
+    CheckDocFileWriter(doc, L"[\n\t[]\n]", L"Doc 3.1");
     a->append(doc.create_array());
-    CheckDocStringWriter(doc, L"[[],[]]", L"Str 3");
-    CheckDocFileWriter(doc, L"[\n\t[],\n\t[]\n]", L"Doc 3");
+    CheckDocStringWriter(doc, L"[[],[]]", L"Str 3.2");
+    CheckDocFileWriter(doc, L"[\n\t[],\n\t[]\n]", L"Doc 3.2");
     //
     doc.clear();
     a = doc.create_array();
@@ -216,12 +229,23 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Object)
     doc.clear();
     json::dom_object* o = doc.create_object();
     doc.root(o);
+    o->append_member(L"Single member", doc.create_number(12345));
+    CheckDocStringWriter(doc, L"{\"Single member\":12345}", L"Str 2.1");
+    CheckDocFileWriter(doc, L"{\n\t\"Single member\": 12345\n}", L"Doc 2.1");
+    o->clear();
+    o->append_member(L"Single member", doc.create_literal(L"null"));
+    CheckDocStringWriter(doc, L"{\"Single member\":null}", L"Str 2.2");
+    CheckDocFileWriter(doc, L"{\n\t\"Single member\": null\n}", L"Doc 2.2");
+    //
+    doc.clear();
+    o = doc.create_object();
+    doc.root(o);
     o->append_member(L"obj 1", doc.create_object());
-    CheckDocStringWriter(doc, L"{\"obj 1\":{}}", L"Str 2");
-    CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {}\n}", L"Doc 2");
+    CheckDocStringWriter(doc, L"{\"obj 1\":{}}", L"Str 3.1");
+    CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {}\n}", L"Doc 3.1");
     o->append_member(L"obj 2", doc.create_object());
-    CheckDocStringWriter(doc, L"{\"obj 1\":{},\"obj 2\":{}}", L"Str 3");
-    CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {},\n\t\"obj 2\": {}\n}", L"Doc 3");
+    CheckDocStringWriter(doc, L"{\"obj 1\":{},\"obj 2\":{}}", L"Str 3.2");
+    CheckDocFileWriter(doc, L"{\n\t\"obj 1\": {},\n\t\"obj 2\": {}\n}", L"Doc 3.2");
     //
     doc.clear();
     o = doc.create_object();
@@ -240,6 +264,16 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Object)
     CheckDocFileWriter(doc,
                        L"{\n\t\"Literal 1\": null,\n\t\"String 2\": \"Hello world\",\n\t\"Number 3\": 12345,\n\t\"Object 4\": {\n\t\t\"Number 4.1\": 123.456\n\t}\n}",
                        L"Doc 6");
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentWriter_Object_MemberNames)
+{
+    json::dom_document doc;
+    json::dom_object* o = doc.create_object();
+    doc.root(o);
+    o->append_member(L"\x1 \xFDD0 \\x \n \\y", doc.create_literal(L"null"));
+    CheckDocStringWriter(doc, strutils::wformat(L"{\"\\u0001 %lc \\\\x \\n \\\\y\":null}", utf16::replacement_character), L"Str 1");
+    CheckDocFileWriter(doc, strutils::wformat(L"{\n\t\"\\u0001 %lc \\\\x \\n \\\\y\": null\n}", utf16::replacement_character), L"Doc 1");
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentWriter_Doc)
@@ -314,7 +348,9 @@ TEST_F(JsonToolsTest, TestDomDocumentGenerator)
         if (it.level() > level_count)
             level_count = it.level();
         if (it->type() == json::dom_value_type::vt_string)
+        {
             EXPECT_TRUE(gen.conf().value_char_range().contains_all(it->text()));
+        }
         if (it->member() != nullptr)
             EXPECT_TRUE(gen.conf().name_char_range().contains_all(it->member()->name()));
         if (it->is_container())
@@ -326,6 +362,145 @@ TEST_F(JsonToolsTest, TestDomDocumentGenerator)
     EXPECT_LE(level_count, gen.conf().depth()) << "Max depth";
     EXPECT_GE(item_count, gen.conf().depth()) << "Count min";
     EXPECT_LE(item_count, std::pow(gen.conf().avg_children(), gen.conf().depth())) << "Count max";
+}
+
+void CheckNoDiff(const json::dom_document& ldoc,
+                 const json::dom_document& rdoc,
+                 const json::dom_document_diff_options& options,
+                 const string title)
+{
+    json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
+    EXPECT_FALSE(diff.has_differences()) << title;
+    if (diff.has_differences())
+    {
+        string msg = title + ": ";
+        for (const json::dom_document_diff_item& item : diff.items())
+        {
+            msg += item.to_string() + "\n";
+        }
+        FAIL() << msg;
+    }
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff)
+{
+    json::dom_document doc1, doc2;
+    jsondom_test::JsonDomTest::FillTestDoc(doc1);
+    jsondom_test::JsonDomTest::FillTestDoc(doc2);
+    json::dom_document_diff_options options;
+    options.case_sensitive(true);
+    options.compare_all(false);
+    CheckNoDiff(doc1, doc2, options, "TestDoc");
+}
+
+void CheckHasDiffOfKind(const json::dom_document_diff_kind expected_kind,
+                        const json::dom_document& ldoc,
+                        const json::dom_document& rdoc,
+                        const json::dom_value* lv,
+                        const json::dom_value* rv,
+                        const json::dom_document_diff_options& options,
+                        const string title)
+{
+    json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
+    EXPECT_TRUE(diff.has_differences());
+    bool has_tested_diff = false;
+    string msg = "Diff kinds: ";
+    for (const json::dom_document_diff_item& item : diff.items())
+    {
+        if (item.kind() == expected_kind)
+        {
+            EXPECT_EQ(item.lval(), lv) << title;
+            EXPECT_EQ(item.rval(), rv) << title;
+            has_tested_diff = true;
+            break;
+        }
+        else
+            msg += json::to_string(item.kind()) + ",";
+    }
+    EXPECT_TRUE(has_tested_diff) << title + ". " + msg;
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff_Type)
+{
+    json::dom_document ldoc, rdoc;
+    json::dom_value* lv = ldoc.create_literal(L"null");
+    ldoc.root(lv);
+    json::dom_value* rv = rdoc.create_string(L"null");
+    rdoc.root(rv);
+    CheckHasDiffOfKind(json::dom_document_diff_kind::type_diff, ldoc, rdoc, lv, rv, json::dom_document_diff_options(), "Type");
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff_Path)
+{
+    json::dom_document ldoc, rdoc;
+    // ldoc is [[],[]]
+    json::dom_array* arr = ldoc.create_array();
+    ldoc.root(arr);
+    arr->append(ldoc.create_array());
+    json::dom_value* lv = ldoc.create_array();
+    arr->append(lv);
+    // rdoc is [[[]]]
+    arr = rdoc.create_array();
+    rdoc.root(arr);
+    json::dom_array* arr2 = rdoc.create_array();
+    arr->append(arr2);
+    json::dom_value* rv = rdoc.create_array();
+    arr2->append(rv);
+    arr->append(rdoc.create_array());
+    json::dom_document_diff_options options;
+    options.compare_all(true);
+    CheckHasDiffOfKind(json::dom_document_diff_kind::path_diff, ldoc, rdoc, lv, rv, options, "Path");
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff_Count)
+{
+    json::dom_document ldoc, rdoc;
+    // ldoc is [12,34]
+    json::dom_array* lv = ldoc.create_array();
+    ldoc.root(lv);
+    lv->append(ldoc.create_number(12));
+    lv->append(ldoc.create_number(34));
+    // rdoc is [1,2,3]
+    json::dom_array* rv = rdoc.create_array();
+    rdoc.root(rv);
+    rv->append(rdoc.create_number(1));
+    rv->append(rdoc.create_number(2));
+    rv->append(rdoc.create_number(3));
+    CheckHasDiffOfKind(json::dom_document_diff_kind::count_diff, ldoc, rdoc, lv, rv, json::dom_document_diff_options(), "Count");
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff_MemberName)
+{
+    json::dom_document ldoc, rdoc;
+    // ldoc
+    json::dom_object* lobj = ldoc.create_object();
+    ldoc.root(lobj);
+    json::dom_value* lv = ldoc.create_number(123);
+    lobj->append_member(L"VALUE", lv);
+    json::dom_object* robj = rdoc.create_object();
+    // rdoc
+    rdoc.root(robj);
+    json::dom_value* rv = rdoc.create_number(123);
+    robj->append_member(L"value", rv);
+    json::dom_document_diff_options options;
+    options.case_sensitive(true);
+    CheckHasDiffOfKind(json::dom_document_diff_kind::member_name_diff, ldoc, rdoc, lv, rv, options, "Member 1");
+    options.case_sensitive(false);
+    CheckNoDiff(ldoc, rdoc, options, "Member 2");
+}
+
+TEST_F(JsonToolsTest, TestDomDocumentDiff_Value)
+{
+    json::dom_document ldoc, rdoc;
+    json::dom_value* lv = ldoc.create_string(L"Value 1");
+    ldoc.root(lv);
+    json::dom_value* rv = rdoc.create_string(L"value 1");
+    rdoc.root(rv);
+    json::dom_document_diff_options options;
+    options.case_sensitive(true);
+    CheckHasDiffOfKind(json::dom_document_diff_kind::value_diff, ldoc, rdoc, lv, rv, json::dom_document_diff_options(), "Value 1");
+    options.case_sensitive(false);
+    CheckNoDiff(ldoc, rdoc, options, "Value 2");
 }
 
 }

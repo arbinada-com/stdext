@@ -83,7 +83,7 @@ OBJECTS       = release\x86_64\win32\gtest-all.obj \
 		release\x86_64\win32\trees-test.obj \
 		release\x86_64\win32\variants-test.obj
 
-DIST          =   ..\..\googletest\googletest\src\gtest-all.cc \
+DIST          =  src/jsondom-test.h ..\..\googletest\googletest\src\gtest-all.cc \
 		..\..\googletest\googlemock\src\gmock-all.cc \
 		src\main.cpp \
 		src\containers-test.cpp \
@@ -287,8 +287,7 @@ release\x86_64\win32\ioutils-test.obj: src\ioutils-test.cpp ..\..\googletest\goo
 		..\stdext\src\testutils.h \
 		..\stdext\src\strutils.h
 
-release\x86_64\win32\jsondom-test.obj: src\jsondom-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
-		..\stdext\src\json\json.h \
+release\x86_64\win32\jsondom-test.obj: src\jsondom-test.cpp src\jsondom-test.h \
 		..\stdext\src\locutils.h \
 		..\stdext\src\strutils.h \
 		..\stdext\src\testutils.h
@@ -300,16 +299,15 @@ release\x86_64\win32\jsonlexer-test.obj: src\jsonlexer-test.cpp ..\..\googletest
 
 release\x86_64\win32\jsonparser-test.obj: src\jsonparser-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
 		..\stdext\src\json\json.h \
-		..\stdext\src\json\jsontools.h \
 		..\stdext\src\strutils.h \
 		..\stdext\src\testutils.h
 
 release\x86_64\win32\jsontools-test.obj: src\jsontools-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
-		..\stdext\src\json\json.h \
 		..\stdext\src\json\jsontools.h \
 		..\stdext\src\locutils.h \
 		..\stdext\src\strutils.h \
-		..\stdext\src\testutils.h
+		..\stdext\src\testutils.h \
+		src\jsondom-test.h
 
 release\x86_64\win32\locutils-test.obj: src\locutils-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
 		..\stdext\src\locutils.h \
