@@ -13,6 +13,7 @@
 #include <map>
 #include <cstdint>
 #include <limits>
+#include "jsoncommon.h"
 #include "jsonexceptions.h"
 #include "../ptr_vector.h"
 
@@ -55,6 +56,7 @@ namespace stdext
             document_is_null,
             duplicate_name,
             invalid_literal,
+            member_not_found,
             owner_is_null,
             parent_is_not_null,
             usupported_value_type,
@@ -69,6 +71,24 @@ namespace stdext
             dom_error error() const { return m_error; }
         protected:
             dom_error m_error;
+        };
+
+        class dom_member_not_found : public json::dom_exception
+        {
+        public:
+            dom_member_not_found(const std::wstring member_name)
+                : json::dom_exception(strutils::wformat(L"Member not found: %ls", member_name.c_str()),
+                                      dom_error::member_not_found),
+                  m_member_name(member_name)
+            {}
+            dom_member_not_found(const std::wstring member_name, const std::wstring msg)
+                : json::dom_exception(msg, dom_error::member_not_found),
+                  m_member_name(member_name)
+            {}
+        public:
+            std::wstring member_name() const noexcept { return m_member_name; }
+        protected:
+            std::wstring m_member_name;
         };
 
 
@@ -147,7 +167,7 @@ namespace stdext
             dom_object_member* member() const noexcept { return m_member; }
             dom_value* parent() const noexcept { return m_parent; }
             virtual std::wstring text() const noexcept { return m_text; }
-            virtual void text(const std::wstring value) noexcept(false) { m_text = value; }
+            virtual void text(const std::wstring value) noexcept(false) { m_text = json::to_unescaped(value); }
             dom_value_type type() const noexcept { return m_type; }
         public:
             friend bool operator ==(const dom_value& v1, const dom_value& v2);
@@ -158,8 +178,9 @@ namespace stdext
             dom_document* m_doc = nullptr;
             dom_object_member* m_member = nullptr;
             dom_value* m_parent = nullptr;
-            std::wstring m_text;
             dom_value_type m_type;
+        private:
+            std::wstring m_text;
         };
 
 
@@ -261,13 +282,15 @@ namespace stdext
             void clear() noexcept;
             dom_object_member* at(const size_type i) { return m_data.at(i); }
             dom_object_member* operator [](const size_type i) { return m_data.at(i); }
+            dom_object_member* operator [](const name_t name) { return this->get(name); }
             iterator begin() noexcept { return m_data.begin(); }
             const_iterator begin() const noexcept { return m_data.begin(); }
             iterator end() noexcept { return m_data.end(); }
             const_iterator end() const noexcept { return m_data.end(); }
             inline bool contains_name(const name_t name) const noexcept { return find(name) != nullptr; }
             bool empty() const noexcept { return m_data.empty(); }
-            dom_value* find(const name_t name) const noexcept;
+            dom_object_member* find(const name_t name) const noexcept;
+            dom_object_member* get(const name_t name) const noexcept(false);
             size_type size() const { return m_data.size(); }
         protected:
             void check_name(const name_t name) const noexcept(false);
@@ -294,7 +317,8 @@ namespace stdext
             dom_object_member* operator [](const size_type i) { return m_members->at(i); }
             void append_member(const name_t name, dom_value* const value) noexcept(false) { m_members->append(name, value); }
             inline bool contains_member(const name_t name) const noexcept { return m_members->contains_name(name); }
-            inline dom_value* find(const name_t name) const noexcept { return m_members->find(name); }
+            inline dom_object_member* find(const name_t name) const noexcept { return m_members->find(name); }
+            dom_value* find_value(const name_t name) const noexcept;
             size_type size() const { return m_members->size(); }
         public: // container_intf implementation
             container_intf* as_container() override { return dynamic_cast<json::container_intf*>(this); }

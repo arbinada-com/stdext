@@ -54,5 +54,6 @@ namespace stdext
         bool is_unescaped(const wchar_t c);
         std::wstring to_escaped(const wchar_t c, const bool force_to_numeric = false);
         std::wstring to_escaped(const std::wstring ws, const bool force_to_numeric = false);
+        std::wstring to_unescaped(const std::wstring ws);
     }
 }

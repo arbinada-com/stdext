@@ -666,11 +666,7 @@ codecvt_utf16_wchar_t::do_in(
         }
         else
             get_next1(c2, state_adapter.byte_order());
-        // append character
-        if (!utf16::is_noncharacter(c2))
-            put_next2(c2);
-        else
-            put_next2(utf16::replacement_character);
+        put_next2(c2);
     }
     return (first1 == next1 ? codecvt_base_t::partial : codecvt_base_t::ok);
 }
@@ -723,10 +719,8 @@ codecvt_utf16_wchar_t::do_out(mbstate_t& state,
             return codecvt_base_t::error;
         if (utf16::is_bom((wchar_t)c2))
             continue;
-        if (c2 <= 0xFFFF)
+        if (c2 <= utf16::max_char)
         {
-            if (utf16::is_noncharacter((wchar_t)c2))
-                c2 = utf16::replacement_character;
             put_char2((intern_type)c2);
         }
         else

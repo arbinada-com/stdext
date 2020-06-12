@@ -184,7 +184,7 @@ dom_string::dom_string(dom_document* const doc, const std::wstring& text)
  * dom_object_member class
  */
 dom_object_member::dom_object_member(dom_object_members* const owner, const name_t& name, dom_value* const value)
-    : m_owner(owner), m_name(name), m_value(value)
+    : m_owner(owner), m_name(json::to_unescaped(name)), m_value(value)
 { 
     if (m_owner == nullptr)
         throw dom_exception(L"Member owner is null", dom_error::owner_is_null);
@@ -230,12 +230,20 @@ void dom_object_members::clear() noexcept
     m_data.clear();
 }
 
-dom_value* dom_object_members::find(const name_t name) const noexcept
+dom_object_member* dom_object_members::find(const name_t name) const noexcept
 {
-    data_index_t::const_iterator it = m_index.find(name);
+    data_index_t::const_iterator it = m_index.find(json::to_unescaped(name));
     if (it == m_index.end())
         return nullptr;
-    return it->second->value();
+    return it->second;
+}
+
+dom_object_member* dom_object_members::get(const name_t name) const noexcept(false)
+{
+    dom_object_member* member = this->find(name);
+    if (member == nullptr)
+        throw json::dom_member_not_found(name);
+    return member;
 }
 
 /*
@@ -252,10 +260,18 @@ dom_object::~dom_object()
         delete m_members;
 }
 
-void stdext::json::dom_object::clear()
+void dom_object::clear()
 {
     m_members->clear();
     dom_value::clear();
+}
+
+dom_value* dom_object::find_value(const name_t name) const noexcept
+{
+    dom_object_member* member = this->find(name);
+    if (member != nullptr)
+        return member->value();
+    return nullptr;
 }
 
 /*

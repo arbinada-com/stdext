@@ -89,7 +89,7 @@ namespace stdext
             static bool is_digit(const wchar_t c);
             static bool is_escape(const wchar_t c);
             static bool is_structural(const wchar_t c);
-            static bool is_unescaped(const wchar_t c);
+            inline static bool is_unescaped(const wchar_t c) noexcept { return json::is_unescaped(c); }
             static bool is_whitespace(const wchar_t c);
         private:
             void add_error(const parser_msg_kind kind);

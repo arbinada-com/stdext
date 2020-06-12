@@ -108,10 +108,9 @@ TEST_F(JsonToolsTest, TestStringEscape)
     EXPECT_EQ(L"\\u0001", w.escape(L"\x0001")) << "3.1";
     EXPECT_EQ(L"\\u001F", w.escape(L"\x001F")) << "3.2";
     wstring ws = {utf16::replacement_character};
-    ASSERT_EQ(L"\xFFFD", w.escape(ws)) << "3.3";
-    wstring expected = {utf16::replacement_character};
+    ASSERT_EQ(ws, w.escape(ws)) << "3.3";
     EXPECT_TRUE(utf16::is_noncharacter(L'\xFDD0'));
-    ASSERT_EQ(expected, w.escape(L"\xFDD0")) << "3.4";
+    ASSERT_EQ(L"\\uFDD0", w.escape(L"\xFDD0")) << "3.4";
     //
     EXPECT_EQ(L"\xD834\xDD1E", w.escape(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
     EXPECT_EQ(L"==\xD834\xDD1E==", w.escape(L"==\xD834\xDD1E==")) << "Surrogate pair 'G clef' 2";
@@ -137,8 +136,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocFileWriter(doc, L"\"ABC été déjà строка\"", L"Doc 3");
     doc.clear();
     doc.root(doc.create_string(L"\x1 \x2 \xFFFE \xFFFF"));
-    wstring expected = strutils::wformat(L"\"\\u0001 \\u0002 %lc %lc\"",
-                                         utf16::replacement_character, utf16::replacement_character);
+    wstring expected = L"\"\\u0001 \\u0002 \\uFFFE \\uFFFF\"";
     CheckDocStringWriter(doc, expected, L"Str 4");
     CheckDocFileWriter(doc, expected, L"Doc 4");
     // Non-existing escape sequences
@@ -176,7 +174,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocStringWriter(doc, expected, L"Str 6.1");
     CheckDocFileWriter(doc, expected, L"Doc 6.1");
     s = {L'\xFDD0', L'A'};
-    expected = {L'"', utf16::replacement_character, L'A', L'"'};
+    expected = L"\"\\uFDD0A\"";
     doc.clear();
     doc.root(doc.create_string(s));
     CheckDocStringWriter(doc, expected, L"Str 6.2");
@@ -272,8 +270,8 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Object_MemberNames)
     json::dom_object* o = doc.create_object();
     doc.root(o);
     o->append_member(L"\x1 \xFDD0 \\x \n \\y", doc.create_literal(L"null"));
-    CheckDocStringWriter(doc, strutils::wformat(L"{\"\\u0001 %lc \\\\x \\n \\\\y\":null}", utf16::replacement_character), L"Str 1");
-    CheckDocFileWriter(doc, strutils::wformat(L"{\n\t\"\\u0001 %lc \\\\x \\n \\\\y\": null\n}", utf16::replacement_character), L"Doc 1");
+    CheckDocStringWriter(doc, L"{\"\\u0001 \\uFDD0 \\\\x \\n \\\\y\":null}", L"Str 1");
+    CheckDocFileWriter(doc, L"{\n\t\"\\u0001 \\uFDD0 \\\\x \\n \\\\y\": null\n}", L"Doc 1");
 }
 
 TEST_F(JsonToolsTest, TestDomDocumentWriter_Doc)

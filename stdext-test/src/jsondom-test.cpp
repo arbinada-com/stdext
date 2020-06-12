@@ -179,23 +179,37 @@ TEST_F(JsonDomTest, TestDomValues_Number)
                 L"1.23456e-08", json::dom_number_value_type::nvt_float, L"Float 2.4");
 }
 
+TEST_F(JsonDomTest, TestDomValues_String)
+{
+    json::dom_document doc;
+    {
+        json::dom_string* v = doc.create_string(L"Hello DOM");
+        doc.root(v);
+        EXPECT_EQ(L"Hello DOM", v->text()) << L"text 1";
+        EXPECT_TRUE(json::dom_value_type::vt_string == v->type()) << L"type 1";
+    }
+    {
+        doc.clear();
+        json::dom_string* v = doc.create_string(L"a\\u005Cb");
+        doc.root(v);
+        EXPECT_NE(L"a\\u005Cb", v->text()) << L"text 2.1";
+        EXPECT_EQ(L"a\\b", v->text()) << L"text 2.2";
+    }
+}
+
 TEST_F(JsonDomTest, TestDomValues_Other)
 {
     json::dom_document doc;
     //
-    json::dom_string* v4 = doc.create_string(L"Hello DOM");
-    EXPECT_EQ(L"Hello DOM", v4->text()) << L"v4 text";
-    EXPECT_TRUE(json::dom_value_type::vt_string == v4->type()) << L"v4 type";
-    //
     json::dom_array* v5 = doc.create_array();
-    EXPECT_EQ(L"", v5->text()) << L"v5 text";
-    EXPECT_EQ(0u, v5->size()) << L"v5 size";
-    EXPECT_TRUE(json::dom_value_type::vt_array == v5->type()) << L"v5 type";
+    EXPECT_EQ(L"", v5->text()) << L"array text";
+    EXPECT_EQ(0u, v5->size()) << L"array size";
+    EXPECT_TRUE(json::dom_value_type::vt_array == v5->type()) << L"array type";
     //
     json::dom_object* v6 = doc.create_object();
-    EXPECT_EQ(L"", v6->text()) << L"v6 text";
-    EXPECT_EQ(0u, v6->members()->size()) << L"v6 values size";
-    EXPECT_TRUE(json::dom_value_type::vt_object == v6->type()) << L"v6 type";
+    EXPECT_EQ(L"", v6->text()) << L"object text";
+    EXPECT_EQ(0u, v6->members()->size()) << L"object values size";
+    EXPECT_TRUE(json::dom_value_type::vt_object == v6->type()) << L"object type";
 }
 
 TEST_F(JsonDomTest, TestDomMembers)
@@ -225,13 +239,63 @@ TEST_F(JsonDomTest, TestDomMembers)
         ASSERT_TRUE(test_data[i] == (*o1)[i]->value()) << strutils::wformat(L"Value ptr %d", i);
         ASSERT_TRUE(test_data[i]->type() == (*o1)[i]->value()->type()) << strutils::wformat(L"Value type %d", i);
         ASSERT_TRUE(test_data[i]->text() == (*o1)[i]->value()->text()) << strutils::wformat(L"Value %d", i);
-        json::dom_value* v = o1->find(name);
-        ASSERT_TRUE(o1->contains_member(name)) << strutils::wformat(L"Value2 name %d", i);
-        ASSERT_FALSE(v == nullptr) << strutils::wformat(L"Value2 %d", i);
-        ASSERT_EQ(test_data[i], v) << strutils::wformat(L"Value2 ptr %d", i);
-        ASSERT_EQ(test_data[i]->type(), v->type()) << strutils::wformat(L"Value2 type %d", i);
-        ASSERT_EQ(test_data[i]->text(), v->text()) << strutils::wformat(L"Value2 %d", i);
+        json::dom_object_member* member = o1->find(name);
+        ASSERT_TRUE(o1->contains_member(name)) << strutils::wformat(L"Member2 name %d", i);
+        ASSERT_FALSE(member == nullptr) << strutils::wformat(L"Member2 %d", i);
+        ASSERT_FALSE(member->value() == nullptr) << strutils::wformat(L"MemberValue2 %d", i);
+        EXPECT_EQ(test_data[i], member->value()) << strutils::wformat(L"MemberValue2 ptr %d", i);
+        EXPECT_EQ(test_data[i]->type(), member->value()->type()) << strutils::wformat(L"MemberValue2 type %d", i);
+        EXPECT_EQ(test_data[i]->text(), member->value()->text()) << strutils::wformat(L"MemberValue2 %d", i);
+        json::dom_value* v2 = o1->find_value(name);
+        ASSERT_FALSE(v2 == nullptr) << strutils::wformat(L"Value2 %d", i);
+        EXPECT_EQ(v2, member->value()) << strutils::wformat(L"Value2 ptr %d", i);
     }
+}
+
+TEST_F(JsonDomTest, TestDomMemberName)
+{
+    json::dom_document doc;
+    json::dom_object* o = doc.create_object();
+    doc.root(o);
+    wstring name1     = L"ABC déjà строка",
+            expected1 = L"ABC déjà строка",
+            name2     = L"a\\u005Cb",
+            expected2 = L"a\\b";
+    json::dom_number* v1 = doc.create_number(123);
+    o->append_member(name1, v1);
+    json::dom_number* v2 = doc.create_number(456);
+    o->append_member(name2, v2);
+    EXPECT_EQ(v1->member()->name(), expected1);
+    EXPECT_EQ(v2->member()->name(), expected2);
+    auto test_member_name = [&](wstring name, int num, wstring title)
+    {
+        EXPECT_TRUE(o->members()->contains_name(name)) << title;
+        EXPECT_TRUE(o->members()->get(name)) << title;
+        ASSERT_TRUE(o->members()->find(name) != nullptr) << title;
+        ASSERT_TRUE(o->find(name) != nullptr) << title;
+        ASSERT_TRUE(o->find_value(name) != nullptr) << title;
+        EXPECT_EQ(std::to_wstring(num), o->find_value(name)->text()) << title;
+    };
+    test_member_name(name1, 123, L"name1");
+    test_member_name(expected1, 123, L"expected1");
+    test_member_name(name2, 456, L"name2");
+    test_member_name(expected2, 456, L"expected2");
+}
+
+TEST_F(JsonDomTest, TestDomMemberNotFoundException)
+{
+    json::dom_document doc;
+    json::dom_object* o = doc.create_object();
+    doc.root(o);
+    wstring name1 = L"Value 1";
+    o->append_member(name1, doc.create_number(123));
+    EXPECT_TRUE(o->find(name1) != nullptr);
+    wstring name2 = L"_" + name1;
+    EXPECT_TRUE(o->find(name2) == nullptr);
+    EXPECT_THROW(o->members()->get(name2), json::dom_member_not_found);
+    EXPECT_THROW((*(o->members()))[name2], json::dom_member_not_found);
+    json::dom_object_members* members = o->members();
+    EXPECT_THROW((*members)[name2], json::dom_member_not_found);
 }
 
 TEST_F(JsonDomTest, TestDomContainers)

@@ -24,21 +24,22 @@ bool json::is_unescaped(const wchar_t c)
 
 std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
 {
-    if (force_to_numeric)
-        return strutils::wformat(L"\\u%0.4X", c);
-    switch (c)
+    if (force_to_numeric || !is_unescaped(c))
     {
-    case L'\"': return L"\\\"";
-    case L'\\': return L"\\\\";
-    case L'/': return L"\\/";
-    case L'\b': return L"\\b";
-    case L'\f': return L"\\f";
-    case L'\n': return L"\\n";
-    case L'\r': return L"\\r";
-    case L'\t': return L"\\t";
-    default:
-        return strutils::wformat(L"\\u%0.4X", c);
+        switch (c)
+        {
+        case L'\"': return L"\\\"";
+        case L'\\': return L"\\\\";
+        case L'\b': return L"\\b";
+        case L'\f': return L"\\f";
+        case L'\n': return L"\\n";
+        case L'\r': return L"\\r";
+        case L'\t': return L"\\t";
+        default:
+            return strutils::wformat(L"\\u%0.4X", c);
+        }
     }
+    return wstring{c};
 }
 
 std::wstring json::to_escaped(const std::wstring ws, const bool force_to_numeric)
@@ -46,7 +47,40 @@ std::wstring json::to_escaped(const std::wstring ws, const bool force_to_numeric
     wstring ws2;
     ws2.reserve(ws.length() * (force_to_numeric ? 6 : 2));
     for (const wchar_t c : ws)
-        ws2 += to_escaped(c, force_to_numeric);
+    {
+        if (force_to_numeric || !is_unescaped(c))
+            ws2 += to_escaped(c, force_to_numeric);
+        else
+            ws2 += c;
+    }
+    return ws2;
+}
+
+std::wstring json::to_unescaped(const std::wstring ws)
+{
+    std::locale loc;
+    wstring ws2;
+    ws2.reserve(ws.length());
+    for (size_t i = 0; i < ws.length(); i++)
+    {
+        wchar_t c = ws[i];
+        if (c == L'\\' && i + 5 < ws.length() && ws[i + 1] == L'u')
+        {
+            wstring value;
+            for (size_t j = 2; j < 6; j++)
+            {
+                if (!std::isxdigit(ws[i + j], loc))
+                    break;
+                value += ws[i + j];
+            }
+            if (value.length() == 4)
+            {
+                c = static_cast<wchar_t>(std::stoi(value, nullptr, 16));
+                i += 5;
+            }
+        }
+        ws2 += c;
+    }
     return ws2;
 }
 

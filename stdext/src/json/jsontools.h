@@ -43,7 +43,7 @@ namespace stdext
             };
         public:
             config& conf() { return m_conf; }
-            std::wstring escape(const std::wstring s) const;
+            inline std::wstring escape(const std::wstring s) const { return json::to_escaped(s); }
             void write(ioutils::text_writer& w);
             void write(std::wostream& stream);
             void write(std::wstring& s);

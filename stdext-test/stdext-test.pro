@@ -19,6 +19,7 @@ unix: PRE_TARGETDEPS += $$LIBS_DIR/libstdext.a
 #message(Pre targetdeps: $$PRE_TARGETDEPS)
 
 SOURCES += \
+    src/jsoncommon-test.cpp \
     src/main.cpp \
     src/containers-test.cpp \
     src/csvtools-test.cpp \

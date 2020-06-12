@@ -19,7 +19,8 @@ namespace stdext
         public:
             exception(const std::wstring msg)
                 : std::exception(), m_wmesssage(msg)
-            { }
+            {}
+        public:
             std::wstring wmessage() const noexcept { return m_wmesssage; }
             const char* what() const noexcept override { return strutils::to_string(m_wmesssage).c_str(); }
         protected:

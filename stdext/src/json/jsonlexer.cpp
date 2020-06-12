@@ -308,11 +308,6 @@ bool json::lexer::is_structural(const wchar_t c)
     return c == L'[' || c == L'{' || c == L']' || c == L'}' || c == L':' || c == L',';
 }
 
-bool json::lexer::is_unescaped(const wchar_t c)
-{
-    return json::is_unescaped(c);
-}
-
 bool json::lexer::is_whitespace(const wchar_t c)
 {
     return c == L' ' || c == L'\t' || c == L'\r' || c == L'\n';

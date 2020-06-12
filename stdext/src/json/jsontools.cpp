@@ -93,26 +93,6 @@ dom_document_writer::dom_document_writer(json::dom_document& doc)
     : m_doc(doc)
 { }
 
-std::wstring dom_document_writer::escape(const std::wstring s) const
-{
-    wstring es;
-    es.reserve(s.length());
-    for (size_t i = 0; i < s.length(); i++)
-    {
-        wchar_t c = s[i];
-        if (json::is_unescaped(c))
-            es += c;
-        else
-        {
-            if (utf16::is_noncharacter(c))
-                es += utf16::replacement_character;
-            else
-                es += json::to_escaped(c);
-        }
-    }
-    return es;
-}
-
 void dom_document_writer::write(ioutils::text_writer& w)
 {
     auto indent = [](size_t n) -> wstring
