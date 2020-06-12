@@ -6,11 +6,11 @@
 - minimalistic implementation of variant type values
 - generic tree implementation
 - string utils (format, replace etc)
-- CSV (comma-separated values) format tools (both ANSI and Unicode support)
-- JSON DOM parser (in progress)
+- CSV (comma-separated values) format reader (both ANSI and Unicode support)
+- JSON DOM parser (both ANSI and Unicode) and tools (document iterators, JSON diff, JSON generator)
 
 Automatic testing provided using Googletest framework
 
 Tested platforms:
- - Windows 32/64-bit using VC++ 2017 and partially C++Builder 10.x clang)
+ - Windows 32/64-bit using VC++ 2017 and partially C++Builder 10.x clang
  - Linux 64-bit using GNU C++ clang
