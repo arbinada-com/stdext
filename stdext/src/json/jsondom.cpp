@@ -76,7 +76,7 @@ bool json::equal(const dom_document& doc1, const dom_document& doc2)
  * dom_value class
  */
 dom_value::dom_value(dom_document* const doc, const dom_value_type type)
-    : m_doc(doc), m_text(L""), m_type(type)
+    : m_doc(doc), m_type(type), m_text(L"")
 { 
     if (m_doc == nullptr)
         throw dom_exception(L"Value should be created in document scope", dom_error::document_is_null);

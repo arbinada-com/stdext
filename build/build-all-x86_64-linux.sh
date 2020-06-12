@@ -12,7 +12,12 @@ function check_last()
 #./gen-makefiles-x86_64-linux.sh
 #check_last $?
 
-mkargs=$1
+mkargs=
+for arg; do
+    if [ "$arg" = "rebuild" ]; then
+        mkargs=--always-make
+    fi
+done
 echo "Additional make parameters: $mkargs"
 
 echo "Building stdext library..."
