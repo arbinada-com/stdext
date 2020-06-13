@@ -169,6 +169,14 @@ namespace stdext
             {
                 add(new message_t(origin, msg_severity::info, kind, pos, source, text));
             }
+            void clear()
+            {
+                m_infos.clear();
+                m_hints.clear();
+                m_warnings.clear();
+                m_errors.clear();
+                m_data.clear();
+            }
             inline bool has_errors() const noexcept { return m_errors.size() > 0; }
             inline bool has_hints() const noexcept { return m_hints.size() > 0; }
             inline bool has_infos() const noexcept { return m_infos.size() > 0; }

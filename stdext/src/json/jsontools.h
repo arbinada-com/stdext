@@ -20,6 +20,29 @@ namespace stdext
 {
     namespace json
     {
+
+        class dom_document_reader
+        {
+        public:
+            dom_document_reader(json::dom_document& doc);
+            dom_document_reader() = delete;
+            dom_document_reader(const dom_document_reader&) = delete;
+            dom_document_reader& operator=(const dom_document_reader&) = delete;
+            dom_document_reader(dom_document_reader&&) = delete;
+            dom_document_reader& operator=(dom_document_reader&&) = delete;
+        public:
+            bool read(ioutils::text_reader& reader);
+            bool read(std::wistream& stream, const std::wstring& source_name = L"");
+            bool read(const std::wstring& ws, const std::wstring& source_name = L"");
+            bool read_from_file(const std::wstring file_name, const ioutils::text_io_options& options);
+        public:
+            const json::msg_collector_t& messages() const noexcept { return m_messages; }
+        private:
+            json::dom_document& m_doc;
+            json::msg_collector_t m_messages;
+        };
+
+
         class dom_document_writer
         {
         public:
@@ -43,10 +66,9 @@ namespace stdext
             };
         public:
             config& conf() { return m_conf; }
-            inline std::wstring escape(const std::wstring s) const { return json::to_escaped(s); }
             void write(ioutils::text_writer& w);
             void write(std::wostream& stream);
-            void write(std::wstring& s);
+            void write(std::wstring& ws);
             void write_to_file(const std::wstring file_name, const ioutils::text_io_options& options);
         private:
             config m_conf;

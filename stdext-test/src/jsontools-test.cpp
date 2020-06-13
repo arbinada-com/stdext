@@ -23,11 +23,11 @@ class JsonToolsTest : public testing::Test
 protected:
     const wstring default_test_file_name = L"current.json";
 
-    void SaveDoc(json::dom_document& doc, const wstring file_name)
+    void SaveDoc(json::dom_document& doc, const wstring file_name, const ioutils::text_io_options& options)
     {
         json::dom_document_writer w(doc);
         w.conf().pretty_print(true);
-        w.write_to_file(file_name, ioutils::text_io_options_utf8());
+        w.write_to_file(file_name, options);
     }
 
     void CompareDocStrings(const wstring ws, const wstring& expected, const wstring& title)
@@ -40,11 +40,54 @@ protected:
             ASSERT_EQ(ws[i], expected[i]) << strutils::wformat(L"%ls: char[%d]", title.c_str(), i);
         }
     }
+};
 
+/*
+ * JSON document reader tests
+ */
+class JsonDocumentReaderTest : public JsonToolsTest
+{
+};
+
+TEST_F(JsonDocumentReaderTest, TestGeneratedDoc)
+{
+    const int max_test_count = 100;
+    for (int i = 1; i <= max_test_count; i++)
+    {
+        json::dom_document doc1;
+        json::dom_document_generator gen(doc1);
+        gen.conf().depth(7);
+        gen.conf().avg_children(5);
+        gen.run();
+        ioutils::text_io_options_utf8 options = ioutils::text_io_options_utf8();
+        SaveDoc(doc1, default_test_file_name, options);
+        json::dom_document doc2;
+        json::dom_document_reader reader(doc2);
+        bool result = reader.read_from_file(default_test_file_name, options);
+        EXPECT_TRUE(result);
+        EXPECT_FALSE(reader.messages().has_errors());
+        if (reader.messages().has_errors())
+        {
+            wstring msg;
+            for (auto error : reader.messages().errors())
+                msg += error->to_wstring() + L"\n";
+            FAIL() << msg;
+        }
+        if (!result)
+            break;
+    }
+}
+
+/*
+ * JSON document writer tests
+ */
+class JsonDocumentWriterTest : public JsonToolsTest
+{
+protected:
     void CheckDocFileWriter(json::dom_document& doc, const wstring& expected, const wstring& title)
     {
         const wstring file_name = default_test_file_name;
-        SaveDoc(doc, file_name);
+        SaveDoc(doc, file_name, ioutils::text_io_options_utf8());
         ioutils::text_reader r(file_name, ioutils::text_io_options_utf8());
         wstring s;
         r.read_all(s);
@@ -61,7 +104,7 @@ protected:
     }
 };
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Literal)
+TEST_F(JsonDocumentWriterTest, TestLiteral)
 {
     json::dom_document doc;
     doc.clear();
@@ -78,7 +121,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Literal)
     CheckDocFileWriter(doc, L"true", L"Doc 3");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Number)
+TEST_F(JsonDocumentWriterTest, TestNumber)
 {
     json::dom_document doc;
     doc.clear();
@@ -91,35 +134,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Number)
     CheckDocFileWriter(doc, L"123.456", L"Doc 2");
 }
 
-TEST_F(JsonToolsTest, TestStringEscape)
-{
-    json::dom_document doc;
-    json::dom_document_writer w(doc);
-    EXPECT_EQ(L"", w.escape(L"")) << "1";
-    EXPECT_EQ(L"\\\"", w.escape(L"\"")) << "2.1";
-    EXPECT_EQ(L"\\\\", w.escape(L"\\")) << "2.2";
-    EXPECT_EQ(L"/", w.escape(L"/")) << "2.3";
-    EXPECT_EQ(L"\\b", w.escape(L"\b")) << "2.4";
-    EXPECT_EQ(L"\\f", w.escape(L"\f")) << "2.5";
-    EXPECT_EQ(L"\\n", w.escape(L"\n")) << "2.6";
-    EXPECT_EQ(L"\\r", w.escape(L"\r")) << "2.7";
-    EXPECT_EQ(L"\\t", w.escape(L"\t")) << "2.8";
-    //
-    EXPECT_EQ(L"\\u0001", w.escape(L"\x0001")) << "3.1";
-    EXPECT_EQ(L"\\u001F", w.escape(L"\x001F")) << "3.2";
-    wstring ws = {utf16::replacement_character};
-    ASSERT_EQ(ws, w.escape(ws)) << "3.3";
-    EXPECT_TRUE(utf16::is_noncharacter(L'\xFDD0'));
-    ASSERT_EQ(L"\\uFDD0", w.escape(L"\xFDD0")) << "3.4";
-    //
-    EXPECT_EQ(L"\xD834\xDD1E", w.escape(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
-    EXPECT_EQ(L"==\xD834\xDD1E==", w.escape(L"==\xD834\xDD1E==")) << "Surrogate pair 'G clef' 2";
-    EXPECT_EQ(L"\xD834", w.escape(L"\xD834")) << "Incomplete surrogate pair";
-    EXPECT_EQ(L"\xD834-\x1234", w.escape(L"\xD834-\x1234")) << "Invalid surrogate pair 1";
-    EXPECT_EQ(L"\xD834-\xDD1E", w.escape(L"\xD834-\xDD1E")) << "Invalid surrogate pair 2";
-}
-
-TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
+TEST_F(JsonDocumentWriterTest, TestString)
 {
     json::dom_document doc;
     doc.clear();
@@ -181,7 +196,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_String)
     CheckDocFileWriter(doc, expected, L"Doc 6.2");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Array)
+TEST_F(JsonDocumentWriterTest, TestArray)
 {
     json::dom_document doc;
     doc.clear();
@@ -216,7 +231,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Array)
     CheckDocFileWriter(doc, L"[\n\tnull,\n\t\"Hello world\",\n\t12345\n]", L"Doc 4");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Object)
+TEST_F(JsonDocumentWriterTest, TestObject)
 {
     json::dom_document doc;
     doc.clear();
@@ -264,7 +279,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Object)
                        L"Doc 6");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Object_MemberNames)
+TEST_F(JsonDocumentWriterTest, TestObjectMemberNames)
 {
     json::dom_document doc;
     json::dom_object* o = doc.create_object();
@@ -274,7 +289,7 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Object_MemberNames)
     CheckDocFileWriter(doc, L"{\n\t\"\\u0001 \\uFDD0 \\\\x \\n \\\\y\": null\n}", L"Doc 1");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentWriter_Doc)
+TEST_F(JsonDocumentWriterTest, TestDoc)
 {
     json::dom_document doc;
     json::dom_array* a1 = doc.create_array();
@@ -309,7 +324,16 @@ TEST_F(JsonToolsTest, TestDomDocumentWriter_Doc)
 ]", L"Doc 1");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
+/*
+ * DOM document generator tests
+ */
+
+class DomDocumentGeneratorTest : public JsonToolsTest
+{
+
+};
+
+TEST_F(DomDocumentGeneratorTest, TestConfig)
 {
     json::dom_document doc;
     json::dom_document_generator gen(doc);
@@ -331,14 +355,14 @@ TEST_F(JsonToolsTest, TestDomDocumentGeneratorConfig)
     ASSERT_EQ(7u, conf.depth()) << "depth 3";
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentGenerator)
+TEST_F(DomDocumentGeneratorTest, TestGenerationLimits)
 {
     json::dom_document doc;
     json::dom_document_generator gen(doc);
     gen.conf().depth(5);
     gen.conf().avg_children(3);
     gen.run();
-    SaveDoc(doc, default_test_file_name);
+    SaveDoc(doc, default_test_file_name, ioutils::text_io_options_utf8());
     unsigned int item_count = 0;
     size_t level_count = 0, max_children = gen.conf().avg_children() * 2;
     for (json::dom_document::const_iterator it = doc.begin(); it != doc.end(); it++)
@@ -362,25 +386,60 @@ TEST_F(JsonToolsTest, TestDomDocumentGenerator)
     EXPECT_LE(item_count, std::pow(gen.conf().avg_children(), gen.conf().depth())) << "Count max";
 }
 
-void CheckNoDiff(const json::dom_document& ldoc,
-                 const json::dom_document& rdoc,
-                 const json::dom_document_diff_options& options,
-                 const string title)
+/*
+ * Diff tests
+ */
+class JsonDomDocumentDiffTest : public testing::Test
 {
-    json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
-    EXPECT_FALSE(diff.has_differences()) << title;
-    if (diff.has_differences())
+protected:
+    void CheckNoDiff(const json::dom_document& ldoc,
+                     const json::dom_document& rdoc,
+                     const json::dom_document_diff_options& options,
+                     const string title)
     {
-        string msg = title + ": ";
+        json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
+        EXPECT_FALSE(diff.has_differences()) << title;
+        if (diff.has_differences())
+        {
+            string msg = title + ": ";
+            for (const json::dom_document_diff_item& item : diff.items())
+            {
+                msg += item.to_string() + "\n";
+            }
+            FAIL() << msg;
+        }
+    }
+
+    void CheckHasDiffOfKind(const json::dom_document_diff_kind expected_kind,
+                            const json::dom_document& ldoc,
+                            const json::dom_document& rdoc,
+                            const json::dom_value* lv,
+                            const json::dom_value* rv,
+                            const json::dom_document_diff_options& options,
+                            const string title)
+    {
+        json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
+        EXPECT_TRUE(diff.has_differences());
+        bool has_tested_diff = false;
+        string msg = "Diff kinds: ";
         for (const json::dom_document_diff_item& item : diff.items())
         {
-            msg += item.to_string() + "\n";
+            if (item.kind() == expected_kind)
+            {
+                EXPECT_EQ(item.lval(), lv) << title;
+                EXPECT_EQ(item.rval(), rv) << title;
+                has_tested_diff = true;
+                break;
+            }
+            else
+                msg += json::to_string(item.kind()) + ",";
         }
-        FAIL() << msg;
+        EXPECT_TRUE(has_tested_diff) << title + ". " + msg;
     }
-}
+};
 
-TEST_F(JsonToolsTest, TestDomDocumentDiff)
+
+TEST_F(JsonDomDocumentDiffTest, TestFullEquals)
 {
     json::dom_document doc1, doc2;
     jsondom_test::JsonDomTest::FillTestDoc(doc1);
@@ -391,34 +450,7 @@ TEST_F(JsonToolsTest, TestDomDocumentDiff)
     CheckNoDiff(doc1, doc2, options, "TestDoc");
 }
 
-void CheckHasDiffOfKind(const json::dom_document_diff_kind expected_kind,
-                        const json::dom_document& ldoc,
-                        const json::dom_document& rdoc,
-                        const json::dom_value* lv,
-                        const json::dom_value* rv,
-                        const json::dom_document_diff_options& options,
-                        const string title)
-{
-    json::dom_document_diff diff = json::make_diff(ldoc, rdoc, options);
-    EXPECT_TRUE(diff.has_differences());
-    bool has_tested_diff = false;
-    string msg = "Diff kinds: ";
-    for (const json::dom_document_diff_item& item : diff.items())
-    {
-        if (item.kind() == expected_kind)
-        {
-            EXPECT_EQ(item.lval(), lv) << title;
-            EXPECT_EQ(item.rval(), rv) << title;
-            has_tested_diff = true;
-            break;
-        }
-        else
-            msg += json::to_string(item.kind()) + ",";
-    }
-    EXPECT_TRUE(has_tested_diff) << title + ". " + msg;
-}
-
-TEST_F(JsonToolsTest, TestDomDocumentDiff_Type)
+TEST_F(JsonDomDocumentDiffTest, TestType)
 {
     json::dom_document ldoc, rdoc;
     json::dom_value* lv = ldoc.create_literal(L"null");
@@ -428,7 +460,7 @@ TEST_F(JsonToolsTest, TestDomDocumentDiff_Type)
     CheckHasDiffOfKind(json::dom_document_diff_kind::type_diff, ldoc, rdoc, lv, rv, json::dom_document_diff_options(), "Type");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentDiff_Path)
+TEST_F(JsonDomDocumentDiffTest, TestPath)
 {
     json::dom_document ldoc, rdoc;
     // ldoc is [[],[]]
@@ -450,7 +482,7 @@ TEST_F(JsonToolsTest, TestDomDocumentDiff_Path)
     CheckHasDiffOfKind(json::dom_document_diff_kind::path_diff, ldoc, rdoc, lv, rv, options, "Path");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentDiff_Count)
+TEST_F(JsonDomDocumentDiffTest, TestCount)
 {
     json::dom_document ldoc, rdoc;
     // ldoc is [12,34]
@@ -467,7 +499,7 @@ TEST_F(JsonToolsTest, TestDomDocumentDiff_Count)
     CheckHasDiffOfKind(json::dom_document_diff_kind::count_diff, ldoc, rdoc, lv, rv, json::dom_document_diff_options(), "Count");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentDiff_MemberName)
+TEST_F(JsonDomDocumentDiffTest, TestMemberName)
 {
     json::dom_document ldoc, rdoc;
     // ldoc
@@ -487,7 +519,7 @@ TEST_F(JsonToolsTest, TestDomDocumentDiff_MemberName)
     CheckNoDiff(ldoc, rdoc, options, "Member 2");
 }
 
-TEST_F(JsonToolsTest, TestDomDocumentDiff_Value)
+TEST_F(JsonDomDocumentDiffTest, TestValue)
 {
     json::dom_document ldoc, rdoc;
     json::dom_value* lv = ldoc.create_string(L"Value 1");

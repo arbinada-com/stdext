@@ -4,6 +4,7 @@
  */
 
 #include "jsontools.h"
+#include "jsonparser.h"
 #include <stack>
 #include <sstream>
 
@@ -13,6 +14,9 @@ using namespace json;
 using namespace locutils;
 
 
+/*
+ * dom_append_child_visitor class
+ */
 class dom_append_child_visitor : public dom_value_visitor
 {
 public:
@@ -49,11 +53,9 @@ class dom_document_writer_visitor : public dom_value_visitor
 public:
     typedef stack<wstring> endings_t;
 public:
-    dom_document_writer_visitor(dom_document_writer& doc_writer,
-                                ioutils::text_writer& text_writer,
+    dom_document_writer_visitor(ioutils::text_writer& text_writer,
                                 endings_t& endings)
         : dom_value_visitor(),
-          m_doc_writer(doc_writer),
           m_text_writer(text_writer),
           m_endings(endings)
     {}
@@ -62,7 +64,7 @@ public:
     virtual void visit(json::dom_number& value) override { m_text_writer.write(value.text()); }
     virtual void visit(json::dom_string& value) override
     {
-        m_text_writer.write(L"\"").write(m_doc_writer.escape(value.text())).write(L"\"");
+        m_text_writer.write(L"\"").write(json::to_escaped(value.text())).write(L"\"");
     }
     void visit(dom_array& value) override
     {
@@ -81,10 +83,45 @@ public:
             m_endings.push(L"}");
     }
 private:
-    dom_document_writer& m_doc_writer;
     ioutils::text_writer& m_text_writer;
     endings_t& m_endings;
 };
+
+/*
+ * dom_document_reader class
+ */
+dom_document_reader::dom_document_reader(json::dom_document& doc)
+    : m_doc(doc)
+{}
+
+bool dom_document_reader::read(ioutils::text_reader& reader)
+{
+    m_messages.clear();
+    m_doc.clear();
+    json::parser parser(reader, m_messages, m_doc);
+    bool result = parser.run();
+    return result;
+}
+
+bool dom_document_reader::read(std::wistream& stream, const std::wstring& source_name)
+{
+    ioutils::text_reader reader(stream, source_name);
+    return read(reader);
+}
+
+bool dom_document_reader::read(const std::wstring& ws, const std::wstring& source_name)
+{
+    wstringstream ss;
+    ss << ws;
+    return read(ss, source_name);
+}
+
+bool dom_document_reader::read_from_file(const std::wstring file_name, const ioutils::text_io_options& options)
+{
+    ioutils::text_reader reader(file_name, options);
+    return read(reader);
+}
+
 
 /*
  * dom_document_writer class
@@ -116,8 +153,8 @@ void dom_document_writer::write(ioutils::text_writer& w)
             w.write(indent(it.level()));
         dom_value* v = *it;
         if (v->member() != nullptr)
-            w.write(L"\"").write(escape(v->member()->name())).write(L"\"").write(m_conf.pretty_print() ? L": " : L":");
-        dom_document_writer_visitor visitor(*this, w, endings);
+            w.write(L"\"").write(json::to_escaped(v->member()->name())).write(L"\"").write(m_conf.pretty_print() ? L": " : L":");
+        dom_document_writer_visitor visitor(w, endings);
         v->accept(visitor);
         dom_document::const_iterator::path_t prev_path = it.path();
         ++it;
@@ -141,11 +178,11 @@ void dom_document_writer::write(std::wostream& stream)
     write(w);
 }
 
-void dom_document_writer::write(std::wstring& s)
+void dom_document_writer::write(std::wstring& ws)
 {
     wstringstream ss;
     write(ss);
-    s = ss.str();
+    ws = ss.str();
 }
 
 void dom_document_writer::write_to_file(const std::wstring file_name, const ioutils::text_io_options& options)
