@@ -242,6 +242,14 @@ std::wstring utf16::to_upper(const std::wstring& ws)
     return ws2;
 }
 
+std::string utf16::to_utf8string(const std::wstring& ws)
+{
+    locutils::codecvt_utf8_wchar_t cvt;
+    string s;
+    cvt.to_utf8(ws, s);
+    return s;
+}
+
 bool utf16::equal_ci(const std::wstring& ws1, const std::wstring& ws2)
 {
     return utf16::to_lower(ws1) == utf16::to_lower(ws2);
@@ -288,6 +296,15 @@ bool utf8::is_noncharacter(const unsigned char c)
     }
     return false;
 }
+
+std::wstring utf8::to_utf16string(const std::string& s)
+{
+    locutils::codecvt_utf8_wchar_t cvt;
+    wstring ws;
+    cvt.to_utf16(s, ws);
+    return ws;
+}
+
 
 
 /*
@@ -814,8 +831,6 @@ std::string locutils::to_encoding_name(const ansi_encoding encoding, const ansi_
 }
 
 
-#if defined(__STDEXT_USE_ICONV)
-
 codecvt_ansi_utf16_wchar_t::result_t
 codecvt_ansi_utf16_wchar_t::ansi_to_utf16(const std::string& ansi, std::wstring& ws) const
 {
@@ -858,9 +873,7 @@ codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
                                   const extern_type* first1, const extern_type* last1, const extern_type*& next1,
                                   intern_type* first2, intern_type* last2, intern_type*& next2) const
 {
-    iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name_iconv().c_str());
-    if (conv == (iconv_t) -1)
-        return codecvt_base_t::error;
+    result_t ret = codecvt_base_t::ok;
     mbstate_adapter state_adapter(state);
     next1 = first1;
     next2 = first2;
@@ -870,7 +883,10 @@ codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
         if (next2 < last2 && m_cvt_mode.generate_header())
             *next2++ = utf16::bom_value();
     }
-    result_t ret = codecvt_base_t::ok;
+#if defined(__STDEXT_USE_ICONV)
+    iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name_iconv().c_str());
+    if (conv == (iconv_t) -1)
+        return codecvt_base_t::error;
     if (next1 < last1 && next2 < last2)
     {
         size_t size1 = last1 - next1;
@@ -902,23 +918,41 @@ codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
         }
     }
     iconv_close(conv);
+#else
+    std::locale loc = std::locale(m_cvt_mode.encoding_name_windows());
+    if (std::has_facet<codecvt_base_t>(loc))
+    {
+        const codecvt_base_t& facet = use_facet<codecvt_base_t>(loc);
+        mbstate_t state2;
+        intern_type* first2_copy = next2;
+        ret = facet.in(state2, first1, last1, next1, first2_copy, last2, next2);
+    }
+    else
+        ret = codecvt::error;
+#endif
     return ret;
 }
 
 // UTF-16 (wchar_t*) --> ANSI codepage (char*)
 codecvt_ansi_utf16_wchar_t::result_t
-codecvt_ansi_utf16_wchar_t::do_out(mbstate_t&,
+codecvt_ansi_utf16_wchar_t::do_out(mbstate_t& state,
                                    const intern_type* first1, const intern_type* last1, const intern_type*& next1,
                                    extern_type* first2, extern_type* last2, extern_type*& next2) const
 {
+    result_t ret = codecvt_base_t::ok;
+    mbstate_adapter state_adapter(state);
+    next1 = first1;
+    next2 = first2;
+    if (state_adapter.codecvt_state() == codecvt_state::initial)
+    {
+        state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
+        if (next1 < last1 && utf16::is_bom(*next1))
+            ++next1;
+    }
+#if defined(__STDEXT_USE_ICONV)
     iconv_t conv = iconv_open(m_cvt_mode.encoding_name_iconv().c_str(), "WCHAR_T");
     if (conv == (iconv_t) -1)
         return codecvt_base_t::error;
-    next1 = first1;
-    next2 = first2;
-    if (next1 < last1 && utf16::is_bom(*next1))
-        ++next1;
-    result_t ret = codecvt_base_t::ok;
     if (next1 < last1 && next2 < last2)
     {
         size_t size1 = (last1 - next1) * sizeof(wchar_t);
@@ -950,6 +984,18 @@ codecvt_ansi_utf16_wchar_t::do_out(mbstate_t&,
         }
     }
     iconv_close(conv);
+#else
+    std::locale loc = std::locale(m_cvt_mode.encoding_name_windows());
+    if (std::has_facet<codecvt_base_t>(loc))
+    {
+        const codecvt_base_t& facet = use_facet<codecvt_base_t>(loc);
+        mbstate_t state2;
+        const intern_type* first1_copy = next1;
+        ret = facet.out(state2, first1_copy, last1, next1, first2, last2, next2);
+    }
+    else
+        ret = codecvt::error;
+#endif
     return ret;
 }
 
@@ -998,5 +1044,3 @@ int codecvt_ansi_utf16_wchar_t::do_encoding() const noexcept
 {
     return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? -1 : 0);
 }
-
-#endif

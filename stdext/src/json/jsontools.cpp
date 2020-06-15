@@ -98,27 +98,28 @@ bool dom_document_reader::read(ioutils::text_reader& reader)
 {
     m_messages.clear();
     m_doc.clear();
+    if (!m_source_name.empty() && reader.source_name().empty())
+        reader.source_name(m_source_name);
     json::parser parser(reader, m_messages, m_doc);
     bool result = parser.run();
     return result;
 }
 
-bool dom_document_reader::read(std::wistream& stream, const std::wstring& source_name)
+bool dom_document_reader::read(std::wistream& stream, ioutils::text_io_policy& policy)
 {
-    ioutils::text_reader reader(stream, source_name);
+    ioutils::text_reader reader(stream, policy);
     return read(reader);
 }
 
-bool dom_document_reader::read(const std::wstring& ws, const std::wstring& source_name)
+bool dom_document_reader::read(std::wifstream& stream, ioutils::text_io_policy& policy)
 {
-    wstringstream ss;
-    ss << ws;
-    return read(ss, source_name);
+    ioutils::text_reader reader(stream, policy);
+    return read(reader);
 }
 
-bool dom_document_reader::read_from_file(const std::wstring file_name, const ioutils::text_io_options& options)
+bool dom_document_reader::read_file(const std::wstring file_name, ioutils::text_io_policy& policy)
 {
-    ioutils::text_reader reader(file_name, options);
+    ioutils::text_reader reader(file_name, policy);
     return read(reader);
 }
 
@@ -185,9 +186,9 @@ void dom_document_writer::write(std::wstring& ws)
     ws = ss.str();
 }
 
-void dom_document_writer::write_to_file(const std::wstring file_name, const ioutils::text_io_options& options)
+void dom_document_writer::write_to_file(const std::wstring file_name, const ioutils::text_io_policy& policy)
 {
-    ioutils::text_writer w(file_name, options);
+    ioutils::text_writer w(file_name, policy);
     write(w);
 }
 

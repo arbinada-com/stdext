@@ -43,10 +43,10 @@ protected:
         {
             json::dom_document_writer w1(doc);
             w1.conf().pretty_print(true);
-            w1.write_to_file(L"parser_current.json", ioutils::text_io_options_utf8());
+            w1.write_to_file(L"parser_current.json", ioutils::text_io_policy_utf8());
             json::dom_document_writer w2(expected);
             w2.conf().pretty_print(true);
-            w2.write_to_file(L"parser_expected.json", ioutils::text_io_options_utf8());
+            w2.write_to_file(L"parser_expected.json", ioutils::text_io_policy_utf8());
             wstring msg = L"Docs are different: ";
             for (const json::dom_document_diff_item& item : diff.items())
             {
@@ -59,7 +59,8 @@ protected:
     void CheckError(const wstring input, const json::parser_msg_kind kind, const textpos& pos, const wstring title)
     {
         wstringstream ss(input);
-        ioutils::text_reader r(ss, L"ChkErrStream");
+        ioutils::text_reader r(ss);
+        r.source_name(L"ChkErrStream");
         json::msg_collector_t mc;
         json::dom_document doc;
         json::parser parser(r, mc, doc);

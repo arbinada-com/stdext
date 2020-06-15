@@ -75,7 +75,6 @@ protected:
         EXPECT_EQ(expected, mbs) << title + L": compare";
     }
 
-#if defined(__STDEXT_USE_ICONV)
     void CheckConverter_Ansi_Utf16ToAnsi(const string expected, const wstring ws, const codecvt_mode_ansi& mode, const wstring title)
     {
         locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
@@ -97,7 +96,6 @@ protected:
         EXPECT_EQ(expected.length(), ws.length()) << title2 + L"length";
         EXPECT_EQ(expected, ws) << title2 + L"compare";
     }
-#endif
 };
 
 TEST_F(LocaleUtilsTest, TestSurrogatePair)
@@ -231,6 +229,12 @@ TEST_F(LocaleUtilsTest, TestCharRanges)
         ws += (wchar_t)i;
     EXPECT_TRUE(wcr1.contains_all(ws.c_str(), ws.length()));
     EXPECT_TRUE(wcr1.contains_all(ws));
+}
+
+TEST_F(LocaleUtilsTest, TestStringConvert)
+{
+    wstring ws = L"ABC déjà строка";
+    EXPECT_EQ(ws, utf8::to_utf16string(utf16::to_utf8string(ws)));
 }
 
 /*
@@ -481,7 +485,6 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_Memory)
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
 
-#if defined(__STDEXT_USE_ICONV)
 TEST_F(LocaleUtilsTest, TestStreamConverter_Ansi)
 {
     wstring ws1 = L"ABC déjà";
@@ -493,30 +496,29 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Ansi)
     string s1 = "ABC d\xE9j\xE0";
     string s2 = "ABC \xF1\xF2\xF0\xEE\xEA\xE0";
     {
-        codecvt_mode_ansi cm("CP1252", codecvt_mode_ansi::headers::consume);
+        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_mode_ansi::headers::consume);
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"1.1 - NoBOM (default, consume)");
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"1.2 - BOM (default, consume)");
         CheckConverter_Ansi_AnsiToUtf16(ws1, s1, cm, L"2.1 - NoBOM (default, consume)");
     }
     {
-        codecvt_mode_ansi cm("CP1251", codecvt_mode_ansi::headers::consume);
+        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_mode_ansi::headers::consume);
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"3.1 - NoBOM (default, consume)");
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"3.2 - BOM (default, consume)");
         CheckConverter_Ansi_AnsiToUtf16(ws2, s2, cm, L"3.3 - NoBOM (default, consume)");
     }
     {
-        codecvt_mode_ansi cm("CP1252", codecvt_mode_ansi::headers::generate);
+        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_mode_ansi::headers::generate);
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"5.1 - NoBOM (default, generate)");
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"5.2 - BOM (default, generate)");
         CheckConverter_Ansi_AnsiToUtf16(ws1_bom, s1, cm, L"5.3 - NoBOM (default, generate)");
     }
     {
-        codecvt_mode_ansi cm("CP1251", codecvt_mode_ansi::headers::generate);
+        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_mode_ansi::headers::generate);
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"7.1 - NoBOM (default, generate)");
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"7.2 - BOM (default, generate)");
         CheckConverter_Ansi_AnsiToUtf16(ws2_bom, s2, cm, L"7.3 - NoBOM (default, generate)");
     }
 }
-#endif
 
 }

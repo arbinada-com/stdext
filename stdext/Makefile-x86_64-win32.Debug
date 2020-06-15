@@ -258,7 +258,8 @@ debug\x86_64\win32\jsonlexer.obj: src\json\jsonlexer.cpp src\json\jsonlexer.h \
 debug\x86_64\win32\jsonparser.obj: src\json\jsonparser.cpp src\json\jsonparser.h \
 		src\strutils.h
 
-debug\x86_64\win32\jsontools.obj: src\json\jsontools.cpp src\json\jsontools.h
+debug\x86_64\win32\jsontools.obj: src\json\jsontools.cpp src\json\jsontools.h \
+		src\json\jsonparser.h
 
 debug\x86_64\win32\locutils.obj: src\locutils.cpp src\locutils.h
 

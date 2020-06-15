@@ -79,6 +79,7 @@ namespace stdext
             // String functions
             static std::wstring to_lower(const std::wstring& ws);
             static std::wstring to_upper(const std::wstring& ws);
+            static std::string to_utf8string(const std::wstring& ws);
             static bool equal_ci(const std::wstring& ws1, const std::wstring& ws2);
         };
         
@@ -103,6 +104,8 @@ namespace stdext
             static const char32_t code_point5 = 0x4000000;
             //
             static bool is_noncharacter(const unsigned char c);
+            // String functions
+            static std::wstring to_utf16string(const std::string& s);
         };
 
         template <class CharT, CharT default_min, CharT default_max>
@@ -201,8 +204,8 @@ namespace stdext
             internal_state* m_internal;
         };
 
-        /*
-         * codecvt_utf8_wchar_t
+        /**
+         * @brief The codecvt_mode_utf8 class
          * Facet class for converting between wchar_t and UTF-8 byte sequences
          * Implementation details: https://docs.microsoft.com/en-us/cpp/standard-library/codecvt-class
          *
@@ -389,7 +392,6 @@ namespace stdext
             bool m_encoding_assigned = false;
         };
 
-#if defined(__STDEXT_USE_ICONV)
         class codecvt_ansi_utf16_wchar_t : public codecvt<wchar_t, char, mbstate_t>
         {
         public:
@@ -422,7 +424,6 @@ namespace stdext
         private:
             codecvt_mode_ansi m_cvt_mode;
         };
-#endif
 
     }
 }

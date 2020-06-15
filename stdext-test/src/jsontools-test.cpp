@@ -23,11 +23,11 @@ class JsonToolsTest : public testing::Test
 protected:
     const wstring default_test_file_name = L"current.json";
 
-    void SaveDoc(json::dom_document& doc, const wstring file_name, const ioutils::text_io_options& options)
+    void SaveDoc(json::dom_document& doc, const wstring file_name, const ioutils::text_io_policy& policy)
     {
         json::dom_document_writer w(doc);
         w.conf().pretty_print(true);
-        w.write_to_file(file_name, options);
+        w.write_to_file(file_name, policy);
     }
 
     void CompareDocStrings(const wstring ws, const wstring& expected, const wstring& title)
@@ -47,6 +47,19 @@ protected:
  */
 class JsonDocumentReaderTest : public JsonToolsTest
 {
+protected:
+    void CheckReader(const json::dom_document_reader& reader, bool result, std::wstring title = L"")
+    {
+        EXPECT_TRUE(result) << title;
+        EXPECT_FALSE(reader.messages().has_errors()) << title;
+        if (reader.messages().has_errors())
+        {
+            wstring msg;
+            for (auto error : reader.messages().errors())
+                msg += error->to_wstring() + L"\n";
+            FAIL() << title + L"\n" + msg;
+        }
+    }
 };
 
 TEST_F(JsonDocumentReaderTest, TestGeneratedDoc)
@@ -59,22 +72,41 @@ TEST_F(JsonDocumentReaderTest, TestGeneratedDoc)
         gen.conf().depth(7);
         gen.conf().avg_children(5);
         gen.run();
-        ioutils::text_io_options_utf8 options = ioutils::text_io_options_utf8();
-        SaveDoc(doc1, default_test_file_name, options);
+        ioutils::text_io_policy_utf8 policy;
+        SaveDoc(doc1, default_test_file_name, policy);
         json::dom_document doc2;
         json::dom_document_reader reader(doc2);
-        bool result = reader.read_from_file(default_test_file_name, options);
-        EXPECT_TRUE(result);
-        EXPECT_FALSE(reader.messages().has_errors());
-        if (reader.messages().has_errors())
-        {
-            wstring msg;
-            for (auto error : reader.messages().errors())
-                msg += error->to_wstring() + L"\n";
-            FAIL() << msg;
-        }
-        if (!result)
+        CheckReader(reader, reader.read_file(default_test_file_name, policy));
+        if (this->HasFailure())
             break;
+    }
+}
+
+TEST_F(JsonDocumentReaderTest, TestDocUtf8)
+{
+    // L"ABC déjà строка"
+    // UTF-16: L"ABC d\xE9j\xE0 \x441\x442\x440\x43E\x43A\x430"
+    // UTF-8: "ABC d\xC3\xA9j\xC3\xA0 \xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0"
+    json::dom_document doc;
+    json::dom_document_reader reader(doc);
+    wstring ws_utf16 = L"ABC d\xE9j\xE0 \x441\x442\x440\x43E\x43A\x430";
+    wstring ws_utf8 = L"ABC d\xC3\xA9j\xC3\xA0 \xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0";
+    string s_utf8 = "ABC d\xC3\xA9j\xC3\xA0 \xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0";
+    {
+        wstring ws = strutils::double_quoted(ws_utf8);
+        wstring expected = ws_utf16;
+        wstringstream ss;
+        ss << ws;
+        ioutils::text_io_policy_utf8 policy;
+        CheckReader(reader, reader.read(ss, policy));
+        EXPECT_EQ(json::dom_value_type::vt_string, doc.root()->type());
+        EXPECT_EQ(expected, doc.root()->text());
+    }
+    {
+//        wstringstream ss;
+//        ss << u8"{\"ABC\":\"déjà строка\"}";
+//        CheckReader(reader, reader.read_utf8(ss));
+//        EXPECT_EQ(json::dom_value_type::vt_object, doc.root()->type());
     }
 }
 
@@ -87,8 +119,9 @@ protected:
     void CheckDocFileWriter(json::dom_document& doc, const wstring& expected, const wstring& title)
     {
         const wstring file_name = default_test_file_name;
-        SaveDoc(doc, file_name, ioutils::text_io_options_utf8());
-        ioutils::text_reader r(file_name, ioutils::text_io_options_utf8());
+        ioutils::text_io_policy_utf8 policy;
+        SaveDoc(doc, file_name, policy);
+        ioutils::text_reader r(file_name, policy);
         wstring s;
         r.read_all(s);
         CompareDocStrings(s, expected, title);
@@ -362,7 +395,7 @@ TEST_F(DomDocumentGeneratorTest, TestGenerationLimits)
     gen.conf().depth(5);
     gen.conf().avg_children(3);
     gen.run();
-    SaveDoc(doc, default_test_file_name, ioutils::text_io_options_utf8());
+    SaveDoc(doc, default_test_file_name, ioutils::text_io_policy_utf8());
     unsigned int item_count = 0;
     size_t level_count = 0, max_children = gen.conf().avg_children() * 2;
     for (json::dom_document::const_iterator it = doc.begin(); it != doc.end(); it++)

@@ -9,25 +9,43 @@ using namespace std;
 using namespace stdext;
 using namespace parsers;
 
-/**
+std::wstring csv::to_wstring(const reader_msg_kind value)
+{
+    switch(value)
+    {
+    case reader_msg_kind::io_error:
+        return L"IO error";
+    case reader_msg_kind::expected_separator:
+        return L"Separator expected";
+    case reader_msg_kind::row_field_count_different_from_header:
+        return L"Row field count is defferent from header column count";
+    default:
+        return L"Unknown";
+    }
+}
+
+/*
  * CSV parser and reader
  */
-
 csv::reader::reader(ioutils::text_reader* const rd)
     : m_reader(rd), m_owns_reader(false)
-{ }
+{}
 
 csv::reader::reader(std::wistream& stream)
     : m_reader(new ioutils::text_reader(stream)), m_owns_reader(true)
-{ }
+{}
 
-csv::reader::reader(std::wistream* const stream)
-    : m_reader(new ioutils::text_reader(stream)), m_owns_reader(true)
-{ }
+csv::reader::reader(std::wistream& stream, const ioutils::text_io_policy& policy)
+    : m_reader(new ioutils::text_reader(stream, policy)), m_owns_reader(true)
+{}
 
-csv::reader::reader(const std::wstring file_name, const ioutils::text_io_options& options)
-    : m_reader(new ioutils::text_reader(file_name, options)), m_owns_reader(true)
-{ }
+csv::reader::reader(const std::wstring file_name, const ioutils::text_io_policy& policy)
+    : m_reader(new ioutils::text_reader(file_name, policy)), m_owns_reader(true)
+{}
+
+csv::reader::reader(std::wifstream& stream, const ioutils::text_io_policy& policy)
+    : m_reader(new ioutils::text_reader(stream, policy)), m_owns_reader(true)
+{}
 
 csv::reader::~reader()
 {

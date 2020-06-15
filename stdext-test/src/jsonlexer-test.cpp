@@ -64,7 +64,8 @@ protected:
     void CheckError(const wstring input, const json::parser_msg_kind kind, const textpos& pos, const wstring title)
     {
         wstringstream ss(input);
-        ioutils::text_reader r(ss, L"ChkErrStream");
+        ioutils::text_reader r(ss);
+        r.source_name(L"ChkErrStream");
         json::msg_collector_t mc;
         json::lexer lexer(r, mc);
         json::lexeme lex;

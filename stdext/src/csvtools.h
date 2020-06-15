@@ -69,6 +69,7 @@ namespace stdext
             expected_separator = 201,
             row_field_count_different_from_header = 301
         };
+        std::wstring to_wstring(const reader_msg_kind value);
 
         class reader
         {
@@ -79,8 +80,9 @@ namespace stdext
             reader() = delete;
             reader(ioutils::text_reader* const rd);
             reader(std::wistream& stream);
-            reader(std::wistream* const stream);
-            reader(const std::wstring file_name, const ioutils::text_io_options& options);
+            reader(std::wistream& stream, const ioutils::text_io_policy& policy);
+            reader(const std::wstring file_name, const ioutils::text_io_policy& policy);
+            reader(std::wifstream& stream, const ioutils::text_io_policy& policy);
             reader(const reader&) = delete;
             reader& operator =(const reader&) = delete;
             reader(reader&&) = delete;

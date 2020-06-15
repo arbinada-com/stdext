@@ -251,17 +251,10 @@ std::wstring strutils::double_quoted(const std::wstring& s)
 }
 
 
-
 string strutils::to_string(const wstring& ws)
 {
     string s(ws.begin(), ws.end()); // ANSI charset only
     return s;
-}
-
-std::string strutils::to_utf8string(const std::wstring& ws)
-{
-    // TODO from UTF-16 to UTF-8
-    return strutils::to_string(ws);
 }
 
 wstring strutils::to_wstring(const string& s)
