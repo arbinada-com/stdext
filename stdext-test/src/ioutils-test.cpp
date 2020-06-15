@@ -64,7 +64,8 @@ protected:
                                  const ioutils::text_io_policy& policy, const wstring title)
     {
         wstringstream wss;
-        wss << s.c_str();
+        for (char c : s)
+            wss << (wchar_t)c;
         ioutils::text_reader reader(wss, policy);
         wstring ws2;
         reader.read_all(ws2);

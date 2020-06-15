@@ -211,7 +211,7 @@ text_reader::text_reader(const std::wstring& file_name, const text_io_policy& po
 #if defined(__STDEXT_WINDOWS)
     m_stream = new wifstream(file_name, std::ios::binary);
 #else
-    m_wstream = new wifstream(utf16::to_utf8string(file_name), std::ios::binary);
+    m_stream = new wifstream(utf16::to_utf8string(file_name), std::ios::binary);
 #endif
     m_policy.set_imbue_read(*m_stream);
 }

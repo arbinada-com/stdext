@@ -253,7 +253,8 @@ release/x86_64/linux/jsonparser.o: src/json/jsonparser.cpp src/json/jsonparser.h
 		src/strutils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/x86_64/linux/jsonparser.o src/json/jsonparser.cpp
 
-release/x86_64/linux/jsontools.o: src/json/jsontools.cpp src/json/jsontools.h
+release/x86_64/linux/jsontools.o: src/json/jsontools.cpp src/json/jsontools.h \
+		src/json/jsonparser.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/x86_64/linux/jsontools.o src/json/jsontools.cpp
 
 release/x86_64/linux/locutils.o: src/locutils.cpp src/locutils.h

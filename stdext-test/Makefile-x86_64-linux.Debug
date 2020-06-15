@@ -242,6 +242,7 @@ debug/x86_64/linux/gmock-all.o: ../../googletest/googlemock/src/gmock-all.cc ../
 
 debug/x86_64/linux/jsoncommon-test.o: src/jsoncommon-test.cpp ../../googletest/googletest/include/gtest/gtest.h \
 		../stdext/src/json/jsoncommon.h \
+		../stdext/src/locutils.h \
 		../stdext/src/testutils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug/x86_64/linux/jsoncommon-test.o src/jsoncommon-test.cpp
 
