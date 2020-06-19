@@ -39,4 +39,5 @@ SOURCES += \
 PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)
 
 HEADERS += \
-    src/jsondom-test.h
+    src/jsondom-test.h \
+    src/locutils-test.h

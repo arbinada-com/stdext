@@ -139,10 +139,9 @@ TEST_F(CsvToolsTest, TestErrorRowFieldCount)
     v.push_back(csv_row_values_t({ L"Col 1", L"Col 2" }));
     v.push_back(csv_row_values_t({ L"12", L"34", L"56" }));
     wstringstream ss = CreateTestStream(v, L',', L"\r\n");
-    ioutils::text_io_policy_plain policy;
-    csv::reader rd(ss, policy);
+    csv::reader rd(ss); // ioutils::text_io_policy_plain is by default
     rd.separator(',');
-    ASSERT_TRUE(rd.read_header()) << L"Header";
+    EXPECT_TRUE(rd.read_header()) << L"Header";
     csv::row r;
     EXPECT_FALSE(rd.next_row(r)) << L"Read row";
     ASSERT_TRUE(rd.has_error()) << L"No error";

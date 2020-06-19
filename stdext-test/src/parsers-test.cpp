@@ -48,50 +48,53 @@ protected:
 TEST_F(ParsersTest, TestTextPos)
 {
     textpos pos0;
-    ASSERT_EQ(1, pos0.line()) << L"Line 0";
-    ASSERT_EQ(1, pos0.col()) << L"Col 0";
+    EXPECT_EQ(1, pos0.line()) << L"Line 0";
+    EXPECT_EQ(1, pos0.col()) << L"Col 0";
     textpos pos1(11, 22);
-    ASSERT_EQ(11, pos1.line()) << L"Line 1";
-    ASSERT_EQ(22, pos1.col()) << L"Col 1";
+    EXPECT_EQ(11, pos1.line()) << L"Line 1";
+    EXPECT_EQ(22, pos1.col()) << L"Col 1";
     textpos pos2(pos1);
-    ASSERT_EQ(11, pos1.line()) << L"Line 2.1";
-    ASSERT_EQ(22, pos1.col()) << L"Col 2.1";
-    ASSERT_EQ(11, pos2.line()) << L"Line 2.2";
-    ASSERT_EQ(22, pos2.col()) << L"Col 2.2";
-    ASSERT_TRUE(pos1 == pos2) << L"Operator ==";
+    EXPECT_EQ(11, pos1.line()) << L"Line 2.1";
+    EXPECT_EQ(22, pos1.col()) << L"Col 2.1";
+    EXPECT_EQ(11, pos2.line()) << L"Line 2.2";
+    EXPECT_EQ(22, pos2.col()) << L"Col 2.2";
+    EXPECT_TRUE(pos1 == pos2) << L"Operator ==";
     textpos pos3 = pos1;
-    ASSERT_EQ(11, pos1.line()) << L"Line 3.1";
-    ASSERT_EQ(22, pos1.col()) << L"Col 3.1";
-    ASSERT_EQ(11, pos3.line()) << L"Line 3.2";
-    ASSERT_EQ(22, pos3.col()) << L"Col 3.2";
+    EXPECT_EQ(11, pos1.line()) << L"Line 3.1";
+    EXPECT_EQ(22, pos1.col()) << L"Col 3.1";
+    EXPECT_EQ(11, pos3.line()) << L"Line 3.2";
+    EXPECT_EQ(22, pos3.col()) << L"Col 3.2";
     textpos pos4(std::move(pos1));
-    ASSERT_EQ(11, pos4.line()) << L"Line 4";
-    ASSERT_EQ(22, pos4.col()) << L"Col 4";
+    EXPECT_EQ(11, pos4.line()) << L"Line 4";
+    EXPECT_EQ(22, pos4.col()) << L"Col 4";
     textpos pos5 = std::move(pos2);
-    ASSERT_EQ(11, pos5.line()) << L"Line 5";
-    ASSERT_EQ(22, pos5.col()) << L"Col 5";
+    EXPECT_EQ(11, pos5.line()) << L"Line 5";
+    EXPECT_EQ(22, pos5.col()) << L"Col 5";
     //
     textpos pos6(1, 1);
     pos6++;
-    ASSERT_EQ(1, pos6.line()) << L"Line 6.1";
-    ASSERT_EQ(2, pos6.col()) << L"Col 6.1";
-    ASSERT_TRUE(textpos(1, 2) == pos6) << L"== 6.1";
+    EXPECT_EQ(1, pos6.line()) << L"Line 6.1";
+    EXPECT_EQ(2, pos6.col()) << L"Col 6.1";
+    EXPECT_TRUE(textpos(1, 2) == pos6) << L"== 6.1";
     pos6.newline();
-    ASSERT_EQ(2, pos6.line()) << L"Line 6.2";
-    ASSERT_EQ(1, pos6.col()) << L"Col 6.2";
-    ASSERT_TRUE(textpos(2, 1) == pos6) << L"== 6.2";
+    EXPECT_EQ(2, pos6.line()) << L"Line 6.2";
+    EXPECT_EQ(1, pos6.col()) << L"Col 6.2";
+    EXPECT_TRUE(textpos(2, 1) == pos6) << L"== 6.2";
+    pos6.reset();
+    EXPECT_EQ(1, pos6.line()) << L"Line 6.5";
+    EXPECT_EQ(1, pos6.col()) << L"Col 6.5";
 }
 
 TEST_F(ParsersTest, TestMessages)
 {
     textpos pos1(11, 22);
     test_message_t m1(msg_origin::lexer, msg_severity::error, test_message_kind::e_error2, pos1, L"file1.txt", L"Invalid char");
-    ASSERT_TRUE(msg_origin::lexer == m1.origin()) << L"Origin 1";
-    ASSERT_TRUE(msg_severity::error == m1.severity()) << L"Severity 1";
-    ASSERT_TRUE(test_message_kind::e_error2 == m1.kind()) << L"Kind 1";
-    ASSERT_TRUE(pos1 == m1.pos()) << L"Pos 1";
-    ASSERT_EQ(L"file1.txt", m1.source()) << L"Source 1";
-    ASSERT_EQ(L"Invalid char", m1.text()) << L"Text 1";
+    EXPECT_TRUE(msg_origin::lexer == m1.origin()) << L"Origin 1";
+    EXPECT_TRUE(msg_severity::error == m1.severity()) << L"Severity 1";
+    EXPECT_TRUE(test_message_kind::e_error2 == m1.kind()) << L"Kind 1";
+    EXPECT_TRUE(pos1 == m1.pos()) << L"Pos 1";
+    EXPECT_EQ(L"file1.txt", m1.source()) << L"Source 1";
+    EXPECT_EQ(L"Invalid char", m1.text()) << L"Text 1";
     test_message_t m21(m1);
     CompareMessages(m1, m21, L"Copy ctor");
     test_message_t m22 = m1;
@@ -102,12 +105,12 @@ TEST_F(ParsersTest, TestMessages)
     CompareMessages(m1, m32, L"Move oper");
     textpos pos4(33, 77);
     test_message_t m4(msg_origin::parser, msg_severity::hint, test_message_kind::h_hint1, pos4, L"");
-    ASSERT_TRUE(msg_origin::parser == m4.origin()) << L"Origin 4";
-    ASSERT_TRUE(msg_severity::hint == m4.severity()) << L"Severity 4";
-    ASSERT_TRUE(test_message_kind::h_hint1 == m4.kind()) << L"Kind 4";
-    ASSERT_TRUE(pos4 == m4.pos()) << L"Pos 4";
-    ASSERT_EQ(L"", m4.source()) << L"Source 4";
-    ASSERT_EQ(L"", m4.text()) << L"Text 4";
+    EXPECT_TRUE(msg_origin::parser == m4.origin()) << L"Origin 4";
+    EXPECT_TRUE(msg_severity::hint == m4.severity()) << L"Severity 4";
+    EXPECT_TRUE(test_message_kind::h_hint1 == m4.kind()) << L"Kind 4";
+    EXPECT_TRUE(pos4 == m4.pos()) << L"Pos 4";
+    EXPECT_EQ(L"", m4.source()) << L"Source 4";
+    EXPECT_EQ(L"", m4.text()) << L"Text 4";
 }
 
 TEST_F(ParsersTest, TestMessageCollector)

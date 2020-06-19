@@ -15,14 +15,21 @@ namespace json_lexer_test
 
 class lex_vector : public stdext::ptr_vector<json::lexeme>
 {
+    typedef stdext::ptr_vector<json::lexeme> base_t;
 public:
-    void add(
+    lex_vector& add(
         const json::token token, 
         const parsers::textpos::pos_t line, 
         const parsers::textpos::pos_t col, 
         const std::wstring text)
     {
         push_back(new json::lexeme(token, textpos(line, col), text));
+        return *this;
+    }
+    lex_vector& clear()
+    {
+        base_t::clear();
+        return *this;
     }
 };
 
@@ -33,9 +40,9 @@ protected:
     void CompareLexemes(const json::lexeme& expected, const json::lexeme& lex, wstring title)
     {
         title += L": ";
-        ASSERT_EQ(expected.token(), lex.token()) << title + L"token";
-        ASSERT_EQ(expected.pos(), lex.pos()) << title + L"pos";
-        ASSERT_EQ(expected.text(), lex.text()) << title + L"text";
+        EXPECT_EQ(expected.token(), lex.token()) << title + L"expected token: " + json::to_wstring(expected.token()) + L", got: " + json::to_wstring(lex.token());
+        EXPECT_EQ(expected.pos(), lex.pos()) << title + L"pos";
+        EXPECT_EQ(expected.text(), lex.text()) << title + L"text";
     }
 
     void CheckLexeme(const wstring input, const json::lexeme& expected, const wstring title)
@@ -47,6 +54,7 @@ protected:
         json::lexer lexer(r, mc);
         json::lexeme lex;
         bool next_ok = lexer.next_lexeme(lex);
+        EXPECT_TRUE(next_ok) << title2 + L"next_lexeme() failed with no errors";
         if (lexer.has_errors())
         {
             wstring msg = title2 + L"next_lexeme() failed:";
@@ -56,8 +64,7 @@ protected:
             }
             FAIL() << msg;
         }
-        EXPECT_TRUE(next_ok) << title2 + L"next_lexeme() failed with no errors";
-        ASSERT_FALSE(lexer.has_errors()) << title2 + L"has errors";
+        EXPECT_FALSE(lexer.has_errors()) << title2 + L"has errors";
         CompareLexemes(expected, lex, title);
     }
 
@@ -69,17 +76,17 @@ protected:
         json::msg_collector_t mc;
         json::lexer lexer(r, mc);
         json::lexeme lex;
-        while (!lexer.eof() && lexer.next_lexeme(lex))
+        while (lexer.next_lexeme(lex))
         {
         }
         wstring title2 = title + L": ";
         ASSERT_TRUE(lexer.has_errors()) << title2 + L"no errors";
         json::message_t* err = lexer.messages().errors()[0];
-        ASSERT_TRUE(msg_origin::lexer == err->origin()) << title2 + L"origin. " + err->text();
-        EXPECT_EQ(kind, err->kind()) << title2 + L"kind. " + err->text();
+        EXPECT_TRUE(msg_origin::lexer == err->origin()) << title2 + L"origin. " + err->to_wstring();
+        EXPECT_EQ(kind, err->kind()) << title2 + L"kind. " + err->to_wstring();
         EXPECT_FALSE(err->text().empty()) << title2 + L"text is empty";
-        EXPECT_EQ(pos, err->pos()) << title2 + L"error pos. " + err->text();
-        EXPECT_EQ(r.source_name(), err->source()) << title2 + L"source. " + err->text();
+        EXPECT_EQ(pos, err->pos()) << title2 + L"error pos. " + err->to_wstring();
+        EXPECT_EQ(r.source_name(), err->source()) << title2 + L"source. " + err->to_wstring();
     }
 
     void CheckText(const wstring input, const lex_vector& expected, const wstring title)
@@ -98,7 +105,7 @@ protected:
             CompareLexemes(*expected_lex, lex, strutils::wformat(L"%ls lexeme[%d]", title.c_str(), i));
             i++;
         }
-        ASSERT_EQ(expected.size(), i) << title2 + L"lex count";
+        EXPECT_EQ(expected.size(), i) << title2 + L"lex count";
     }
 
 };
@@ -110,8 +117,8 @@ TEST_F(JsonLexerTest, TestEmptyStreams)
     json::msg_collector_t mc;
     json::lexer lexer(r, mc);
     json::lexeme l;
-    ASSERT_FALSE(lexer.next_lexeme(l));
-    ASSERT_FALSE(lexer.has_errors());
+    EXPECT_FALSE(lexer.next_lexeme(l));
+    EXPECT_FALSE(lexer.has_errors());
 }
 
 TEST_F(JsonLexerTest, TestSimpleTokens)
@@ -178,26 +185,40 @@ TEST_F(JsonLexerTest, TestTexts)
 {
     lex_vector lv;
     //
-    CheckText(L"", lv, L"Txt1");
+    CheckText(L"", lv, L"1");
     //
-    lv.clear();
-    lv.add(json::token::begin_array, 1, 1, L"[");
-    lv.add(json::token::end_array, 1, 2, L"]");
-    CheckText(L"[]", lv, L"Txt2");
+    lv.clear()
+            .add(json::token::begin_array, 1, 1, L"[")
+            .add(json::token::end_array, 1, 2, L"]");
+    CheckText(L"[]", lv, L"2");
     //
-    lv.clear();
-    lv.add(json::token::begin_array, 1, 1, L"[");
-    lv.add(json::token::end_array, 1, 2, L"]");
-    lv.add(json::token::begin_object, 2, 1, L"{");
-    lv.add(json::token::end_object, 2, 2, L"}");
-    lv.add(json::token::literal_false, 3, 1, L"false");
-    lv.add(json::token::literal_null, 3, 7, L"null");
-    lv.add(json::token::literal_true, 3, 12, L"true");
-    lv.add(json::token::string, 4, 1, L"Name 1");
-    lv.add(json::token::name_separator, 4, 9, L":");
-    lv.add(json::token::string, 4, 10, L"Value 1");
-    lv.add(json::token::value_separator, 4, 19, L",");
-    CheckText(L"[]\n{}\nfalse null true\n\"Name 1\":\"Value 1\",", lv, L"Txt3");
+    lv.clear()
+            .add(json::token::begin_array, 1, 1, L"[")
+            .add(json::token::end_array, 1, 2, L"]")
+            .add(json::token::begin_object, 2, 1, L"{")
+            .add(json::token::end_object, 2, 2, L"}")
+            .add(json::token::literal_false, 3, 1, L"false")
+            .add(json::token::literal_null, 3, 7, L"null")
+            .add(json::token::literal_true, 3, 12, L"true")
+            .add(json::token::string, 4, 1, L"Name 1")
+            .add(json::token::name_separator, 4, 9, L":")
+            .add(json::token::string, 4, 10, L"Value 1")
+            .add(json::token::value_separator, 4, 19, L",");
+    CheckText(L"[]\n{}\nfalse null true\n\"Name 1\":\"Value 1\",", lv, L"3");
+    //
+    lv.clear()
+            .add(json::token::begin_array, 1, 1, L"[")
+            .add(json::token::number_float, 1, 2, L"-4.54557e+18")
+            .add(json::token::end_array, 1, 14, L"]");
+    CheckText(L"[-4.54557e+18]", lv, L"3");
+    //
+    lv.clear()
+            .add(json::token::begin_object, 1, 1, L"{")
+            .add(json::token::string, 1, 3, L"abc def")
+            .add(json::token::name_separator, 1, 12, L":")
+            .add(json::token::number_float, 1, 14, L"-4.54557e+18")
+            .add(json::token::end_object, 1, 27, L"}");
+    CheckText(L"{\t\"abc def\": -4.54557e+18 }", lv, L"4");
 }
 
 TEST_F(JsonLexerTest, TestLexerErrors)
@@ -211,7 +232,8 @@ TEST_F(JsonLexerTest, TestLexerErrors)
     CheckError(L"-", json::parser_msg_kind::err_invalid_number, textpos(1, 1), L"E1012.1");
     CheckError(L"-.", json::parser_msg_kind::err_invalid_number, textpos(1, 2), L"E1012.2");
     CheckError(L"123.", json::parser_msg_kind::err_invalid_number, textpos(1, 4), L"E1012.3");
-    CheckError(L"123.0\"", json::parser_msg_kind::err_invalid_number, textpos(1, 6), L"E1012.4");
+    CheckError(L"123.\"", json::parser_msg_kind::err_invalid_number, textpos(1, 5), L"E1012.41");
+    CheckError(L"123.0\"", json::parser_msg_kind::err_invalid_number, textpos(1, 6), L"E1012.42");
     CheckError(L"1e", json::parser_msg_kind::err_invalid_number, textpos(1, 2), L"E1012.5");
     CheckError(L"1eA", json::parser_msg_kind::err_invalid_number, textpos(1, 3), L"E1012.6");
     CheckError(L"1e-1A", json::parser_msg_kind::err_invalid_number, textpos(1, 5), L"E1012.7");

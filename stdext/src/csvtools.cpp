@@ -63,12 +63,14 @@ void csv::reader::add_error(const reader_msg_kind kind, parsers::textpos pos, co
     m_messages.add_error(msg_origin::lexer, kind, pos, m_reader->source_name(), text);
 }
 
-wchar_t csv::reader::next_char()
+bool csv::reader::next_char(wchar_t& wc)
 {
-    wchar_t c;
-    if (m_reader->next_char(c))
+    if (m_reader->next_char(wc))
+    {
         m_pos++;
-    return c;
+        return true;
+    }
+    return false;
 }
 
 bool csv::reader::next_row(csv::row& r)
@@ -84,8 +86,8 @@ bool csv::reader::next_row(csv::row& r)
     while (!m_reader->eof() && !row_accepted)
     {
         lastpos = m_pos;
-        wchar_t c = next_char();
-        if (!m_reader->good())
+        wchar_t c = 0;
+        if (!next_char(c))
         {
             if (!m_reader->eof())
                 add_error(reader_msg_kind::io_error, L"I/O error");
@@ -99,7 +101,10 @@ bool csv::reader::next_row(csv::row& r)
             else
             {
                 if (m_reader->is_next_char(c))
-                    value += next_char();
+                {
+                    next_char(c);
+                    value += c;
+                }
                 else
                 {
                     accepting_quoted_value = false;
@@ -118,7 +123,7 @@ bool csv::reader::next_row(csv::row& r)
             nl += c;
             if (c == L'\r' && m_reader->is_next_char(L'\n'))
             {
-                c = next_char();
+                next_char(c);
                 nl += c;
             }
             if (accepting_quoted_value)

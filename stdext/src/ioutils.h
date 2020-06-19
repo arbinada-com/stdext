@@ -31,26 +31,25 @@ namespace stdext
             text_io_policy& operator=(text_io_policy&&) = default;
             virtual ~text_io_policy() {}
         public:
-            std::size_t max_buf_size() const noexcept { return m_max_buf_size; }
-            void max_buf_size(const std::size_t value) noexcept { m_max_buf_size = value; }
+            std::size_t max_text_buf_size() const noexcept { return m_max_text_buf_size; }
+            void max_text_buf_size(const std::size_t value) noexcept { m_max_text_buf_size = value; }
         protected:
             virtual void do_read_chars(mbstate_t& mbstate, std::wistream& stream, text_buffer_t& buf) const = 0;
             virtual void set_imbue_read(std::wistream&) const = 0;
             virtual void set_imbue_write(std::wostream&) const = 0;
         protected:
-            bool read_string(std::wistream& stream, std::string& buf, const size_t max_len) const;
             void push_back_chars(const std::wstring& ws, text_buffer_t& buf) const;
         protected:
-            std::size_t m_max_buf_size = 10;
+            std::size_t m_max_text_buf_size = 1024;
         };
 
 
         class text_io_policy_plain : public text_io_policy
         {
         protected:
+            void do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const override;
             void set_imbue_read(std::wistream&) const override {}
             void set_imbue_write(std::wostream&) const override {}
-            void do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const override;
         };
 
 
@@ -68,9 +67,11 @@ namespace stdext
             inline bool use_default_encoding() const noexcept { return !m_cvt_mode.encoding_assigned(); }
             const locutils::codecvt_mode_ansi& cvt_mode() const noexcept { return m_cvt_mode; }
         protected:
-            void do_read_chars(mbstate_t& mbstate, std::wistream& stream, text_buffer_t& buf) const override;
+            void do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const override;
             void set_imbue_read(std::wistream& stream) const override;
             void set_imbue_write(std::wostream& stream) const override;
+        private:
+            bool read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const;
         protected:
             locutils::codecvt_mode_ansi m_cvt_mode;
             locutils::codecvt_ansi_utf16_wchar_t* m_cvt = nullptr;
@@ -88,9 +89,11 @@ namespace stdext
         public:
             const locutils::codecvt_mode_utf8& cvt_mode() const noexcept { return m_cvt_mode; }
         protected:
-            void do_read_chars(mbstate_t& mbstate, std::wistream& stream, text_buffer_t& buf) const override;
+            void do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const override;
             void set_imbue_read(std::wistream& stream) const override;
             void set_imbue_write(std::wostream& stream) const override;
+        private:
+            bool read_bytes(std::wistream& stream, std::string& bytes, const size_t count) const;
         protected:
             locutils::codecvt_mode_utf8 m_cvt_mode;
             locutils::codecvt_utf8_wchar_t* m_cvt;
@@ -108,9 +111,11 @@ namespace stdext
         public:
             const locutils::codecvt_mode_utf16& cvt_mode() const noexcept { return m_cvt_mode; }
         protected:
-            void do_read_chars(mbstate_t& mbstate, std::wistream& stream, text_buffer_t& buf) const override;
+            void do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const override;
             void set_imbue_read(std::wistream& stream) const override;
             void set_imbue_write(std::wostream& stream) const override;
+        private:
+            bool read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const;
         protected:
             locutils::codecvt_mode_utf16 m_cvt_mode;
             locutils::codecvt_utf16_wchar_t* m_cvt;
@@ -135,15 +140,12 @@ namespace stdext
             text_reader& operator=(text_reader&&) = delete;
             virtual ~text_reader();
         public:
-            wchar_t next_char();
-            bool next_char(wchar_t& c);
-            bool is_next_char(wchar_t c);
-            bool is_next_char(std::initializer_list<wchar_t> chars);
+            bool next_char(wchar_t& wc);
+            bool is_next_char(wchar_t wc);
+            bool is_next_char(std::initializer_list<wchar_t> wchars);
             std::streamsize count() const;
             bool eof() const;
-            bool good() const;
-            wchar_t peek();
-            int rdstate() const;
+            bool peek(wchar_t& wc);
             virtual void read_all(std::wstring& ws);
             std::wstring source_name() const noexcept { return m_source_name; }
             void source_name(const std::wstring& value) { m_source_name = value; }

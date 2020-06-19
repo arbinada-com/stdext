@@ -19,8 +19,7 @@ using namespace locutils;
  */
 const char utf16::bom_le[] = { '\xFF', '\xFE' };
 const char utf16::bom_be[] = { '\xFE', '\xFF' };
-const uint16_t utf16::bom_be_value;
-const uint16_t utf16::bom_le_value;
+const uint16_t utf16::bom_value;
 const uint16_t utf16::high_surrogate_min;
 const uint16_t utf16::high_surrogate_max;
 const uint16_t utf16::low_surrogate_min;
@@ -29,39 +28,34 @@ const char32_t utf16::max_char;
 const wchar_t utf16::replacement_character;
 const int utf16::bytes_per_character;
 
-std::string utf16::bom_le_str() { return string(utf16::bom_le, 2); }
-std::string utf16::bom_be_str() { return string(utf16::bom_be, 2); }
-
 bool utf16::is_bom(wchar_t c)
 {
-    return (c == bom_be_value || c == bom_le_value);
+    return (c == utf16::bom_value);
 }
 
-bool utf16::is_bom(char c1, char c2)
-{
-    return (c1 == utf16::bom_be[0] && c2 == utf16::bom_be[1]) || (c1 == utf16::bom_le[0] && c2 == utf16::bom_le[1]);
-}
-
-std::string utf16::bom_str(endianess::byte_order order)
+bool utf16::is_bom(char byte0, char byte1, endianess::byte_order order)
 {
     if (order == endianess::byte_order::big_endian)
-        return utf16::bom_be_str();
-    return utf16::bom_le_str();
+        return (byte0 == utf16::bom_be[0] && byte1 == utf16::bom_be[1]);
+    return (byte0 == utf16::bom_le[0] && byte1 == utf16::bom_le[1]);
 }
 
 void utf16::add_bom(wstring& ws)
 {
     if (ws.length() == 0 || !utf16::is_bom(ws[0]))
     {
-        ws.insert(0, 1, (endianess::platform_value() == endianess::byte_order::little_endian ? utf16::bom_le_value : utf16::bom_be_value));
+        ws.insert(0, 1, utf16::bom_value);
     }
 }
 
-void utf16::add_bom(string& mbs, endianess::byte_order order)
+void utf16::add_bom(string& bytes, endianess::byte_order order)
 {
-    if (mbs.length() < 2 || !utf16::is_bom(mbs[0], mbs[1]))
+    if (bytes.length() < 2 || !utf16::is_bom(bytes[0], bytes[1], order))
     {
-        mbs.insert(0, utf16::bom_str(order));
+        if (order == endianess::byte_order::big_endian)
+            bytes.insert(0, utf16::bom_be, 2);
+        else
+            bytes.insert(0, utf16::bom_le, 2);
     }
 }
 
@@ -81,10 +75,10 @@ bool utf16::is_noncharacter(const wchar_t c)
     // They are forbidden for use in open interchange of Unicode text data.
     // http://www.unicode.org/versions/Unicode5.2.0/ch16.pdf#G19635
     return
-        (c >= 0xFDD0 && c <= 0xFDEF)
-        || c == utf16::bom_be_value
-        || c == utf16::bom_le_value
-        || c == 0xFFFF
+        (c >= 0xFDD0u && c <= 0xFDEFu)
+        || c == utf16::bom_value
+        || c == 0xFFFEu
+        || c == 0xFFFFu
 #if __STDEXT_WCHAR_SIZE > 2
         || c > (wchar_t)utf16::max_char
 #endif
@@ -274,13 +268,16 @@ const char32_t utf8::code_point3;
 const char32_t utf8::code_point4;
 const char32_t utf8::code_point5;
 
-std::string utf8::bom_str() { return string(utf8::bom, 3); } // "\xEF\xBB\xBF"
-
-void utf8::add_bom(string& mbs)
+bool utf8::is_bom(char byte0, char byte1, char byte2)
 {
-    if (mbs.length() < 3 || (mbs[0] != utf8::bom[0] && mbs[1] != utf8::bom[1] && mbs[2] != utf8::bom[2]))
+    return byte0 == utf8::bom[0] && byte1 == utf8::bom[1] && byte2 == utf8::bom[2];
+}
+
+void utf8::add_bom(string& bytes)
+{
+    if (bytes.length() < 3 || !utf8::is_bom(bytes[0], bytes[1], bytes[2]))
     {
-        mbs.insert(0, utf8::bom, sizeof(utf8::bom));
+        bytes.insert(0, utf8::bom, sizeof(utf8::bom));
     }
 }
 
@@ -327,9 +324,8 @@ locale_guard::~locale_guard()
  * codecvt_utf8_wchar_t class
  */
 codecvt_utf8_wchar_t::result_t 
-codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
+codecvt_utf8_wchar_t::to_utf16(mbstate_t& state, const std::string& utf8s, std::wstring& utf16s, std::size_t& converted_bytes)
 {
-    mbstate_t state = {};
     const char* first1 = utf8s.data();
     const char* last1 = first1 + utf8s.length();
     const char* next1 = nullptr;
@@ -338,15 +334,23 @@ codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
     wchar_t* last2 = first2 + utf16s.length();
     wchar_t* next2 = nullptr;
     result_t result = do_in(state, first1, last1, next1, first2, last2, next2);
+    converted_bytes = next1 - first1;
     if (next2 != nullptr && next2 >= first2)
         utf16s.resize(next2 - first2);
     return result;
 }
 
-codecvt_utf8_wchar_t::result_t 
-codecvt_utf8_wchar_t::to_utf8(const std::wstring& utf16s, std::string& utf8s)
+codecvt_utf8_wchar_t::result_t
+codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
 {
     mbstate_t state = {};
+    std::size_t converted_bytes;
+    return to_utf16(state, utf8s, utf16s, converted_bytes);
+}
+
+codecvt_utf8_wchar_t::result_t 
+codecvt_utf8_wchar_t::to_utf8(mbstate_t& state, const std::wstring& utf16s, std::string& utf8s)
+{
     const wchar_t* first1 = utf16s.data();
     const wchar_t* last1 = first1 + utf16s.length();
     const wchar_t* next1 = nullptr;
@@ -360,6 +364,12 @@ codecvt_utf8_wchar_t::to_utf8(const std::wstring& utf16s, std::string& utf8s)
     return result;
 }
 
+codecvt_utf8_wchar_t::result_t
+codecvt_utf8_wchar_t::to_utf8(const std::wstring& utf16s, std::string& utf8s)
+{
+    mbstate_t state = {};
+    return to_utf8(state, utf16s, utf8s);
+}
 // UTF-8 char* -> UTF-16 wchar_t*
 // Bitwise operators abstract away the endianness
 codecvt_utf8_wchar_t::result_t 
@@ -430,11 +440,11 @@ codecvt_utf8_wchar_t::do_in(
             if (utf16::is_bom((intern_type)c2))
             {
                 if (!m_cvt_mode.consume_header())
-                    put_next2((intern_type)utf16::bom_value());
+                    put_next2((intern_type)utf16::bom_value);
                 continue;
             }
             else if (m_cvt_mode.generate_header())
-                put_next2((intern_type)utf16::bom_value());
+                put_next2((intern_type)utf16::bom_value);
 
         }
         if (c2 > utf16::max_char)
@@ -452,7 +462,7 @@ codecvt_utf8_wchar_t::do_in(
         else
             put_next2((intern_type)c2);
     }
-    return (first1 == next1 ? codecvt_base_t::partial : codecvt_base_t::ok);
+    return (next1 < last1 ? codecvt_base_t::partial : codecvt_base_t::ok);
 }
 
 // UTF-16 wchar_t* -> UTF-8 char*
@@ -593,9 +603,8 @@ int codecvt_utf8_wchar_t::do_length(mbstate_t& state, const extern_type* first1,
  * codecvt_utf16_wchar_t class
  */
 codecvt_utf16_wchar_t::result_t 
-codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
+codecvt_utf16_wchar_t::mb_to_utf16(mbstate_t& state, const std::string& mbs, std::wstring& ws)
 {
-    mbstate_t state = {};
     const char* first1 = mbs.data();
     const char* last1 = first1 + mbs.length();
     const char* next1 = nullptr;
@@ -612,10 +621,16 @@ codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
     return result;
 }
 
-codecvt_utf16_wchar_t::result_t 
-codecvt_utf16_wchar_t::utf16_to_mb(const std::wstring& ws, std::string& mbs)
+codecvt_utf16_wchar_t::result_t
+codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
 {
     mbstate_t state = {};
+    return mb_to_utf16(state, mbs, ws);
+}
+
+codecvt_utf16_wchar_t::result_t 
+codecvt_utf16_wchar_t::utf16_to_mb(mbstate_t& state, const std::wstring& ws, std::string& mbs)
+{
     const wchar_t* first1 = ws.data();
     const wchar_t* last1 = first1 + ws.length();
     const wchar_t* next1 = nullptr;
@@ -628,6 +643,13 @@ codecvt_utf16_wchar_t::utf16_to_mb(const std::wstring& ws, std::string& mbs)
     if (next2 != nullptr && next2 >= first2)
         mbs.resize(next2 - first2);
     return result;
+}
+
+codecvt_utf16_wchar_t::result_t
+codecvt_utf16_wchar_t::utf16_to_mb(const std::wstring& ws, std::string& mbs)
+{
+    mbstate_t state = {};
+    return utf16_to_mb(state, ws, mbs);
 }
 
 // multibyte char* (extern) sequence --> UTF-16 wchar_t* (intern) sequence
@@ -676,7 +698,7 @@ codecvt_utf16_wchar_t::do_in(
             if (m_cvt_mode.generate_header())
             {
                 if (next2 != last2)
-                    put_next2(utf16::bom_value());
+                    put_next2(utf16::bom_value);
             }
             if (utf16::is_bom(c2))
                 continue;
@@ -832,13 +854,12 @@ std::string locutils::to_encoding_name(const ansi_encoding encoding, const ansi_
 
 
 codecvt_ansi_utf16_wchar_t::result_t
-codecvt_ansi_utf16_wchar_t::ansi_to_utf16(const std::string& ansi, std::wstring& ws) const
+codecvt_ansi_utf16_wchar_t::ansi_to_utf16(mbstate_t& state, const std::string& s, std::wstring& ws) const
 {
-    mbstate_t state = {};
-    const char* first1 = ansi.data();
-    const char* last1 = first1 + ansi.length();
+    const char* first1 = s.data();
+    const char* last1 = first1 + s.length();
     const char* next1 = nullptr;
-    size_t len2 = ansi.length() + (m_cvt_mode.generate_header() ? 1 : 0);
+    size_t len2 = s.length() + (m_cvt_mode.generate_header() ? 1 : 0);
     ws.resize(len2);
     wchar_t* first2 = (wchar_t*)ws.data();
     wchar_t* last2 = first2 + ws.length();
@@ -850,21 +871,35 @@ codecvt_ansi_utf16_wchar_t::ansi_to_utf16(const std::string& ansi, std::wstring&
 }
 
 codecvt_ansi_utf16_wchar_t::result_t
-codecvt_ansi_utf16_wchar_t::utf16_to_ansi(const std::wstring& ws, std::string& ansi) const
+codecvt_ansi_utf16_wchar_t::ansi_to_utf16(const std::string& s, std::wstring& ws) const
 {
     mbstate_t state = {};
+    return ansi_to_utf16(state, s, ws);
+}
+
+
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::utf16_to_ansi(mbstate_t& state, const std::wstring& ws, std::string& s) const
+{
     const wchar_t* first1 = ws.data();
     const wchar_t* last1 = first1 + ws.length();
     const wchar_t* next1 = nullptr;
     size_t len2 = ws.length() + 1 /*BOM*/;
-    ansi.resize(len2);
-    char* first2 = (char*)ansi.data();
-    char* last2 = first2 + ansi.length();
+    s.resize(len2);
+    char* first2 = (char*)s.data();
+    char* last2 = first2 + s.length();
     char* next2 = nullptr;
     result_t result = do_out(state, first1, last1, next1, first2, last2, next2);
     if (next2 != nullptr && next2 >= first2)
-        ansi.resize(next2 - first2);
+        s.resize(next2 - first2);
     return result;
+}
+
+codecvt_ansi_utf16_wchar_t::result_t
+codecvt_ansi_utf16_wchar_t::utf16_to_ansi(const std::wstring& ws, std::string& s) const
+{
+    mbstate_t state = {};
+    return utf16_to_ansi(state, ws, s);
 }
 
 // ANSI codepage (char*) --> UTF-16 (wchar_t*)
@@ -881,7 +916,7 @@ codecvt_ansi_utf16_wchar_t::do_in(mbstate_t& state,
     {
         state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
         if (next2 < last2 && m_cvt_mode.generate_header())
-            *next2++ = utf16::bom_value();
+            *next2++ = utf16::bom_value;
     }
 #if defined(__STDEXT_USE_ICONV)
     iconv_t conv = iconv_open("WCHAR_T", m_cvt_mode.encoding_name_iconv().c_str());

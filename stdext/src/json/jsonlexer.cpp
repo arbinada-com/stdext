@@ -79,6 +79,18 @@ void json::lexeme::reset(const parsers::textpos pos, const json::token tok, cons
 /*
  * lexer class
  */
+void json::lexer::accept_char(lexeme& lex)
+{
+    lex.inc_text(m_c);
+    accept_char();
+}
+
+void json::lexer::accept_char(std::wstring& value)
+{
+    value += m_c;
+    accept_char();
+}
+
 void json::lexer::add_error(const parser_msg_kind kind)
 {
     add_error(kind, m_pos, json::to_wmessage(kind));
@@ -116,6 +128,7 @@ bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
             return false;
         }
         value += m_c;
+        accept_char();
     }
     int code = std::stoi(value, nullptr, 16);
     c = static_cast<wchar_t>(code);
@@ -124,18 +137,15 @@ bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
 
 bool json::lexer::handle_literal(lexeme& lex)
 {
-    m_look_ahead = true;
     textpos pos = m_pos;
     wstring value;
-    do 
+    accept_char(value);
+    while (next_char())
     {
-        value += m_c;
-        if (!next_char())
-        {
-            if (!eof())
-                return false;
-        }
-    } while (!(eof() || is_whitespace(m_c) || is_structural(m_c)));
+        if (is_whitespace(m_c) || is_structural(m_c))
+            break;
+        accept_char(value);
+    }
     if (value == L"false")
         lex.reset(pos, token::literal_false, value);
     else if (value == L"null")
@@ -156,11 +166,11 @@ bool json::lexer::handle_literal(lexeme& lex)
 
 bool json::lexer::handle_number(lexeme& lex)
 {
-    m_look_ahead = true;
     lex.reset(m_pos, token::number_int, m_c);
+    accept_char();
     int int_digit_count = m_c == L'-' ? 0 : 1;
     wchar_t prev = m_c;
-    while (!eof() && next_char())
+    while (next_char())
     {
         if (!is_digit(m_c))
             break;
@@ -170,7 +180,7 @@ bool json::lexer::handle_number(lexeme& lex)
             return false;
         }
         int_digit_count++;
-        lex.inc_text(m_c);
+        accept_char(lex);
         prev = m_c;
     }
     if (int_digit_count == 0)
@@ -181,14 +191,14 @@ bool json::lexer::handle_number(lexeme& lex)
     if (m_c == L'.')
     {
         lex.token(token::number_decimal);
-        lex.inc_text(m_c);
+        accept_char(lex);
         int frac_digit_count = 0;
-        while (!eof() && next_char())
+        while (next_char())
         {
             if (!is_digit(m_c))
                 break;
             frac_digit_count++;
-            lex.inc_text(m_c);
+            accept_char(lex);
         }
         if (frac_digit_count == 0)
         {
@@ -199,18 +209,19 @@ bool json::lexer::handle_number(lexeme& lex)
     if (m_c == L'e' || m_c == L'E')
     {
         lex.token(token::number_float);
-        lex.inc_text(m_c);
+        accept_char(lex);
         int exp_digit_count = 0;
-        while (!eof() && next_char())
+        while (next_char())
         {
-            if (!is_digit(m_c))
+            if (is_digit(m_c))
             {
-                if (!((m_c == L'-' || m_c == L'+') && exp_digit_count == 0))
-                    break;
-            }
-            else
                 exp_digit_count++;
-            lex.inc_text(m_c);
+                accept_char(lex);
+            }
+            else if (exp_digit_count == 0 && (m_c == L'-' || m_c == L'+'))
+                accept_char(lex);
+            else
+                break;
         }
         if (exp_digit_count == 0)
         {
@@ -218,7 +229,7 @@ bool json::lexer::handle_number(lexeme& lex)
             return false;
         }
     }
-    if (eof() || is_whitespace(m_c) || is_structural(m_c))
+    if (char_accepted() || is_whitespace(m_c) || is_structural(m_c))
         return true;
     add_error(parser_msg_kind::err_invalid_number);
     return false;
@@ -228,15 +239,14 @@ bool json::lexer::handle_string(lexeme& lex)
 {
     wstring value;
     lex.reset(m_pos, token::string, L"");
-    while (!eof())
+    while (next_char())
     {
-        if (!next_char())
-            break;
         if (is_unescaped(m_c))
-            value += m_c;
+            accept_char(value);
         else if (m_c == L'"')
         {
             lex.text(value);
+            accept_char();
             return true;
         }
         else if (is_escape(m_c))
@@ -249,22 +259,27 @@ bool json::lexer::handle_string(lexeme& lex)
             case  L'"':
             case  L'\\':
             case  L'/':
-                value += m_c;
+                accept_char(value);
                 break;
             case  L'b':
                 value += L'\b';
+                accept_char();
                 break;
             case  L'f':
                 value += L'\f';
+                accept_char();
                 break;
             case  L'n':
                 value += L'\n';
+                accept_char();
                 break;
             case  L'r':
                 value += L'\r';
+                accept_char();
                 break;
             case  L't':
                 value += L'\t';
+                accept_char();
                 break;
             case  L'u':
                 wchar_t c;
@@ -318,6 +333,7 @@ bool json::lexer::next_char()
     wchar_t prev = m_c;
     if (m_reader.next_char(m_c))
     {
+        m_c_accepted = false;
         m_pos++;
         if (prev == L'\n')
             m_pos.newline();
@@ -334,28 +350,32 @@ bool json::lexer::next_char()
 
 bool json::lexer::next_lexeme(lexeme& lex)
 {
-    if (!m_look_ahead)
+    if (char_accepted() || m_initial)
     {
         if (!next_char())
             return false;
     }
-    m_look_ahead = false;
+    m_initial = false;
     skip_whitespaces();
-    if (!eof())
+    if (!char_accepted())
     {
         switch (m_c)
         {
         case L'[':
             lex.reset(m_pos, token::begin_array, m_c);
+            accept_char();
             return true;
         case L'{':
             lex.reset(m_pos, token::begin_object, m_c);
+            accept_char();
             return true;
         case L']':
             lex.reset(m_pos, token::end_array, m_c);
+            accept_char();
             return true;
         case L'}':
             lex.reset(m_pos, token::end_object, m_c);
+            accept_char();
             return true;
         case L'"':
             return handle_string(lex);
@@ -365,9 +385,11 @@ bool json::lexer::next_lexeme(lexeme& lex)
             return handle_literal(lex);
         case L':':
             lex.reset(m_pos, token::name_separator, m_c);
+            accept_char();
             return true;
         case L',':
             lex.reset(m_pos, token::value_separator, m_c);
+            accept_char();
             return true;
         case L'-':
         case L'0':
@@ -394,6 +416,9 @@ bool json::lexer::next_lexeme(lexeme& lex)
 
 void json::lexer::skip_whitespaces()
 {
-    while (!eof() && is_whitespace(m_c))
+    while (is_whitespace(m_c))
+    {
+        accept_char();
         next_char();
+    }
 }

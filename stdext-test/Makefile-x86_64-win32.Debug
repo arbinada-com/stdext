@@ -85,7 +85,8 @@ OBJECTS       = debug\x86_64\win32\gtest-all.obj \
 		debug\x86_64\win32\trees-test.obj \
 		debug\x86_64\win32\variants-test.obj
 
-DIST          =  src/jsondom-test.h ..\..\googletest\googletest\src\gtest-all.cc \
+DIST          =  src/jsondom-test.h \
+		src/locutils-test.h ..\..\googletest\googletest\src\gtest-all.cc \
 		..\..\googletest\googlemock\src\gmock-all.cc \
 		src\jsoncommon-test.cpp \
 		src\main.cpp \
@@ -294,7 +295,8 @@ debug\x86_64\win32\datetime-test.obj: src\datetime-test.cpp ..\..\googletest\goo
 debug\x86_64\win32\ioutils-test.obj: src\ioutils-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
 		..\stdext\src\ioutils.h \
 		..\stdext\src\testutils.h \
-		..\stdext\src\strutils.h
+		..\stdext\src\strutils.h \
+		src\locutils-test.h
 
 debug\x86_64\win32\jsondom-test.obj: src\jsondom-test.cpp src\jsondom-test.h \
 		..\stdext\src\locutils.h \
@@ -319,6 +321,7 @@ debug\x86_64\win32\jsontools-test.obj: src\jsontools-test.cpp ..\..\googletest\g
 		src\jsondom-test.h
 
 debug\x86_64\win32\locutils-test.obj: src\locutils-test.cpp ..\..\googletest\googletest\include\gtest\gtest.h \
+		src\locutils-test.h \
 		..\stdext\src\locutils.h \
 		..\stdext\src\testutils.h \
 		..\stdext\src\strutils.h

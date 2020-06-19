@@ -24,8 +24,8 @@ std::wstring parsers::to_wstring(const msg_severity value)
 }
 
 /*
-* textpos class
-*/
+ * textpos class
+ */
 void textpos::operator ++() noexcept
 {
     m_col++;

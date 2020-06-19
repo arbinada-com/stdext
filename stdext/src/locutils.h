@@ -35,17 +35,11 @@ namespace stdext
         {
             static const char bom_be[2];
             static const char bom_le[2];
+            static const uint16_t bom_value = 0xFEFFu;
             static void add_bom(wstring& ws);
-            static void add_bom(string& mbs, endianess::byte_order order);
+            static void add_bom(string& bytes, endianess::byte_order order);
             static bool is_bom(wchar_t c);
-            static bool is_bom(char c1, char c2);
-            static std::string bom_str(endianess::byte_order order);
-            inline static std::string bom_str() { return utf16::bom_str(endianess::platform_value()); }
-            static std::string bom_le_str();
-            static std::string bom_be_str();
-            static const uint16_t bom_be_value = 0xFEFFu;
-            static const uint16_t bom_le_value = 0xFFFEu;
-            static uint16_t bom_value() { return (endianess::platform_value() == endianess::byte_order::big_endian ? bom_be_value : bom_le_value); }
+            static bool is_bom(char byte0, char byte1, endianess::byte_order order);
             static const uint16_t high_surrogate_min = 0xD800u;
             static const uint16_t high_surrogate_max = 0xDBFFu;
             static const uint16_t low_surrogate_min = 0xDC00u;
@@ -86,8 +80,8 @@ namespace stdext
         struct utf8
         {
             static const char bom[3];
-            static std::string bom_str();
-            static void add_bom(string& mbs);
+            static void add_bom(string& bytes);
+            static bool is_bom(char byte0, char byte1, char byte2);
             static const int max_seq_length = 4; // RFC 3629 limit since 2003
             // check points
             static const unsigned char chk_seq1 = 0x80;
@@ -238,7 +232,9 @@ namespace stdext
             {}
             virtual ~codecvt_utf8_wchar_t() noexcept { }
         public:
+            result_t to_utf16(mbstate_t& state, const std::string& utf8s, std::wstring& utf16s, std::size_t& converted_bytes);
             result_t to_utf16(const std::string& utf8s, std::wstring& utf16s);
+            result_t to_utf8(mbstate_t& state, const std::wstring& utf16s, std::string& utf8s);
             result_t to_utf8(const std::wstring& utf16s, std::string& utf8s);
         protected:
             // codecvt implementation
@@ -308,7 +304,9 @@ namespace stdext
             { }
             virtual ~codecvt_utf16_wchar_t() noexcept { }
         public:
+            result_t mb_to_utf16(mbstate_t& state, const std::string& mbs, std::wstring& ws);
             result_t mb_to_utf16(const std::string& mbs, std::wstring& ws);
+            result_t utf16_to_mb(mbstate_t& state, const std::wstring& ws, std::string& mbs);
             result_t utf16_to_mb(const std::wstring& ws, std::string& mbs);
         protected:
             // codecvt implementation
@@ -406,8 +404,10 @@ namespace stdext
             { }
             virtual ~codecvt_ansi_utf16_wchar_t() noexcept { }
         public:
+            result_t ansi_to_utf16(mbstate_t& state, const std::string& s, std::wstring& ws) const;
             result_t ansi_to_utf16(const std::string& mbs, std::wstring& ws) const;
-            result_t utf16_to_ansi(const std::wstring& ws, std::string& mbs) const;
+            result_t utf16_to_ansi(mbstate_t& state, const std::wstring& ws, std::string& s) const;
+            result_t utf16_to_ansi(const std::wstring& ws, std::string& s) const;
         protected:
             // codecvt implementation
             virtual result_t do_in(mbstate_t& state,

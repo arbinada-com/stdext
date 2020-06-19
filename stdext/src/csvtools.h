@@ -102,7 +102,7 @@ namespace stdext
             const msg_collector_t& messages() const { return m_messages; }
             const msg_collector_t::errors_t& errors() const { return m_messages.errors(); }
         private:
-            wchar_t next_char();
+            bool next_char(wchar_t& wc);
             void add_error(const reader_msg_kind kind, const std::wstring text);
             void add_error(const reader_msg_kind kind, parsers::textpos pos, const std::wstring text);
         private:

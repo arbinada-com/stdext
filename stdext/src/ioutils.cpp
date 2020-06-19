@@ -18,16 +18,6 @@ using namespace locutils;
 /*
  * text_io_policy class
  */
-
-bool text_io_policy::read_string(std::wistream& stream, std::string& buf, const size_t max_len) const
-{
-    buf.clear();
-    buf.reserve(max_len);
-    while (!stream.eof() && buf.length() <= max_len)
-        buf += (char)stream.get();
-    return (buf.length() > 0);
-}
-
 void text_io_policy::push_back_chars(const std::wstring& ws, text_buffer_t& buf) const
 {
     for (const wchar_t& wc : ws)
@@ -42,8 +32,13 @@ void text_io_policy_plain::do_read_chars(mbstate_t&, std::wistream& stream, text
 {
     if (!buf.empty())
         return;
-    while (!stream.eof() && buf.size() <= m_max_buf_size)
-        buf.push_back((wchar_t)stream.get());
+    while (buf.size() < m_max_text_buf_size)
+    {
+        std::wistream::int_type wc = stream.get();
+        if (!stream.good() || wc == std::wistream::traits_type::eof())
+            break;
+        buf.push_back((wchar_t)wc);
+    }
 }
 
 /*
@@ -96,16 +91,31 @@ void text_io_policy_ansi::set_imbue_write(std::wostream& stream) const
 #endif
 }
 
-void text_io_policy_ansi::do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_ansi::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
 {
     string ansi;
-    if (read_string(stream, ansi, 1024))
+    if (read_bytes(stream, ansi, m_max_text_buf_size))
     {
         wstring ws;
-        if (m_cvt->ansi_to_utf16(ansi, ws) == m_cvt->ok) // TODO use m_mbstate
+        if (m_cvt->ansi_to_utf16(state, ansi, ws) == m_cvt->ok)
             push_back_chars(ws, buf);
     }
 }
+
+bool text_io_policy_ansi::read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const
+{
+    bytes.clear();
+    bytes.reserve(max_len);
+    while (bytes.length() < max_len)
+    {
+        std::wistream::int_type wc = stream.get();
+        if (!stream.good() || wc == std::wistream::traits_type::eof())
+            break;
+        bytes += (unsigned char)wc;
+    }
+    return (bytes.length() > 0);
+}
+
 
 /*
  * text_io_policy_utf8 class
@@ -136,17 +146,47 @@ void text_io_policy_utf8::set_imbue_write(std::wostream& stream) const
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf8_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf8::do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_utf8::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
 {
-    string u8s;
-    if (read_string(stream, u8s, 1024)) //TO DO loop until m_cvt->ok
+    string bytes;
+    if (read_bytes(stream, bytes, m_max_text_buf_size))  // min length of UTF-8 bytes is equal to UTF-16 string length (in characters)
     {
-        wstring ws;
-        if (m_cvt->to_utf16(u8s, ws) == m_cvt->ok)
-            push_back_chars(ws, buf);
+        codecvt_utf8_wchar_t::result_t result = m_cvt->error;
+        do
+        {
+            wstring ws;
+            size_t converted_bytes = 0;
+            result = m_cvt->to_utf16(state, bytes, ws, converted_bytes);
+            if (result == m_cvt->ok)
+            {
+                bytes.clear();
+                push_back_chars(ws, buf);
+            }
+            else if (result == m_cvt->partial)
+            {
+                bytes.erase(0, converted_bytes);
+                push_back_chars(ws, buf);
+                if (!read_bytes(stream, bytes, 1))
+                    break;
+            }
+            else
+                break;
+        } while (result != m_cvt->ok);
     }
 }
 
+bool text_io_policy_utf8::read_bytes(std::wistream& stream, std::string& bytes, const size_t count) const
+{
+    size_t i = 0;
+    for (; i < count; i++)
+    {
+        std::wistream::int_type wc = stream.get();
+        if (!stream.good() || wc == std::wistream::traits_type::eof())
+            break;
+        bytes += (unsigned char)wc;
+    }
+    return i > 0;
+}
 
 /*
  * text_io_policy_utf16 class
@@ -178,15 +218,33 @@ void text_io_policy_utf16::set_imbue_write(std::wostream& stream) const
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf16_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf16::do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_utf16::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
 {
     string mbs;
-    if (read_string(stream, mbs, 1024))
+    if (read_bytes(stream, mbs, m_max_text_buf_size * utf16::bytes_per_character))
     {
         wstring ws;
-        if (m_cvt->mb_to_utf16(mbs, ws) == m_cvt->ok)
+        if (m_cvt->mb_to_utf16(state, mbs, ws) == m_cvt->ok)
             push_back_chars(ws, buf);
     }
+}
+
+bool text_io_policy_utf16::read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const
+{
+    bytes.clear();
+    bytes.reserve(max_len);
+    while (bytes.length() < max_len)
+    {
+        std::wistream::int_type wc = stream.get();
+        if (!stream.good() || wc == std::wistream::traits_type::eof())
+            break;
+        bytes += (unsigned char)wc;
+    }
+    // Other way is copy_n() function but copy_if() is required too to check eof()
+    // Also note streambuf operations doesn't set stream state bits
+    // std::istreambuf_iterator<wchar_t> it(stream);
+    // std::copy_n(it, max_len, std::back_inserter(buf));
+    return (bytes.length() > 0);
 }
 
 
@@ -231,23 +289,17 @@ text_reader::~text_reader()
         delete m_stream;
 }
 
-wchar_t text_reader::next_char()
+bool text_reader::next_char(wchar_t& wc)
 {
-    wchar_t wc = 0;
     if (m_chars.empty())
         read_chars();
     if (!m_chars.empty())
     {
         wc = m_chars.front();
         m_chars.pop_front();
+        return true;
     }
-    return wc;
-}
-
-bool text_reader::next_char(wchar_t& c)
-{
-    c = next_char();
-    return good();
+    return false;
 }
 
 void text_reader::read_chars()
@@ -256,37 +308,48 @@ void text_reader::read_chars()
         return;
     if (m_use_file_io) // imbue() codecvt works only with file streams
     {
-        if (!m_stream->eof() && m_stream->good())
-            m_chars.push_back((wchar_t)m_stream->get());
+        while (m_chars.size() < m_policy.max_text_buf_size())
+        {
+            std::wistream::int_type wc = m_stream->get();
+            if (!m_stream->good() || wc == std::wistream::traits_type::eof())
+                break;
+            m_chars.push_back((wchar_t)wc);
+        }
     }
     else
         m_policy.do_read_chars(m_mbstate, *m_stream, m_chars);
 }
 
-wchar_t text_reader::peek()
+bool text_reader::peek(wchar_t& wc)
 {
     if (m_chars.empty())
-    {
-        if (m_stream != nullptr)
-            m_stream->peek(); // Set flags before
         read_chars();
-    }
     if (!m_chars.empty())
-        return m_chars.front();
-    return 0;
-}
-
-bool text_reader::is_next_char(wchar_t c)
-{
-    return c == this->peek();
-}
-
-bool text_reader::is_next_char(std::initializer_list<wchar_t> chars)
-{
-    for (wchar_t c : chars)
     {
-        if (c == this->peek())
-            return true;
+        wc = m_chars.front();
+        return true;
+    }
+    return false;
+}
+
+bool text_reader::is_next_char(wchar_t wc)
+{
+    wchar_t next;
+    if (this->peek(next))
+        return wc == next;
+    return false;
+}
+
+bool text_reader::is_next_char(std::initializer_list<wchar_t> wchars)
+{
+    wchar_t next;
+    if (this->peek(next))
+    {
+        for (wchar_t c : wchars)
+        {
+            if (c == next)
+                return true;
+        }
     }
     return false;
 }
@@ -310,24 +373,12 @@ bool text_reader::eof() const
     if (!m_chars.empty())
         return false;
     if (m_stream != nullptr)
+    {
+        if (m_stream->gcount() == 0)
+            m_stream->peek();
         return m_stream->eof();
+    }
     return true;
-}
-
-bool text_reader::good() const
-{
-    if (!m_chars.empty())
-        return true;
-    if (m_stream != nullptr)
-        return m_stream->good();
-    return false;
-}
-
-int text_reader::rdstate() const
-{
-    if (m_stream != nullptr)
-        return m_stream->rdstate();
-    return ios_base::failbit;
 }
 
 

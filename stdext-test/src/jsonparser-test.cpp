@@ -37,7 +37,7 @@ protected:
             FAIL() << title2 + L"OK with errors:" + err_text;
         if (!result && !parser.has_errors())
             FAIL() << title2 + L"failed without errors:" + err_text;
-        ASSERT_FALSE(parser.has_errors()) << title2 + L"errors:" + err_text;
+        EXPECT_FALSE(parser.has_errors()) << title2 + L"errors:" + err_text;
         json::dom_document_diff diff = json::make_diff(doc, expected);
         if (diff.has_differences())
         {

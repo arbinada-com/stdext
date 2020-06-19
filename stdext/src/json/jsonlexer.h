@@ -92,6 +92,10 @@ namespace stdext
             inline static bool is_unescaped(const wchar_t c) noexcept { return json::is_unescaped(c); }
             static bool is_whitespace(const wchar_t c);
         private:
+            inline void accept_char() { m_c_accepted = true; }
+            void accept_char(lexeme& lex);
+            void accept_char(std::wstring& value);
+            inline bool char_accepted() const noexcept { return m_c_accepted; }
             void add_error(const parser_msg_kind kind);
             void add_error(const parser_msg_kind kind, const parsers::textpos pos);
             void add_error(const parser_msg_kind kind, const std::wstring text);
@@ -106,7 +110,8 @@ namespace stdext
             ioutils::text_reader& m_reader;
             msg_collector_t& m_messages;
             wchar_t m_c = 0;
-            bool m_look_ahead = false;
+            bool m_c_accepted = false;
+            bool m_initial = true;
             parsers::textpos m_pos{ 1, 0 };
         };
     }
