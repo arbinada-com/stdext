@@ -32,9 +32,9 @@ namespace stdext
             dom_document_reader& operator=(dom_document_reader&&) = delete;
         public:
             bool read(ioutils::text_reader& reader);
-            bool read(std::wistream& stream, ioutils::text_io_policy& policy);
-            bool read(std::wifstream& stream, ioutils::text_io_policy& policy);
-            bool read_file(const std::wstring file_name, ioutils::text_io_policy& policy);
+            bool read(std::wistream& stream, const ioutils::text_io_policy& policy);
+            bool read(std::wifstream& stream, const ioutils::text_io_policy& policy);
+            bool read_file(const std::wstring file_name, const ioutils::text_io_policy& policy);
         public:
             const json::msg_collector_t& messages() const noexcept { return m_messages; }
             std::wstring source_name() const noexcept { return m_source_name; }

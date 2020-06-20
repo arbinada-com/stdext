@@ -143,17 +143,17 @@ namespace stdext
         /*
          * Converters
          */
+        enum class codecvt_headers
+        {
+            consume,
+            generate
+        };
+
         class codecvt_mode_base
         {
         public:
-            enum class headers
-            {
-                consume,
-                generate
-            };
-        public:
             codecvt_mode_base() {}
-            codecvt_mode_base(const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_base(const codecvt_headers headers_mode)
                 : m_headers(headers_mode)
             {}
             codecvt_mode_base(const codecvt_mode_base&) = default;
@@ -162,12 +162,12 @@ namespace stdext
             codecvt_mode_base& operator=(codecvt_mode_base&&) = default;
             virtual ~codecvt_mode_base() {}
         public:
-            codecvt_mode_base::headers headers_mode() const noexcept { return m_headers; }
-            void headers_mode(const codecvt_mode_base::headers value) noexcept { m_headers = value; }
-            bool consume_header() const noexcept { return m_headers == codecvt_mode_base::headers::consume; }
-            bool generate_header() const noexcept { return m_headers == codecvt_mode_base::headers::generate; }
+            codecvt_headers headers_mode() const noexcept { return m_headers; }
+            void headers_mode(const codecvt_headers value) noexcept { m_headers = value; }
+            bool consume_header() const noexcept { return m_headers == codecvt_headers::consume; }
+            bool generate_header() const noexcept { return m_headers == codecvt_headers::generate; }
         protected:
-            codecvt_mode_base::headers m_headers = codecvt_mode_base::headers::consume;
+            codecvt_headers m_headers = codecvt_headers::consume;
         };
 
         enum codecvt_state : unsigned short
@@ -212,7 +212,7 @@ namespace stdext
             codecvt_mode_utf8()
                 : codecvt_mode_base()
             {}
-            codecvt_mode_utf8(const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_utf8(const codecvt_headers headers_mode)
                 : codecvt_mode_base(headers_mode)
             {}
         };
@@ -268,10 +268,10 @@ namespace stdext
             codecvt_mode_utf16(const endianess::byte_order order)
                 : codecvt_mode_base(), m_byte_order(order), m_is_byte_order_assigned(true)
             {}
-            codecvt_mode_utf16(const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_utf16(const codecvt_headers headers_mode)
                 : codecvt_mode_base(headers_mode)
             {}
-            codecvt_mode_utf16(const endianess::byte_order order, const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_utf16(const endianess::byte_order order, const codecvt_headers headers_mode)
                 : codecvt_mode_base(headers_mode), m_byte_order(order), m_is_byte_order_assigned(true)
             {}
         public:
@@ -360,12 +360,12 @@ namespace stdext
                   m_encoding_name(encoding_name),
                   m_encoding_assigned(true)
             {}
-            codecvt_mode_ansi(const ansi_encoding encoding, const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_ansi(const ansi_encoding encoding, const codecvt_headers headers_mode)
                 : codecvt_mode_base(headers_mode),
                   m_encoding(encoding),
                   m_encoding_assigned(true)
             {}
-            codecvt_mode_ansi(const char* encoding_name, const codecvt_mode_base::headers headers_mode)
+            codecvt_mode_ansi(const char* encoding_name, const codecvt_headers headers_mode)
                 : codecvt_mode_base(headers_mode),
                   m_encoding(ansi_encoding::by_name),
                   m_encoding_name(encoding_name),

@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <clocale>
+#include <algorithm>
 
 using namespace std;
 using namespace stdext;
@@ -28,18 +29,25 @@ void text_io_policy::push_back_chars(const std::wstring& ws, text_buffer_t& buf)
 /*
  * text_io_policy_plain class
  */
-void text_io_policy_plain::do_read_chars(mbstate_t&, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_plain::read_chars(mbstate_t&, text_reader_stream_adapter_base& stream, text_buffer_t& buf) const
 {
     if (!buf.empty())
         return;
     while (buf.size() < m_max_text_buf_size)
     {
-        std::wistream::int_type wc = stream.get();
-        if (!stream.good() || wc == std::wistream::traits_type::eof())
+        text_reader_stream_adapter_base::int_type wc = stream.get();
+        if (!stream.good() || stream.is_eof(wc))
             break;
         buf.push_back((wchar_t)wc);
     }
 }
+
+void text_io_policy_plain::write_chars(mbstate_t&, text_writer_stream_adapter_base& stream, const std::wstring& ws) const
+{
+    for(const wchar_t& wc : ws)
+        stream.put(wc);
+}
+
 
 /*
  * text_io_policy_ansi class
@@ -69,29 +77,17 @@ text_io_policy_ansi::~text_io_policy_ansi()
         delete m_cvt;
 }
 
-void text_io_policy_ansi::set_imbue_read(std::wistream& stream) const
+void text_io_policy_ansi::set_imbue_read(text_reader_stream_adapter_base& stream) const
 {
-#if defined(__STDEXT_USE_ICONV)
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
-#elif defined(__STDEXT_WINDOWS)
-    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
-//    if (!use_default_encoding())
-//        stream.imbue(std::locale(m_cvt_mode.encoding_name_windows()));
-#endif
 }
 
-void text_io_policy_ansi::set_imbue_write(std::wostream& stream) const
+void text_io_policy_ansi::set_imbue_write(text_writer_stream_adapter_base& stream) const
 {
-#if defined(__STDEXT_USE_ICONV)
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
-#elif defined(__STDEXT_WINDOWS)
-    stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_ansi_utf16_wchar_t(m_cvt_mode)));
-//    if (!use_default_encoding())
-//        stream.imbue(std::locale(m_cvt_mode.encoding_name_windows()));
-#endif
 }
 
-void text_io_policy_ansi::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_ansi::read_chars(mbstate_t& state, text_reader_stream_adapter_base& stream, text_buffer_t& buf) const
 {
     string ansi;
     if (read_bytes(stream, ansi, m_max_text_buf_size))
@@ -102,18 +98,28 @@ void text_io_policy_ansi::do_read_chars(mbstate_t& state, std::wistream& stream,
     }
 }
 
-bool text_io_policy_ansi::read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const
+bool text_io_policy_ansi::read_bytes(text_reader_stream_adapter_base& stream, std::string& bytes, const size_t max_len) const
 {
     bytes.clear();
     bytes.reserve(max_len);
     while (bytes.length() < max_len)
     {
-        std::wistream::int_type wc = stream.get();
-        if (!stream.good() || wc == std::wistream::traits_type::eof())
+        text_reader_stream_adapter_base::int_type wc = stream.get();
+        if (!stream.good() || stream.is_eof(wc))
             break;
         bytes += (unsigned char)wc;
     }
     return (bytes.length() > 0);
+}
+
+void text_io_policy_ansi::write_chars(mbstate_t& state, text_writer_stream_adapter_base& stream, const std::wstring& ws) const
+{
+    string bytes;
+    if (m_cvt->utf16_to_ansi(state, ws, bytes) == m_cvt->ok)
+    {
+        for(const char& c : bytes)
+            stream.put((unsigned char)c);
+    }
 }
 
 
@@ -136,17 +142,17 @@ text_io_policy_utf8::~text_io_policy_utf8()
         delete m_cvt;
 }
 
-void text_io_policy_utf8::set_imbue_read(std::wistream& stream) const
+void text_io_policy_utf8::set_imbue_read(text_reader_stream_adapter_base& stream) const
 {
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf8_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf8::set_imbue_write(std::wostream& stream) const
+void text_io_policy_utf8::set_imbue_write(text_writer_stream_adapter_base& stream) const
 {
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf8_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf8::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_utf8::read_chars(mbstate_t& state, text_reader_stream_adapter_base& stream, text_buffer_t& buf) const
 {
     string bytes;
     if (read_bytes(stream, bytes, m_max_text_buf_size))  // min length of UTF-8 bytes is equal to UTF-16 string length (in characters)
@@ -175,18 +181,29 @@ void text_io_policy_utf8::do_read_chars(mbstate_t& state, std::wistream& stream,
     }
 }
 
-bool text_io_policy_utf8::read_bytes(std::wistream& stream, std::string& bytes, const size_t count) const
+bool text_io_policy_utf8::read_bytes(text_reader_stream_adapter_base& stream, std::string& bytes, const size_t count) const
 {
     size_t i = 0;
     for (; i < count; i++)
     {
-        std::wistream::int_type wc = stream.get();
-        if (!stream.good() || wc == std::wistream::traits_type::eof())
+        text_reader_stream_adapter_base::int_type wc = stream.get();
+        if (!stream.good() || stream.is_eof(wc))
             break;
         bytes += (unsigned char)wc;
     }
     return i > 0;
 }
+
+void text_io_policy_utf8::write_chars(mbstate_t& state, text_writer_stream_adapter_base& stream, const std::wstring& ws) const
+{
+    string bytes;
+    if (m_cvt->to_utf8(state, ws, bytes) == m_cvt->ok)
+    {
+        for(const char& c : bytes)
+            stream.put((unsigned char)c);
+    }
+}
+
 
 /*
  * text_io_policy_utf16 class
@@ -208,17 +225,17 @@ text_io_policy_utf16::~text_io_policy_utf16()
         delete m_cvt;
 }
 
-void text_io_policy_utf16::set_imbue_read(std::wistream& stream) const
+void text_io_policy_utf16::set_imbue_read(text_reader_stream_adapter_base& stream) const
 {
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf16_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf16::set_imbue_write(std::wostream& stream) const
+void text_io_policy_utf16::set_imbue_write(text_writer_stream_adapter_base& stream) const
 {
     stream.imbue(std::locale(stream.getloc(), new locutils::codecvt_utf16_wchar_t(m_cvt_mode)));
 }
 
-void text_io_policy_utf16::do_read_chars(mbstate_t& state, std::wistream& stream, text_buffer_t& buf) const
+void text_io_policy_utf16::read_chars(mbstate_t& state, text_reader_stream_adapter_base& stream, text_buffer_t& buf) const
 {
     string mbs;
     if (read_bytes(stream, mbs, m_max_text_buf_size * utf16::bytes_per_character))
@@ -229,34 +246,54 @@ void text_io_policy_utf16::do_read_chars(mbstate_t& state, std::wistream& stream
     }
 }
 
-bool text_io_policy_utf16::read_bytes(std::wistream& stream, std::string& bytes, const size_t max_len) const
+bool text_io_policy_utf16::read_bytes(text_reader_stream_adapter_base& stream, std::string& bytes, const size_t max_len) const
 {
     bytes.clear();
     bytes.reserve(max_len);
     while (bytes.length() < max_len)
     {
-        std::wistream::int_type wc = stream.get();
-        if (!stream.good() || wc == std::wistream::traits_type::eof())
+        text_reader_stream_adapter_base::int_type wc = stream.get();
+        if (!stream.good() || stream.is_eof(wc))
             break;
         bytes += (unsigned char)wc;
     }
     // Other way is copy_n() function but copy_if() is required too to check eof()
-    // Also note streambuf operations doesn't set stream state bits
+    // Note that 'streambuf' operations doesn't set stream state bits
     // std::istreambuf_iterator<wchar_t> it(stream);
     // std::copy_n(it, max_len, std::back_inserter(buf));
     return (bytes.length() > 0);
 }
+
+void text_io_policy_utf16::write_chars(mbstate_t& state, text_writer_stream_adapter_base& stream, const std::wstring& ws) const
+{
+    string bytes;
+    if (m_cvt->utf16_to_mb(state, ws, bytes) == m_cvt->ok)
+    {
+        for(const char& c : bytes)
+            stream.put((unsigned char)c);
+    }
+}
+
 
 
 /*
  * text_reader class
  */
 text_reader::text_reader(std::wistream& stream)
-    : m_stream(&stream)
+    : m_stream(new text_wistream_adapter(&stream, false))
 {}
 
 text_reader::text_reader(std::wistream& stream, const text_io_policy& policy)
-    : m_stream(&stream),
+    : m_stream(new text_wistream_adapter(&stream, false)),
+      m_policy(policy)
+{}
+
+text_reader::text_reader(std::istream& stream)
+    : m_stream(new text_istream_adapter(&stream, false))
+{}
+
+text_reader::text_reader(std::istream& stream, const text_io_policy& policy)
+    : m_stream(new text_istream_adapter(&stream, false)),
       m_policy(policy)
 {}
 
@@ -265,17 +302,16 @@ text_reader::text_reader(const std::wstring& file_name, const text_io_policy& po
       m_policy(policy)
 {
     m_use_file_io = true;
-    m_owns_stream = true;
 #if defined(__STDEXT_WINDOWS)
-    m_stream = new wifstream(file_name, std::ios::binary);
+    m_stream = new text_wistream_adapter(new wifstream(file_name, std::ios::binary), true);
 #else
-    m_stream = new wifstream(utf16::to_utf8string(file_name), std::ios::binary);
+    m_stream = new text_wistream_adapter(new wifstream(utf16::to_utf8string(file_name), std::ios::binary), true);
 #endif
     m_policy.set_imbue_read(*m_stream);
 }
 
 text_reader::text_reader(std::wifstream& stream, const text_io_policy& policy)
-    : m_stream(&stream),
+    : m_stream(new text_wistream_adapter(&stream, false)),
       m_policy(policy)
 {
     m_use_file_io = true;
@@ -285,7 +321,7 @@ text_reader::text_reader(std::wifstream& stream, const text_io_policy& policy)
 
 text_reader::~text_reader()
 {
-    if (m_owns_stream && m_stream != nullptr)
+    if (m_stream != nullptr)
         delete m_stream;
 }
 
@@ -304,20 +340,18 @@ bool text_reader::next_char(wchar_t& wc)
 
 void text_reader::read_chars()
 {
-    if (m_stream == nullptr)
-        return;
     if (m_use_file_io) // imbue() codecvt works only with file streams
     {
         while (m_chars.size() < m_policy.max_text_buf_size())
         {
-            std::wistream::int_type wc = m_stream->get();
-            if (!m_stream->good() || wc == std::wistream::traits_type::eof())
+            text_reader_stream_adapter_base::int_type wc = m_stream->get();
+            if (!m_stream->good() || m_stream->is_eof(wc))
                 break;
             m_chars.push_back((wchar_t)wc);
         }
     }
     else
-        m_policy.do_read_chars(m_mbstate, *m_stream, m_chars);
+        m_policy.read_chars(m_mbstate, *m_stream, m_chars);
 }
 
 bool text_reader::peek(wchar_t& wc)
@@ -386,44 +420,69 @@ bool text_reader::eof() const
  * test_writer class
  */
 text_writer::text_writer(std::wostream& stream)
-    : text_writer(&stream)
-{ }
+    : m_stream(new text_wostream_adapter(&stream, false))
+{}
 
-text_writer::text_writer(std::wostream* const stream)
-    : m_stream(stream)
-{ }
+text_writer::text_writer(std::wostream& stream, const text_io_policy& policy)
+    : m_stream(new text_wostream_adapter(&stream, false)), m_policy(policy)
+{}
+
+text_writer::text_writer(std::ostream& stream)
+    : m_stream(new text_ostream_adapter(&stream, false))
+{}
+
+text_writer::text_writer(std::ostream& stream, const text_io_policy& policy)
+    : m_stream(new text_ostream_adapter(&stream, false)), m_policy(policy)
+{}
 
 text_writer::text_writer(const std::wstring file_name, const text_io_policy& policy)
+    : m_policy(policy)
 {
-    m_owns_stream = true;
+    m_use_file_io = true;
 #if defined(__STDEXT_WINDOWS)
-    m_stream = new wofstream(file_name, ios::binary | ios::trunc);
+    m_stream = new text_wostream_adapter(new wofstream(file_name, ios::binary | ios::trunc), true);
 #else
-    m_stream = new wofstream(utf16::to_utf8string(file_name), ios::binary | ios::trunc);
+    m_stream = new text_wostream_adapter(new wofstream(utf16::to_utf8string(file_name), ios::binary | ios::trunc), true);
 #endif
+    policy.set_imbue_write(*m_stream);
+}
+
+text_writer::text_writer(std::wofstream& stream, const text_io_policy& policy)
+    : m_stream(new text_wostream_adapter(&stream, false)), m_policy(policy)
+{
+    m_use_file_io = true;
     policy.set_imbue_write(*m_stream);
 }
 
 text_writer::~text_writer()
 {
-    if (m_owns_stream && m_stream != nullptr)
+    if (m_stream != nullptr)
         delete m_stream;
 }
 
-text_writer& text_writer::write(const std::wstring& s)
+text_writer& text_writer::write(const std::wstring& ws)
 {
-    return write(s.c_str());
+    if (m_use_file_io)
+    {
+        for (const wchar_t& wc : ws)
+            m_stream->put(wc);
+    }
+    else
+        m_policy.write_chars(m_mbstate, *m_stream, ws);
+    return *this;
 }
 
-text_writer& text_writer::write(const wchar_t* s)
+text_writer& text_writer::write(const wchar_t wc)
 {
-    *m_stream << s;
-    return *this; 
+    if (m_use_file_io)
+        m_stream->put(wc);
+    else
+        m_policy.write_chars(m_mbstate, *m_stream, wstring(1, wc));
+    return *this;
 }
 
 text_writer& text_writer::write_endl()
 {
-    *m_stream << endl;
-    return *this;
+    return write(L'\n');
 }
 

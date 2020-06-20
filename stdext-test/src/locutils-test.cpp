@@ -10,7 +10,7 @@ using namespace stdext;
 using namespace locutils;
 using namespace testutils;
 
-namespace locale_utils_test
+namespace locutils_test
 {
 
 class LocaleUtilsTest : public testing::Test
@@ -218,7 +218,7 @@ TEST_F(LocaleUtilsTest, TestSwapByteOrder)
     EXPECT_EQ(0x12345678u, utf16::swap_byte_order32(0x78563412u)) << L"2.6";
     EXPECT_EQ(0x78563412u, utf16::swap_byte_order32(0x12345678u)) << L"2.7";
     //
-    wstring s1 = locale_utils_test::string_01_utf16;
+    wstring s1 = locutils_test::string_01_utf16;
     EXPECT_EQ(s1, utf16::swap_byte_order(utf16::swap_byte_order(s1))) << L"3";
 }
 
@@ -251,8 +251,8 @@ TEST_F(LocaleUtilsTest, TestCharRanges)
 
 TEST_F(LocaleUtilsTest, TestStringConvert)
 {
-    wstring ws = locale_utils_test::string_01_utf16;
-    EXPECT_EQ(locale_utils_test::string_01_utf8, utf16::to_utf8string(ws));
+    wstring ws = locutils_test::string_01_utf16;
+    EXPECT_EQ(locutils_test::string_01_utf8, utf16::to_utf8string(ws));
     EXPECT_EQ(ws, utf8::to_utf16string(utf16::to_utf8string(ws)));
 }
 
@@ -261,10 +261,12 @@ TEST_F(LocaleUtilsTest, TestStringConvert)
  */
 TEST_F(LocaleUtilsTest, TestUtf16_WCharToMbytes)
 {
-    wstring ws1 = locale_utils_test::string_01_utf16;
+    wstring ws1 = locutils_test::string_01_utf16;
     string expected_le, expected_be;
-    expected_le.assign("\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x00\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30\x04", ws1.length() * utf16::bytes_per_character);
-    expected_be.assign("\x00\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x04\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30", ws1.length() * utf16::bytes_per_character);
+    expected_le.assign("\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x00\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30\x04",
+                       ws1.length() * utf16::bytes_per_character);
+    expected_be.assign("\x00\x41\x00\x42\x00\x43\x00\x20\x00\x64\x00\xe9\x00\x6a\x00\xe0\x00\x20\x04\x41\x04\x42\x04\x40\x04\x3e\x04\x3a\x04\x30",
+                       ws1.length() * utf16::bytes_per_character);
     wstring ws1_bom = ws1;
     utf16::add_bom(ws1_bom);
     string expected_le_bom = "\xFF\xFE" + expected_le;
@@ -301,13 +303,13 @@ TEST_F(LocaleUtilsTest, TestConverterMode_Utf8)
     }
     {
         codecvt_mode_utf8 cm;
-        cm.headers_mode(codecvt_mode_base::headers::consume);
+        cm.headers_mode(codecvt_headers::consume);
         ASSERT_TRUE(cm.consume_header()) << L"Utf8 consume_header 2";
         ASSERT_FALSE(cm.generate_header()) << L"Utf8 generate_header 2";
     }
     {
         codecvt_mode_utf8 cm;
-        cm.headers_mode(codecvt_mode_base::headers::generate);
+        cm.headers_mode(codecvt_headers::generate);
         ASSERT_FALSE(cm.consume_header()) << L"Utf8 consume_header 3";
         ASSERT_TRUE(cm.generate_header()) << L"Utf8 generate_header 3";
     }
@@ -319,7 +321,7 @@ TEST_F(LocaleUtilsTest, TestConverterMode_Utf16)
         codecvt_mode_utf16 cm1;
         ASSERT_FALSE(cm1.is_byte_order_assigned()) << L"default is_byte_order_assigned";
         ASSERT_TRUE(cm1.byte_order() == endianess::platform_value()) << L"default byte_order";
-        ASSERT_TRUE(cm1.headers_mode() == codecvt_mode_base::headers::consume) << L"default headers_mode";
+        ASSERT_TRUE(cm1.headers_mode() == codecvt_headers::consume) << L"default headers_mode";
         ASSERT_TRUE(cm1.consume_header()) << L"default consume_header";
         ASSERT_FALSE(cm1.generate_header()) << L"default generate_header";
     }
@@ -327,7 +329,7 @@ TEST_F(LocaleUtilsTest, TestConverterMode_Utf16)
     if (inverse_order == endianess::platform_value())
         inverse_order = endianess::byte_order::little_endian;
     {
-        codecvt_mode_utf16 cm2(inverse_order, codecvt_mode_base::headers::generate);
+        codecvt_mode_utf16 cm2(inverse_order, codecvt_headers::generate);
         ASSERT_TRUE(cm2.is_byte_order_assigned()) << L"is_byte_order_assigned 2";
         ASSERT_TRUE(cm2.byte_order() == inverse_order) << L"byte_order 2";
         ASSERT_FALSE(cm2.consume_header()) << L"consume_header 2";
@@ -337,7 +339,7 @@ TEST_F(LocaleUtilsTest, TestConverterMode_Utf16)
         codecvt_mode_utf16 cm3;
         cm3.byte_order(inverse_order);
         ASSERT_TRUE(cm3.is_byte_order_assigned()) << L"is_byte_order_assigned 3";
-        cm3.headers_mode(codecvt_mode_base::headers::generate);
+        cm3.headers_mode(codecvt_headers::generate);
         ASSERT_TRUE(cm3.byte_order() == inverse_order) << L"byte_order 3";
         ASSERT_FALSE(cm3.consume_header()) << L"consume_header 3";
         ASSERT_TRUE(cm3.generate_header()) << L"generate_header 3";
@@ -346,14 +348,14 @@ TEST_F(LocaleUtilsTest, TestConverterMode_Utf16)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8)
 {
-    wstring s1 = locale_utils_test::string_01_utf16;
+    wstring s1 = locutils_test::string_01_utf16;
     wstring s1bom = s1;
     utf16::add_bom(s1bom);
-    string s2 = locale_utils_test::string_01_utf8;
+    string s2 = locutils_test::string_01_utf8;
     string s2bom = s2;
     utf8::add_bom(s2bom);
     {
-        codecvt_mode_utf8 cm(codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf8 cm(codecvt_headers::consume);
         CheckConverter_Utf8_8to16(s1, s2, cm, L"1.1 - NoBOM (consume)");
         CheckConverter_Utf8_8to16(s1, s2bom, cm, L"1.2 - BOM (consume)");
         //
@@ -361,7 +363,7 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8)
         CheckConverter_Utf8_16to8(s2, s1bom, cm, L"1.4 - BOM (consume)");
     }
     {
-        codecvt_mode_utf8 cm(codecvt_mode_utf8::headers::generate);
+        codecvt_mode_utf8 cm(codecvt_headers::generate);
         CheckConverter_Utf8_8to16(s1bom, s2, cm, L"2.1 - NoBOM (generate)");
         CheckConverter_Utf8_8to16(s1bom, s2bom, cm, L"2.2 - BOM (generate)");
         //
@@ -372,13 +374,13 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_Partial)
 {
-    wstring ws1 = locale_utils_test::string_01_utf16;
-    string s1 = locale_utils_test::string_01_utf8;
+    wstring ws1 = locutils_test::string_01_utf16;
+    string s1 = locutils_test::string_01_utf8;
     size_t expected_count = s1.length() - 2; // last character is two-byte
     string partial_str = s1.substr(0, s1.length() - 1);
     wstring expected = ws1.substr(0, ws1.length() - 1);
     {
-        codecvt_mode_utf8 cm(codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf8 cm(codecvt_headers::consume);
         locutils::codecvt_utf8_wchar_t cvt(cm);
         mbstate_t state = {};
         size_t count;
@@ -397,7 +399,7 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_SurrogatePair)
     // UTF-16: 0xD834 0xDD1E
     wstring ws1 = L"ABC \xD834\xDD1E";
     string s1 = "ABC \xF0\x9D\x84\x9E";
-    codecvt_mode_utf8 cm(codecvt_mode_utf8::headers::consume);
+    codecvt_mode_utf8 cm(codecvt_headers::consume);
     CheckConverter_Utf8_8to16(ws1, s1, cm, L"1.1 - NoBOM (consume)");
     CheckConverter_Utf8_16to8(s1, ws1, cm, L"1.2 - NoBOM (consume)");
     wstring ws2 = L"\xD834 ABC \xDD1E";
@@ -408,10 +410,10 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_SurrogatePair)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_Memory)
 {
-    string s1 = locale_utils_test::string_01_utf8;
+    string s1 = locutils_test::string_01_utf8;
     string s1_bom = s1;
     utf8::add_bom(s1_bom);
-    wstring ws1 = locale_utils_test::string_01_utf16;
+    wstring ws1 = locutils_test::string_01_utf16;
     memchecker chk;
     {
         string s2;
@@ -431,35 +433,35 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf8_Memory)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16)
 {
-    wstring ws1 = locale_utils_test::string_01_utf16;
+    wstring ws1 = locutils_test::string_01_utf16;
     wstring ws1_bom = ws1;
     utf16::add_bom(ws1_bom);
     string s1_le = utf16::wchar_to_multibyte(ws1, endianess::byte_order::little_endian);
     string s1_le_bom = s1_le;
     utf16::add_bom(s1_le_bom, endianess::byte_order::little_endian);
     {
-        codecvt_mode_utf16 cm(codecvt_mode_utf16::headers::consume);
+        codecvt_mode_utf16 cm(codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws1, s1_le, cm, L"1.1 - NoBOM (default, consume)");
         CheckConverter_Utf16_Mbto16(ws1, s1_le_bom, cm, L"1.2 - BOM (default, consume)");
         CheckConverter_Utf16_16toMb(s1_le, ws1, cm, L"2.1 - NoBOM (default, consume)");
         CheckConverter_Utf16_16toMb(s1_le, ws1_bom, cm, L"2.2 - BOM (default, consume)");
     }
     {
-        codecvt_mode_utf16 cm(codecvt_mode_utf16::headers::generate);
+        codecvt_mode_utf16 cm(codecvt_headers::generate);
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_le, cm, L"3.1 - NoBOM (default, generate)");
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_le_bom, cm, L"3.2 - BOM (default, generate)");
         CheckConverter_Utf16_16toMb(s1_le_bom, ws1, cm, L"4.1 - NoBOM (default, generate)");
         CheckConverter_Utf16_16toMb(s1_le_bom, ws1_bom, cm, L"4.2 - BOM (default, generate)");
     }
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf16::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws1, s1_le, cm, L"5.1 - NoBOM (LE, consume)");
         CheckConverter_Utf16_Mbto16(ws1, s1_le_bom, cm, L"5.2 - BOM (LE, consume)");
         CheckConverter_Utf16_16toMb(s1_le, ws1, cm, L"6.1 - NoBOM (LE, consume)");
         CheckConverter_Utf16_16toMb(s1_le, ws1_bom, cm, L"6.2 - BOM (LE, consume)");
     }
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf16::headers::generate);
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_headers::generate);
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_le, cm, L"7.1 - NoBOM (LE, generate)");
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_le_bom, cm, L"7.2 - BOM (LE, generate)");
         CheckConverter_Utf16_16toMb(s1_le_bom, ws1, cm, L"8.1 - NoBOM (LE, generate)");
@@ -469,14 +471,14 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16)
     string s1_be_bom = s1_be;
     utf16::add_bom(s1_be_bom, endianess::byte_order::big_endian);
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf16::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws1, s1_be, cm, L"9.1 - NoBOM (BE, consume)");
         CheckConverter_Utf16_Mbto16(ws1, s1_be_bom, cm, L"9.2 - BOM (BE, consume)");
         CheckConverter_Utf16_16toMb(s1_be, ws1, cm, L"10.1 - NoBOM (BE, consume)");
         CheckConverter_Utf16_16toMb(s1_be, ws1_bom, cm, L"10.2 - BOM (BE, consume)");
     }
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf16::headers::generate);
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_headers::generate);
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_be, cm, L"11.1 - NoBOM (BE, generate)");
         CheckConverter_Utf16_Mbto16(ws1_bom, s1_be_bom, cm, L"11.2 - BOM (BE, generate)");
         CheckConverter_Utf16_16toMb(s1_be_bom, ws1, cm, L"12.1 - NoBOM (BE, generate)");
@@ -493,12 +495,12 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_SurrogatePair)
     string s1_le = utf16::wchar_to_multibyte(ws1, endianess::byte_order::little_endian);
     string s1_be = utf16::wchar_to_multibyte(ws1, endianess::byte_order::big_endian);
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws1, s1_le, cm, L"1.1 - NoBOM (LE, consume)");
         CheckConverter_Utf16_16toMb(s1_le, ws1, cm, L"1.2 - NoBOM (LE, consume)");
     }
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws1, s1_be, cm, L"2.1 - NoBOM (BE, consume)");
         CheckConverter_Utf16_16toMb(s1_be, ws1, cm, L"2.2 - NoBOM (BE, consume)");
     }
@@ -506,12 +508,12 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_SurrogatePair)
     string s2_le = utf16::wchar_to_multibyte(ws2, endianess::byte_order::little_endian);
     string s2_be = utf16::wchar_to_multibyte(ws2, endianess::byte_order::big_endian);
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::little_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws2, s2_le, cm, L"3.1 - NoBOM (LE, consume)");
         CheckConverter_Utf16_16toMb(s2_le, ws2, cm, L"3.2 - NoBOM (LE, consume)");
     }
     {
-        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_mode_utf8::headers::consume);
+        codecvt_mode_utf16 cm(endianess::byte_order::big_endian, codecvt_headers::consume);
         CheckConverter_Utf16_Mbto16(ws2, s2_be, cm, L"4.1 - NoBOM (BE, consume)");
         CheckConverter_Utf16_16toMb(s2_be, ws2, cm, L"4.2 - NoBOM (BE, consume)");
     }
@@ -519,10 +521,10 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_SurrogatePair)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_Memory)
 {
-    string s1 = locale_utils_test::string_01_utf8;
+    string s1 = locutils_test::string_01_utf8;
     string s1_bom = s1;
     utf8::add_bom(s1_bom);
-    wstring ws1 = locale_utils_test::string_01_utf16;
+    wstring ws1 = locutils_test::string_01_utf16;
     memchecker chk;
     {
         string s2;
@@ -541,34 +543,34 @@ TEST_F(LocaleUtilsTest, TestStreamConverter_Utf16_Memory)
 
 TEST_F(LocaleUtilsTest, TestStreamConverter_Ansi)
 {
-    wstring ws1 = locale_utils_test::string_01_utf16_cp1252;
+    wstring ws1 = locutils_test::string_01_utf16_cp1252;
     wstring ws1_bom = ws1;
     utf16::add_bom(ws1_bom);
-    wstring ws2 = locale_utils_test::string_01_utf16_cp1251;
+    wstring ws2 = locutils_test::string_01_utf16_cp1251;
     wstring ws2_bom = ws2;
     utf16::add_bom(ws2_bom);
-    string s1 = locale_utils_test::string_01_ansi_cp1252;
-    string s2 = locale_utils_test::string_01_ansi_cp1251;
+    string s1 = locutils_test::string_01_ansi_cp1252;
+    string s2 = locutils_test::string_01_ansi_cp1251;
     {
-        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_mode_ansi::headers::consume);
+        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_headers::consume);
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"1.1 - NoBOM (default, consume)");
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"1.2 - BOM (default, consume)");
         CheckConverter_Ansi_AnsiToUtf16(ws1, s1, cm, L"2.1 - NoBOM (default, consume)");
     }
     {
-        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_mode_ansi::headers::consume);
+        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_headers::consume);
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"3.1 - NoBOM (default, consume)");
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"3.2 - BOM (default, consume)");
         CheckConverter_Ansi_AnsiToUtf16(ws2, s2, cm, L"3.3 - NoBOM (default, consume)");
     }
     {
-        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_mode_ansi::headers::generate);
+        codecvt_mode_ansi cm(ansi_encoding::cp1252, codecvt_headers::generate);
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1, cm, L"5.1 - NoBOM (default, generate)");
         CheckConverter_Ansi_Utf16ToAnsi(s1, ws1_bom, cm, L"5.2 - BOM (default, generate)");
         CheckConverter_Ansi_AnsiToUtf16(ws1_bom, s1, cm, L"5.3 - NoBOM (default, generate)");
     }
     {
-        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_mode_ansi::headers::generate);
+        codecvt_mode_ansi cm(ansi_encoding::cp1251, codecvt_headers::generate);
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2, cm, L"7.1 - NoBOM (default, generate)");
         CheckConverter_Ansi_Utf16ToAnsi(s2, ws2_bom, cm, L"7.2 - BOM (default, generate)");
         CheckConverter_Ansi_AnsiToUtf16(ws2_bom, s2, cm, L"7.3 - NoBOM (default, generate)");

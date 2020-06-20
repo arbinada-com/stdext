@@ -36,8 +36,8 @@ SOURCES += \
     src/trees-test.cpp \
     src/variants-test.cpp
 
-PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)
-
 HEADERS += \
     src/jsondom-test.h \
     src/locutils-test.h
+
+PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)
