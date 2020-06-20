@@ -152,7 +152,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/file_copies.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/testcase_targets.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exceptions.prf \
-		stdext-test.pro src/jsondom-test.h ../../googletest/googletest/src/gtest-all.cc \
+		stdext-test.pro src/jsondom-test.h \
+		src/locutils-test.h ../../googletest/googletest/src/gtest-all.cc \
 		../../googletest/googlemock/src/gmock-all.cc \
 		src/jsoncommon-test.cpp \
 		src/main.cpp \
@@ -268,7 +269,8 @@ debug/x86_64/linux/datetime-test.o: src/datetime-test.cpp ../../googletest/googl
 debug/x86_64/linux/ioutils-test.o: src/ioutils-test.cpp ../../googletest/googletest/include/gtest/gtest.h \
 		../stdext/src/ioutils.h \
 		../stdext/src/testutils.h \
-		../stdext/src/strutils.h
+		../stdext/src/strutils.h \
+		src/locutils-test.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug/x86_64/linux/ioutils-test.o src/ioutils-test.cpp
 
 debug/x86_64/linux/jsondom-test.o: src/jsondom-test.cpp src/jsondom-test.h \
@@ -294,10 +296,12 @@ debug/x86_64/linux/jsontools-test.o: src/jsontools-test.cpp ../../googletest/goo
 		../stdext/src/locutils.h \
 		../stdext/src/strutils.h \
 		../stdext/src/testutils.h \
-		src/jsondom-test.h
+		src/jsondom-test.h \
+		src/locutils-test.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug/x86_64/linux/jsontools-test.o src/jsontools-test.cpp
 
 debug/x86_64/linux/locutils-test.o: src/locutils-test.cpp ../../googletest/googletest/include/gtest/gtest.h \
+		src/locutils-test.h \
 		../stdext/src/locutils.h \
 		../stdext/src/testutils.h \
 		../stdext/src/strutils.h

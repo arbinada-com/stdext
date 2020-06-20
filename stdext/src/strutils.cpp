@@ -259,6 +259,10 @@ string strutils::to_string(const wstring& ws)
 
 wstring strutils::to_wstring(const string& s)
 {
-    wstring ws(s.begin(), s.end()); // ANSI charset only
+    // ANSI charset only
+    wstring ws;
+    ws.resize(s.length());
+    for (string::size_type i = 0; i < s.length(); i++)
+        ws[i] = (wchar_t)((unsigned char)s[i]);
     return ws;
 }

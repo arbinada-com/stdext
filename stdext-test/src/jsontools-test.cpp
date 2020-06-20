@@ -87,22 +87,27 @@ TEST_F(JsonDocumentReaderTest, TestDocUtf8)
 {
     {
         wstringstream ss; // wide string stream contains UTF-8 bytes (every wchar <= 0xFF)
-        ss << "\"" << locutils_test::string_01_utf8.c_str() << "\"";
+        ss << "\"";
+        for (const char& c : locutils_test::string_01_utf8)
+            ss << (wchar_t)c;
+        ss << "\"";
         json::dom_document doc;
         json::dom_document_reader reader(doc);
         CheckReader(reader, reader.read(ss, ioutils::text_io_policy_utf8()));
+        ASSERT_TRUE(doc.root() != nullptr);
         EXPECT_EQ(json::dom_value_type::vt_string, doc.root()->type());
         EXPECT_EQ(locutils_test::string_01_utf16, doc.root()->text());
     }
     {
-        wstringstream ss;
-        ss << u8"[\"" << locutils_test::string_01_utf8.c_str() << u8"\"]";
+        stringstream ss;
+        ss << u8"[\"" << locutils_test::string_01_utf8 << u8"\"]";
         json::dom_document doc;
         json::dom_document_reader reader(doc);
         CheckReader(reader, reader.read(ss, ioutils::text_io_policy_utf8()));
+        ASSERT_TRUE(doc.root() != nullptr);
         ASSERT_EQ(json::dom_value_type::vt_array, doc.root()->type());
         json::dom_array* arr = dynamic_cast<json::dom_array*>(doc.root());
-        ASSERT_EQ(arr->size(), 1);
+        ASSERT_EQ(arr->size(), 1u);
         EXPECT_EQ(locutils_test::string_01_utf16, arr->at(0)->text());
     }
 }

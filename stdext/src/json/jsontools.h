@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <fstream>
 #include "jsoncommon.h"
 #include "jsondom.h"
 #include "../locutils.h"
@@ -32,6 +33,8 @@ namespace stdext
             dom_document_reader& operator=(dom_document_reader&&) = delete;
         public:
             bool read(ioutils::text_reader& reader);
+            bool read(std::istream& stream, const ioutils::text_io_policy& policy);
+            bool read(std::wistream& stream);
             bool read(std::wistream& stream, const ioutils::text_io_policy& policy);
             bool read(std::wifstream& stream, const ioutils::text_io_policy& policy);
             bool read_file(const std::wstring file_name, const ioutils::text_io_policy& policy);

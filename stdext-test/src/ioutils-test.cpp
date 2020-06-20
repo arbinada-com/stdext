@@ -210,20 +210,24 @@ protected:
     void CheckReadBytes(const string& bytes, const wstring& expected, const ioutils::text_io_policy& policy, string title)
     {
         stringstream ss(bytes);
-        ioutils::text_reader r(ss, policy);
-        CheckRead(r, expected, title + "(BYTE)");
+        ioutils::text_reader r1(ss, policy);
+        CheckRead(r1, expected, title + "(BYTE)");
         //
+        // Like file wide-char stream, other wide-streams (i.e.wstringstream) should contains 1 significant byte per character
+        // I.e. the character "A" (ASCII code 0x41) is presented as two wchar_t in wistream:
+        // [0x41, 0x00] for LE or [0x00, 0x41] for BE
         wstringstream wss;
         for (char c : bytes)
             wss << (wchar_t)((unsigned char)c);
-        CheckRead(wss, expected, policy, title + "(WCHAR)");
-    };
+        ioutils::text_reader r2(wss, policy);
+        CheckRead(r2, expected, title + "(WCHAR)");
+    }
 
-    void CheckRead(wistream& wss, const wstring& expected, const ioutils::text_io_policy& policy, string title)
+    void CheckRead(istream& wss, const wstring& expected, const ioutils::text_io_policy& policy, string title)
     {
         ioutils::text_reader r(wss, policy);
         CheckRead(r, expected, title);
-    };
+    }
 
     void CheckRead(ioutils::text_reader& reader, const wstring& expected, string title)
     {
@@ -264,20 +268,20 @@ TEST_F(TextReaderTest, TestRead_Utf8_FileToStream)
     // An imbue() converter is not used but reading should produce the same result
     ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::consume)));
     {
-        wifstream fs(L"text-reader-test-01-utf8-bom.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf8-bom.txt", ios::binary);
         CheckRead(fs, expected, policy, "BOM file I/O");
     }
     {
-        wifstream fs(L"text-reader-test-01-utf8.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf8.txt", ios::binary);
         CheckRead(fs, expected, policy, "NoBOM file I/O");
     }
     policy.max_text_buf_size(expected.length() / 2);
     {
-        wifstream fs(L"text-reader-test-01-utf8-bom.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf8-bom.txt", ios::binary);
         CheckRead(fs, expected, policy, "BOM file I/O small text buffer");
     }
     {
-        wifstream fs(L"text-reader-test-01-utf8.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf8.txt", ios::binary);
         CheckRead(fs, expected, policy, "NoBOM file I/O small text buffer");
     }
 }
@@ -317,19 +321,19 @@ TEST_F(TextReaderTest, TestRead_Utf16_FileToStream)
     // Test file streams processed as ordinary istream
     // An imbue() converter is not used but reading should produce the same result
     {
-        wifstream fs(L"text-reader-test-01-utf16-le.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf16-le.txt", ios::binary);
         CheckRead(fs, expected,
                   ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
                   "LE BOM file I/O");
     }
     {
-        wifstream fs(L"text-reader-test-01-utf16-le.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf16-le.txt", ios::binary);
         ioutils::text_io_policy_utf16 policy(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume));
         policy.max_text_buf_size(expected.length() / 2); // File I/O only
         CheckRead(fs, expected, policy, "LE BOM file I/O small text buffer");
     }
     {
-        wifstream fs(L"text-reader-test-01-utf16-be.txt", ios::binary);
+        ifstream fs("text-reader-test-01-utf16-be.txt", ios::binary);
         CheckRead(fs, expected,
                   ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::consume)),
                   "BE BOM file I/O");
@@ -338,65 +342,32 @@ TEST_F(TextReaderTest, TestRead_Utf16_FileToStream)
 
 TEST_F(TextReaderTest, TestRead_Utf16_Stringstream)
 {
-    // Like file wide-char stream, other wide-streams (i.e.wstringstream) should contains 1 significant byte per character
-    // I.e. the character "A" (ASCII code 0x41) is presented as two wchar_t in wistream:
-    // [0x41, 0x00] for LE or [0x00, 0x41] for BE
     wstring expected = locutils_test::string_01_utf16;
     wstring expected_bom = expected;
     utf16::add_bom(expected_bom);
+    string bytes = utf16::wchar_to_multibyte(expected);
+    string bytes_bom = utf16::wchar_to_multibyte(expected_bom);
+    ASSERT_EQ(bytes.length(), expected.length() * utf16::bytes_per_character);
+    ASSERT_EQ(bytes_bom.length(), expected_bom.length() * utf16::bytes_per_character);
     {
-        // default
-        string bytes = utf16::wchar_to_multibyte(expected);
-        string bytes_bom = bytes;
-        utf16::add_bom(bytes_bom, endianess::platform_value());
-        CheckReadBytes(bytes, expected, ioutils::text_io_policy_utf16(), "Default NoBOM consume");
-        CheckReadBytes(bytes_bom, expected, ioutils::text_io_policy_utf16(), "Default BOM consume");
+        // default policy
+        CheckReadBytes(bytes, expected, ioutils::text_io_policy_utf16(), "Default NoBOM");
+        CheckReadBytes(bytes_bom, expected, ioutils::text_io_policy_utf16(), "Default BOM");
     }
     {
-        string bytes_le = utf16::wchar_to_multibyte(expected);
-        string bytes_le_bom = utf16::wchar_to_multibyte(expected_bom);
-        if (endianess::platform_value() != endianess::byte_order::little_endian)
-        {
-            bytes_le = utf16::wchar_to_multibyte(utf16::swap_byte_order(expected));
-            bytes_le_bom = utf16::wchar_to_multibyte(utf16::swap_byte_order(expected_bom));
-        }
-        ASSERT_EQ(bytes_le.length(), expected.length() * utf16::bytes_per_character);
-        ASSERT_EQ(bytes_le_bom.length(), expected_bom.length() * utf16::bytes_per_character);
-        CheckReadBytes(bytes_le, expected,
+        // default platform endian
+        CheckReadBytes(bytes, expected,
                        ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
-                       "LE NoBOM consume");
-        CheckReadBytes(bytes_le, expected_bom,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
-                            "LE NoBOM generate");
-        CheckReadBytes(bytes_le_bom, expected,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
-                            "LE BOM consume");
-        CheckReadBytes(bytes_le_bom, expected_bom,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
-                            "LE BOM generate");
-    }
-    {
-        string bytes_be = utf16::wchar_to_multibyte(expected);
-        string bytes_be_bom = utf16::wchar_to_multibyte(expected_bom);
-        if (endianess::platform_value() != endianess::byte_order::big_endian)
-        {
-            bytes_be = utf16::wchar_to_multibyte(utf16::swap_byte_order(expected));
-            bytes_be_bom = utf16::wchar_to_multibyte(utf16::swap_byte_order(expected_bom));
-        }
-        ASSERT_EQ(bytes_be.length(), expected.length() * utf16::bytes_per_character);
-        ASSERT_EQ(bytes_be_bom.length(), expected_bom.length() * utf16::bytes_per_character);
-        CheckReadBytes(bytes_be, expected,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::consume)),
-                            "BE NoBOM consume");
-        CheckReadBytes(bytes_be, expected_bom,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::generate)),
-                            "BE NoBOM generate");
-        CheckReadBytes(bytes_be_bom, expected,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::consume)),
-                            "BE BOM consume");
-        CheckReadBytes(bytes_be_bom, expected_bom,
-                            ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::generate)),
-                            "BE BOM generate");
+                       "Default NoBOM consume");
+        CheckReadBytes(bytes, expected_bom,
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
+                       "Default NoBOM generate");
+        CheckReadBytes(bytes_bom, expected,
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
+                       "Default BOM consume");
+        CheckReadBytes(bytes_bom, expected_bom,
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
+                       "Default BOM generate");
     }
 }
 
@@ -405,12 +376,12 @@ class TextWriterTest : public testing::Test
 protected:
     void CheckWriteBytes(const wstring& ws, const string& expected, const ioutils::text_io_policy& policy, string title)
     {
-        wstring wexpected;
-        //std::copy_n(expected.begin(), expected.length(), std::back_inserter(wexpected));
-        for (const char& c : expected)
-            wexpected += (unsigned char)c;
-        // wide stream
         {
+            // wide stream
+            wstring wexpected;
+            //std::copy_n(expected.begin(), expected.length(), std::back_inserter(wexpected));
+            for (const char& c : expected)
+                wexpected += (unsigned char)c;
             wstringstream wss;
             ioutils::text_writer w1(wss, policy);
             w1.write(ws);
@@ -427,7 +398,7 @@ protected:
             EXPECT_EQ(expected.length(), s2.length()) << title + ": length 2";
             EXPECT_EQ(s2, expected) << title + ": content 2";
         }
-    };
+    }
 };
 
 TEST_F(TextWriterTest, TestWrite_Plain)

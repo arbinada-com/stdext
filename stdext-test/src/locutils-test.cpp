@@ -136,15 +136,15 @@ TEST_F(LocaleUtilsTest, TestUtf16_BOM)
     //
     string mbs_be;
     utf16::add_bom(mbs_be, endianess::byte_order::big_endian);
-    ASSERT_EQ(2, mbs_be.length()) << L"BOM BE length";
+    ASSERT_EQ(2u, mbs_be.length()) << L"BOM BE length";
     EXPECT_EQ(utf16::bom_be[0], mbs_be[0]) << L"BOM BE [0]";
     EXPECT_EQ(utf16::bom_be[1], mbs_be[1]) << L"BOM BE [1]";
     utf16::add_bom(mbs_be, endianess::byte_order::big_endian);
-    ASSERT_EQ(2, mbs_be.length()) << L"BOM BE length 2";
+    ASSERT_EQ(2u, mbs_be.length()) << L"BOM BE length 2";
     //
     string mbs_le;
     utf16::add_bom(mbs_le, endianess::byte_order::little_endian);
-    ASSERT_EQ(2, mbs_le.length()) << L"BOM LE length";
+    ASSERT_EQ(2u, mbs_le.length()) << L"BOM LE length";
     EXPECT_EQ(utf16::bom_le[0], mbs_le[0]) << L"BOM LE [0]";
     EXPECT_EQ(utf16::bom_le[1], mbs_le[1]) << L"BOM LE [1]";
 }
@@ -185,12 +185,12 @@ TEST_F(LocaleUtilsTest, TestUtf8_BOM)
 {
     string s1;
     utf8::add_bom(s1);
-    ASSERT_EQ(3, s1.length()) << L"BOM length 1.1";
+    ASSERT_EQ(3u, s1.length()) << L"BOM length 1.1";
     EXPECT_EQ(utf8::bom[0], s1[0]) << L"BOM char [0]";
     EXPECT_EQ(utf8::bom[1], s1[1]) << L"BOM char [1]";
     EXPECT_EQ(utf8::bom[2], s1[2]) << L"BOM char [2]";
     utf8::add_bom(s1);
-    ASSERT_EQ(3, s1.length()) << L"BOM length 1.2";
+    ASSERT_EQ(3u, s1.length()) << L"BOM length 1.2";
     //
     string s11 = u8"ABC";
     string s12 = s11;

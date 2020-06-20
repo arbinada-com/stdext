@@ -86,7 +86,7 @@ namespace stdext
             locale getloc() override                    { return m_stream->getloc(); }
             bool good() override                        { return m_stream->good(); }
             void imbue(const std::locale& loc) override { m_stream->imbue(std::locale(loc)); }
-            bool is_eof(const int_type c) override      { return (c == stream_t::traits_type::eof()); }
+            bool is_eof(const int_type c) override      { return (c == (int_type)stream_t::traits_type::eof()); }
             int_type peek() override                    { return m_stream->peek(); }
         protected:
             stream_t* m_stream = nullptr;

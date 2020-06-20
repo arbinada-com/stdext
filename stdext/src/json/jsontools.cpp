@@ -105,6 +105,18 @@ bool dom_document_reader::read(ioutils::text_reader& reader)
     return result;
 }
 
+bool dom_document_reader::read(std::istream& stream, const ioutils::text_io_policy& policy)
+{
+    ioutils::text_reader reader(stream, policy);
+    return read(reader);
+}
+
+bool dom_document_reader::read(std::wistream& stream)
+{
+    ioutils::text_reader reader(stream);
+    return read(reader);
+}
+
 bool dom_document_reader::read(std::wistream& stream, const ioutils::text_io_policy& policy)
 {
     ioutils::text_reader reader(stream, policy);

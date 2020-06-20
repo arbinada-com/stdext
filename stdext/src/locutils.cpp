@@ -75,10 +75,10 @@ bool utf16::is_noncharacter(const wchar_t c)
     // They are forbidden for use in open interchange of Unicode text data.
     // http://www.unicode.org/versions/Unicode5.2.0/ch16.pdf#G19635
     return
-        (c >= 0xFDD0u && c <= 0xFDEFu)
-        || c == utf16::bom_value
-        || c == 0xFFFEu
-        || c == 0xFFFFu
+        (c >= (wchar_t)0xFDD0u && c <= (wchar_t)0xFDEFu)
+        || c == (wchar_t)utf16::bom_value
+        || c == (wchar_t)0xFFFEu
+        || c == (wchar_t)0xFFFFu
 #if __STDEXT_WCHAR_SIZE > 2
         || c > (wchar_t)utf16::max_char
 #endif

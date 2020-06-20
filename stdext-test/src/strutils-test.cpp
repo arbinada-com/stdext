@@ -34,6 +34,7 @@ TEST(StrUtilsTest, TestConvertion)
     wstring ws1 = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz &#%*@^=+-/";
     EXPECT_EQ(s1, strutils::to_string(ws1));
     EXPECT_EQ(ws1, strutils::to_wstring(s1));
+    EXPECT_EQ(L"\xF1\xF2\xF0\xEE\xEA\xE0", strutils::to_wstring("\xF1\xF2\xF0\xEE\xEA\xE0"));
 }
 
 TEST(StrUtilsTest, TestReplace)
