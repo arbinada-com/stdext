@@ -141,6 +141,23 @@ TEST_F(PtrVectorTest, TestOperators)
     EXPECT_FALSE(v1 == v2) << "Equal 3.2";
 }
 
+TEST_F(PtrVectorTest, TestBackFront)
+{
+    TestDataPtrVector v1;
+    test_data* d1 = new test_data(1, L"test front/back 1");
+    v1.push_back(d1);
+    EXPECT_EQ(d1, v1->front());
+    EXPECT_EQ(d1, v1->back());
+    EXPECT_EQ(d1->int_value(), v1->front()->int_value());
+    EXPECT_EQ(d1->str_value(), v1->front()->str_value());
+    test_data* d2 = new test_data(2, L"test front/back 2");
+    v1.push_back(d2);
+    EXPECT_EQ(d1, v1->front());
+    EXPECT_EQ(d2, v1->back());
+    EXPECT_EQ(d2->int_value(), v1->back()->int_value());
+    EXPECT_EQ(d2->str_value(), v1->back()->str_value());
+}
+
 TEST_F(PtrVectorTest, TestMemory)
 {
     {
