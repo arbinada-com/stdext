@@ -46,11 +46,11 @@ namespace stdext
             m_vector.push_back(value);
         }
 
-        const Type& back() const { return m_vector.back(); }
-        Type& back() { return m_vector.back(); }
+        const Type* back() const { return m_vector.back(); }
+        Type* back() { return m_vector.back(); }
 
-        const Type& front() const { return m_vector.front(); }
-        Type& front() { return m_vector.front(); }
+        const Type* front() const { return m_vector.front(); }
+        Type* front() { return m_vector.front(); }
 
         ptr_vector::size_type size() const
         {
