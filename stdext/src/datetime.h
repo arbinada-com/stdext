@@ -127,10 +127,10 @@ namespace stdext
          Unspecified time values will be set to 0
          Unspecified date value will be set to current one
          */
-        datetime(const char* str);
-        datetime(const std::string& str);
-        datetime(const wchar_t* str);
-        datetime(const std::wstring& str);
+        explicit datetime(const char* str);
+        explicit datetime(const std::string& str);
+        explicit datetime(const wchar_t* str);
+        explicit datetime(const std::wstring& str);
 
         /*
          Copy/move constructors and assigment operators
