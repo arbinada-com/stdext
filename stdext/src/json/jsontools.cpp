@@ -100,7 +100,7 @@ bool dom_document_reader::read(ioutils::text_reader& reader)
     m_doc.clear();
     if (!m_source_name.empty() && reader.source_name().empty())
         reader.source_name(m_source_name);
-    json::parser parser(reader, m_messages, m_doc);
+    json::dom_parser parser(reader, m_messages, m_doc);
     bool result = parser.run();
     return result;
 }

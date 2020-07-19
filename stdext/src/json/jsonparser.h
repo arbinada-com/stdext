@@ -7,6 +7,7 @@
  */
 #pragma once
 
+#include <stack>
 #include "jsonexceptions.h"
 #include "jsonlexer.h"
 #include "jsondom.h"
@@ -46,6 +47,7 @@ namespace stdext
             virtual void on_end_object(const std::size_t member_count) = 0;
             virtual void on_begin_array() = 0;
             virtual void on_end_array(const std::size_t element_count) = 0;
+            virtual void textpos_changed(const parsers::textpos& pos) = 0;
         };
 
 
@@ -88,16 +90,48 @@ namespace stdext
         };
 
 
-        class parser
+        class dom_handler : public sax_handler_intf
         {
         public:
-            parser() = delete;
-            parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc);
-            parser(const parser&) = delete;
-            parser& operator =(const parser&) = delete;
-            parser(parser&&) = delete;
-            parser& operator =(parser&&) = delete;
-            ~parser();
+            typedef std::stack<json::dom_value*> containers_t;
+            typedef std::stack<std::wstring> member_names_t;
+        public:
+            dom_handler(json::dom_document& doc, msg_collector_t& msgs, const std::wstring& source_name)
+                : m_doc(doc), m_messages(msgs), m_source_name(source_name)
+            {}
+        public:
+            virtual void on_literal(const json::dom_literal_type type, const std::wstring& text) override;
+            virtual void on_number(const json::dom_number_type type, const std::wstring& text) override;
+            virtual void on_string(const std::wstring& text) override;
+            virtual void on_begin_object() override;
+            virtual void on_member_name(const std::wstring& text) override;
+            virtual void on_end_object(const std::size_t member_count) override;
+            virtual void on_begin_array() override;
+            virtual void on_end_array(const std::size_t element_count) override;
+            virtual void textpos_changed(const parsers::textpos& pos) override { m_pos = pos; }
+        private:
+            bool accept_value(dom_value_ptr& node);
+            void add_error(const parser_msg_kind kind);
+            void add_error(const parser_msg_kind kind, const std::wstring text);
+        private:
+            json::dom_document& m_doc;
+            containers_t m_containers;
+            member_names_t m_member_names;
+            msg_collector_t& m_messages;
+            std::wstring m_source_name;
+            parsers::textpos m_pos;
+        };
+
+        class dom_parser
+        {
+        public:
+            dom_parser() = delete;
+            dom_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc);
+            dom_parser(const dom_parser&) = delete;
+            dom_parser& operator =(const dom_parser&) = delete;
+            dom_parser(dom_parser&&) = delete;
+            dom_parser& operator =(dom_parser&&) = delete;
+            ~dom_parser();
         public:
             class context
             {
@@ -119,27 +153,8 @@ namespace stdext
             bool has_errors() const { return m_messages.has_errors(); }
             const msg_collector_t& messages() const { return m_messages; }
         private:
-            bool accept_value(json::dom_value* const parent, dom_value_ptr& node, const context& ctx);
-            void add_error(const parser_msg_kind kind, const parsers::textpos pos);
-            void add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text);
-            inline bool eof() const { return m_lexer != nullptr && m_lexer->eof(); }
-            bool is_current_token(const json::token tok);
-            bool is_parent_container(const json::dom_value* parent);
-            bool next();
-            bool parse_array(json::dom_value* const parent, const context& ctx);
-            bool parse_array_items(json::dom_array* const parent, const context& ctx);
-            bool parse_doc();
-            bool parse_literal(json::dom_value* const parent, const context& ctx);
-            bool parse_number(json::dom_value* const parent, const context& ctx);
-            bool parse_object(json::dom_value* const parent, const context& ctx);
-            bool parse_object_members(json::dom_object* const parent, const context& ctx);
-            bool parse_string(json::dom_value* const parent, const context& ctx);
-            bool parse_value(json::dom_value* const parent, const context& ctx);
-            inline const parsers::textpos pos() const { return m_curr.pos(); }
-        private:
             ioutils::text_reader& m_reader;
             json::lexer* m_lexer = nullptr;
-            json::lexeme m_curr;
             msg_collector_t& m_messages;
             json::dom_document& m_doc;
         };

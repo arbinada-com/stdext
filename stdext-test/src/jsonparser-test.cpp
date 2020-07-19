@@ -91,6 +91,7 @@ public:
         EXPECT_EQ(m_arrays.top()->size(), element_count);
         m_arrays.pop();
     }
+    virtual void textpos_changed(const parsers::textpos&) override {}
 private:
     json::dom_document& m_expected;
     json::dom_document::iterator m_it;
@@ -149,7 +150,7 @@ protected:
         ioutils::text_reader r(ss);
         json::msg_collector_t mc;
         json::dom_document doc;
-        json::parser parser(r, mc, doc);
+        json::dom_parser parser(r, mc, doc);
         bool result = parser.run();
         wstring err_text;
         if (parser.has_errors())
@@ -188,7 +189,7 @@ protected:
         r.source_name(L"ChkErrStream");
         json::msg_collector_t mc;
         json::dom_document doc;
-        json::parser parser(r, mc, doc);
+        json::dom_parser parser(r, mc, doc);
         wstring title2 = title + L": ";
         ASSERT_FALSE(parser.run()) << title2 + L"parsed OK";
         ASSERT_TRUE(parser.has_errors()) << title2 + L"no errors";
