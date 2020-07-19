@@ -34,6 +34,60 @@ namespace stdext
             json::dom_value* m_value = nullptr;
         };
 
+
+        class sax_handler_intf
+        {
+        public:
+            virtual void on_literal(const json::dom_literal_type type, const std::wstring& text) = 0;
+            virtual void on_number(const json::dom_number_type type, const std::wstring& text) = 0;
+            virtual void on_string(const std::wstring& text) = 0;
+            virtual void on_begin_object() = 0;
+            virtual void on_member_name(const std::wstring& text) = 0;
+            virtual void on_end_object(const std::size_t member_count) = 0;
+            virtual void on_begin_array() = 0;
+            virtual void on_end_array(const std::size_t element_count) = 0;
+        };
+
+
+        class sax_parser
+        {
+        public:
+            sax_parser() = delete;
+            sax_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::sax_handler_intf& handler);
+            sax_parser(const sax_parser&) = delete;
+            sax_parser& operator =(const sax_parser&) = delete;
+            sax_parser(sax_parser&&) = delete;
+            sax_parser& operator =(sax_parser&&) = delete;
+            ~sax_parser();
+        public:
+            bool run();
+            bool has_errors() const { return m_messages.has_errors(); }
+            const msg_collector_t& messages() const { return m_messages; }
+        private:
+            void add_error(const parser_msg_kind kind, const parsers::textpos pos);
+            void add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text);
+            inline bool eof() const { return m_lexer != nullptr && m_lexer->eof(); }
+            bool is_current_token(const json::token tok);
+            bool next_lexeme();
+            bool parse_array();
+            bool parse_array_items(std::size_t& element_count);
+            bool parse_doc();
+            bool parse_literal();
+            bool parse_number();
+            bool parse_object();
+            bool parse_object_members(std::size_t& member_count);
+            bool parse_string();
+            bool parse_value();
+            inline const parsers::textpos pos() const { return m_curr.pos(); }
+        private:
+            ioutils::text_reader& m_reader;
+            json::lexer* m_lexer = nullptr;
+            json::lexeme m_curr;
+            msg_collector_t& m_messages;
+            json::sax_handler_intf& m_handler;
+        };
+
+
         class parser
         {
         public:

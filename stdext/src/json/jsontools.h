@@ -144,9 +144,11 @@ namespace stdext
             member_name_diff,
             path_diff,
             type_diff,
+            numtype_diff,
             value_diff
         };
         std::string to_string(const dom_document_diff_kind value);
+        std::wstring to_wstring(const dom_document_diff_kind value);
 
         class dom_document_diff_item
         {

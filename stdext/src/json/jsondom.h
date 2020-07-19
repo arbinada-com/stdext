@@ -169,6 +169,7 @@ namespace stdext
             virtual std::wstring text() const noexcept { return m_text; }
             virtual void text(const std::wstring value) noexcept(false) { m_text = json::to_unescaped(value); }
             dom_value_type type() const noexcept { return m_type; }
+            virtual std::wstring to_wstring() const;
         public:
             friend bool operator ==(const dom_value& v1, const dom_value& v2);
             friend bool operator !=(const dom_value& v1, const dom_value& v2);
@@ -184,12 +185,13 @@ namespace stdext
         };
 
 
-        enum class dom_literal_value_type
+        enum class dom_literal_type
         {
             lvt_false,
             lvt_null,
             lvt_true
         };
+        dom_literal_type to_literal_type(const std::wstring& value) noexcept(false);
 
         class dom_literal : public dom_value
         { 
@@ -197,33 +199,37 @@ namespace stdext
             dom_literal(dom_document* const doc, const std::wstring text);
         public:
             void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
-            dom_literal_value_type subtype() const noexcept { return m_subtype; }
+            dom_literal_type literal_type() const noexcept { return m_literal_type; }
             virtual std::wstring text() const noexcept override 
             { return dom_value::text(); } // prevent error C2660 function does not take 0 arguments
             void text(const std::wstring value) noexcept(false) override;
         protected:
-            dom_literal_value_type m_subtype;
+            dom_literal_type m_literal_type;
         };
 
-        enum class dom_number_value_type
+        enum class dom_number_type
         {
             nvt_float,
             nvt_int
         };
+        std::string to_string(const dom_number_type numtype);
+        std::wstring to_wstring(const dom_number_type numtype);
 
         class dom_number : public dom_value
         {
         public:
-            dom_number(dom_document* const doc, const std::wstring& text, const dom_number_value_type subtype);
+            dom_number(dom_document* const doc, const std::wstring& text, const dom_number_type numtype);
             dom_number(dom_document* const doc, const int32_t value);
             dom_number(dom_document* const doc, const int64_t value);
             dom_number(dom_document* const doc, const double value);
         public:
             void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
-            dom_number_value_type subtype() const noexcept { return m_subtype; }
-            void subtype(const dom_number_value_type value) noexcept { m_subtype = value; }
+            dom_number_type numtype() const noexcept { return m_numtype; }
+            void numtype(const dom_number_type value) noexcept { m_numtype = value; }
+            virtual std::wstring to_wstring() const override;
+            static std::wstring to_text(const double value);
         protected:
-            dom_number_value_type m_subtype = dom_number_value_type::nvt_float; // most generic number type
+            dom_number_type m_numtype;
         };
 
         class dom_string : public dom_value
@@ -375,7 +381,7 @@ namespace stdext
             void clear();
             dom_array* create_array();
             dom_literal* create_literal(const std::wstring text);
-            dom_number* create_number(const std::wstring text, const json::dom_number_value_type numtype);
+            dom_number* create_number(const std::wstring text, const json::dom_number_type numtype);
             dom_number* create_number(const int32_t value);
             dom_number* create_number(const int64_t value);
             dom_number* create_number(const double value);

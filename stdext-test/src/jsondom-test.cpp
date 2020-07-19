@@ -51,7 +51,7 @@ void JsonDomTest::CheckTestDocValue(wstring path, json::dom_value* v1)
     else if (path == L"0.1")
     {
         ASSERT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type 1.1";
-        ASSERT_TRUE(json::dom_literal_value_type::lvt_null == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype 1.1";
+        ASSERT_TRUE(json::dom_literal_type::lvt_null == dynamic_cast<json::dom_literal*>(v1)->literal_type()) << title + L"literal_type 1.1";
         ASSERT_TRUE(nullptr == dynamic_cast<json::dom_object*>(v1)) << title + L"cast 1";
         ASSERT_TRUE(nullptr == dynamic_cast<json::container_intf*>(v1)) << title + L"cast 2";
     }
@@ -72,7 +72,7 @@ void JsonDomTest::CheckTestDocValue(wstring path, json::dom_value* v1)
     else if (path == L"0.2.1")
     {
         ASSERT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
-        ASSERT_TRUE(json::dom_number_value_type::nvt_int == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
+        ASSERT_TRUE(json::dom_number_type::nvt_int == dynamic_cast<json::dom_number*>(v1)->numtype()) << title + L"literal_type";
         ASSERT_EQ(L"123", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
         ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
         ASSERT_EQ(L"Num 1", v1->member()->name()) << title + L"member name";
@@ -89,7 +89,7 @@ void JsonDomTest::CheckTestDocValue(wstring path, json::dom_value* v1)
     else if (path == L"0.2.3")
     {
         EXPECT_TRUE(json::dom_value_type::vt_literal == v1->type()) << title + L"type";
-        EXPECT_TRUE(json::dom_literal_value_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->subtype()) << title + L"subtype";
+        EXPECT_TRUE(json::dom_literal_type::lvt_false == dynamic_cast<json::dom_literal*>(v1)->literal_type()) << title + L"literal_type";
         EXPECT_EQ(L"false", dynamic_cast<json::dom_literal*>(v1)->text()) << title + L"text";
         ASSERT_TRUE(v1->member() != nullptr) << title + L"member";
         EXPECT_EQ(L"Literal 1", v1->member()->name()) << title + L"member name";
@@ -106,7 +106,7 @@ void JsonDomTest::CheckTestDocValue(wstring path, json::dom_value* v1)
     else if (path == L"0.2.4.0")
     {
         EXPECT_TRUE(json::dom_value_type::vt_number == v1->type()) << title + L"type";
-        EXPECT_TRUE(json::dom_number_value_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->subtype()) << title + L"subtype";
+        EXPECT_TRUE(json::dom_number_type::nvt_float == dynamic_cast<json::dom_number*>(v1)->numtype()) << title + L"literal_type";
         EXPECT_EQ(L"456.78", dynamic_cast<json::dom_number*>(v1)->text()) << title + L"text";
     }
     else
@@ -130,53 +130,104 @@ TEST_F(JsonDomTest, TestDomValues_Literal)
     json::dom_literal* v11 = doc.create_literal(L"true");
     ASSERT_EQ(L"true", v11->text()) << L"v11 text";
     ASSERT_TRUE(json::dom_value_type::vt_literal == v11->type()) << L"v11 type";
-    ASSERT_TRUE(json::dom_literal_value_type::lvt_true == v11->subtype()) << L"v11 subtype";
+    ASSERT_TRUE(json::dom_literal_type::lvt_true == v11->literal_type()) << L"v11 literal_type";
     json::dom_literal* v12 = doc.create_literal(L"false");
     ASSERT_EQ(L"false", v12->text()) << L"v12 text";
     ASSERT_TRUE(json::dom_value_type::vt_literal == v12->type()) << L"v12 type";
-    ASSERT_TRUE(json::dom_literal_value_type::lvt_false == v12->subtype()) << L"v12 subtype";
+    ASSERT_TRUE(json::dom_literal_type::lvt_false == v12->literal_type()) << L"v12 literal_type";
     json::dom_literal* v2 = doc.create_literal(L"null");
     ASSERT_EQ(L"null", v2->text()) << L"v2 text";
     ASSERT_TRUE(json::dom_value_type::vt_literal == v2->type()) << L"v2 type";
-    ASSERT_TRUE(json::dom_literal_value_type::lvt_null == v2->subtype()) << L"v2 subtype";
+    ASSERT_TRUE(json::dom_literal_type::lvt_null == v2->literal_type()) << L"v2 literal_type";
 }
 
 TEST_F(JsonDomTest, TestDomValues_Number)
 {
-    auto test_number = [](json::dom_number* value, const wstring text, const json::dom_number_value_type subtype, wstring title)
+    auto test_number = [](json::dom_number* value, const wstring text, const json::dom_number_type literal_type, wstring title)
     {
         title += L": ";
-        ASSERT_EQ(text, value->text()) << title + L"text";
-        ASSERT_TRUE(json::dom_value_type::vt_number == value->type()) << title + L"type";
-        ASSERT_TRUE(subtype == value->subtype()) << title + L"subtype";
+        EXPECT_EQ(text, value->text()) << title + L"text";
+        EXPECT_TRUE(json::dom_value_type::vt_number == value->type()) << title + L"type";
+        EXPECT_TRUE(literal_type == value->numtype()) << title + L"literal_type";
         delete value;
     };
     json::dom_document doc;
-    test_number(doc.create_number(L"123456", json::dom_number_value_type::nvt_int),
-                L"123456", json::dom_number_value_type::nvt_int, L"Int 1");
+    test_number(doc.create_number(L"123456", json::dom_number_type::nvt_int),
+                L"123456", json::dom_number_type::nvt_int, L"Int 1");
     test_number(doc.create_number(123456),
-                L"123456", json::dom_number_value_type::nvt_int, L"Int 2");
+                L"123456", json::dom_number_type::nvt_int, L"Int 2");
     test_number(doc.create_number(std::numeric_limits<int64_t>::max()),
-                L"9223372036854775807", json::dom_number_value_type::nvt_int, L"Int 3");
-    test_number(doc.create_number(L"123.456", json::dom_number_value_type::nvt_float),
-                L"123.456", json::dom_number_value_type::nvt_float, L"Decimal 1");
+                L"9223372036854775807", json::dom_number_type::nvt_int, L"Int 3");
+    test_number(doc.create_number(L"123.456", json::dom_number_type::nvt_float),
+                L"123.456", json::dom_number_type::nvt_float, L"Decimal 1");
     test_number(doc.create_number(123.456),
-                L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.1");
+                L"123.456", json::dom_number_type::nvt_float, L"Float 1.1");
     {
         locutils::locale_guard loc(LC_NUMERIC, "ru_RU");
         test_number(doc.create_number(123.456), // 123.456 -> "123,456" on ru_RU
-                    L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.2");
+                    L"123.456", json::dom_number_type::nvt_float, L"Float 1.2");
     }
     test_number(doc.create_number(123.456),
-                L"123.456", json::dom_number_value_type::nvt_float, L"Float 1.3");
+                L"123.456", json::dom_number_type::nvt_float, L"Float 1.3");
+    test_number(doc.create_number(123456.0),
+                L"123456.0", json::dom_number_type::nvt_float, L"Float 1.4");
+    test_number(doc.create_number(0.123456),
+                L"0.123456", json::dom_number_type::nvt_float, L"Float 1.5");
+    test_number(doc.create_number(0.0),
+                L"0.0", json::dom_number_type::nvt_float, L"Float 1.6");
     test_number(doc.create_number(123.456e10),
-                L"1.23456e+12", json::dom_number_value_type::nvt_float, L"Float 2.1");
+                L"1.23456e+12", json::dom_number_type::nvt_float, L"Float 2.1");
     test_number(doc.create_number(0.123456e-10),
-                L"1.23456e-11", json::dom_number_value_type::nvt_float, L"Float 2.2");
+                L"1.23456e-11", json::dom_number_type::nvt_float, L"Float 2.2");
     test_number(doc.create_number(1.23456e8),
-                L"1.23456e+08", json::dom_number_value_type::nvt_float, L"Float 2.3");
+                L"1.23456e+08", json::dom_number_type::nvt_float, L"Float 2.3");
     test_number(doc.create_number(1.23456e-8),
-                L"1.23456e-08", json::dom_number_value_type::nvt_float, L"Float 2.4");
+                L"1.23456e-08", json::dom_number_type::nvt_float, L"Float 2.4");
+    test_number(doc.create_number(1.0e-8),
+                L"1e-08", json::dom_number_type::nvt_float, L"Float 2.5");
+    test_number(doc.create_number(1.0e-80),
+                L"1e-80", json::dom_number_type::nvt_float, L"Float 2.6");
+    test_number(doc.create_number(1.0e+80),
+                L"1e+80", json::dom_number_type::nvt_float, L"Float 2.7");
+    test_number(doc.create_number(123456e+00),
+                L"123456.0", json::dom_number_type::nvt_float, L"Float 2.8");
+    test_number(doc.create_number(0e+80),
+                L"0.0", json::dom_number_type::nvt_float, L"Float 2.9");
+}
+
+TEST_F(JsonDomTest, TestDomValues_Number_Random)
+{
+    testutils::rnd_helper rnd;
+    json::dom_document doc;
+    for (int i = 0; i < 10000; i++)
+    {
+        json::dom_number *v1, *v2;
+        json::dom_number_type numtype;
+        if (rnd.random_bool())
+        {
+            numtype = json::dom_number_type::nvt_int;
+            int value = rnd.random_range(numeric_limits<int>::min(), numeric_limits<int>::max());
+            v1 = doc.create_number(value);
+            v2 = new json::dom_number(&doc, value);
+        }
+        else
+        {
+            numtype = json::dom_number_type::nvt_float;
+            double value = std::pow(10.0f, rnd.random_range(-20, 20)) * (rnd.random_float() - 0.5);
+            wstring s = json::dom_number::to_text(value);
+            v1 = doc.create_number(value);
+            v2 = new json::dom_number(&doc, value);
+            EXPECT_EQ(v1->text(), s);
+            EXPECT_EQ(v2->text(), s);
+            bool is_float = s.find(L'.') != s.npos || s.find(L'e') != s.npos || s.find(L'E') != s.npos;
+            ASSERT_TRUE(is_float) << s << strutils::wformat(L", value: %#g", value);
+        }
+        ASSERT_EQ(v1->text(), v2->text());
+        EXPECT_EQ(v1->numtype(), numtype) << L"value 1: " + v1->to_wstring();
+        EXPECT_EQ(v2->numtype(), numtype) << L"value 2: " + v2->to_wstring();
+        delete v1;
+        delete v2;
+    }
 }
 
 TEST_F(JsonDomTest, TestDomValues_String)
@@ -221,7 +272,7 @@ TEST_F(JsonDomTest, TestDomMembers)
     test_data.push_back(doc.create_literal(L"false"));
     test_data.push_back(doc.create_number(123));
     test_data.push_back(doc.create_number(std::numeric_limits<int64_t>::max()));
-    test_data.push_back(doc.create_number(L"123.456", json::dom_number_value_type::nvt_float));
+    test_data.push_back(doc.create_number(L"123.456", json::dom_number_type::nvt_float));
     test_data.push_back(doc.create_string(L"String"));
 
     unique_ptr<json::dom_object> o1(doc.create_object());
@@ -478,7 +529,7 @@ TEST_F(JsonDomTest, TestDomDocumentMemory)
         json::dom_array* a1 = doc.create_array();
         doc.root(a1);
         a1->append(doc.create_literal(L"null"));
-        a1->append(doc.create_number(L"123.456", json::dom_number_value_type::nvt_float));
+        a1->append(doc.create_number(L"123.456", json::dom_number_type::nvt_float));
         a1->append(doc.create_string(L"Hello"));
         json::dom_object* o1 = doc.create_object();
         a1->append(o1);

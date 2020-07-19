@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <stack>
+#include <cmath>
 #include "../strutils.h"
 #include "../locutils.h"
 #include "../testutils.h"
@@ -111,9 +112,29 @@ void dom_value::parent(dom_value* const value) noexcept (false)
     m_parent = value;
 }
 
+std::wstring dom_value::to_wstring() const
+{
+    return strutils::wformat(L"Length: %d\ntext: \"%ls\"\nencoded: \"%ls\"",
+                                  text().length(),
+                                  text().c_str(),
+                                  json::to_escaped(text(), true).c_str());
+}
+
 /*
  * dom_literal class
  */
+dom_literal_type json::to_literal_type(const std::wstring& value) noexcept(false)
+{
+    if (value == L"false")
+        return dom_literal_type::lvt_false;
+    else if (value == L"null")
+        return dom_literal_type::lvt_null;
+    else if (value == L"true")
+        return dom_literal_type::lvt_true;
+    else
+        throw dom_exception(strutils::wformat(L"Invalid literal value '%ls'", value.c_str()), dom_error::invalid_literal);
+}
+
 dom_literal::dom_literal(dom_document* const doc, const std::wstring text)
     : dom_value(doc, dom_value_type::vt_literal)
 {
@@ -122,25 +143,34 @@ dom_literal::dom_literal(dom_document* const doc, const std::wstring text)
 
 void dom_literal::text(const std::wstring value) noexcept(false)
 {
-    if (value == L"false")
-        m_subtype = dom_literal_value_type::lvt_false;
-    else if (value == L"null")
-        m_subtype = dom_literal_value_type::lvt_null;
-    else if (value == L"true")
-        m_subtype = dom_literal_value_type::lvt_true;
-    else
-        throw dom_exception(strutils::wformat(L"Invalid literal value '%ls'", value.c_str()), dom_error::invalid_literal);
+    m_literal_type = json::to_literal_type(value);
     dom_value::text(value);
 }
 
 /*
  * dom_number class
  */
-dom_number::dom_number(dom_document* const doc, const std::wstring& text, const dom_number_value_type subtype)
+std::string json::to_string(const dom_number_type numtype)
+{
+    switch(numtype)
+    {
+    case dom_number_type::nvt_float: return "nvt_float";
+    case dom_number_type::nvt_int: return "nvt_int";
+    default:
+        return "unknown";
+    };
+}
+
+std::wstring json::to_wstring(const dom_number_type numtype)
+{
+    return strutils::to_wstring(json::to_string(numtype));
+}
+
+dom_number::dom_number(dom_document* const doc, const std::wstring& text, const dom_number_type numtype)
     : dom_value(doc, dom_value_type::vt_number)
 {
     this->text(text);
-    m_subtype = subtype;
+    m_numtype = numtype;
 }
 
 dom_number::dom_number(dom_document* const doc, const int32_t value)
@@ -148,7 +178,7 @@ dom_number::dom_number(dom_document* const doc, const int32_t value)
 {
     locutils::locale_guard lg(LC_NUMERIC, "C");
     this->text(std::to_wstring(value));
-    m_subtype = dom_number_value_type::nvt_int;
+    m_numtype = dom_number_type::nvt_int;
 }
 
 dom_number::dom_number(dom_document* const doc, const int64_t value)
@@ -156,15 +186,30 @@ dom_number::dom_number(dom_document* const doc, const int64_t value)
 {
     locutils::locale_guard lg(LC_NUMERIC, "C");
     this->text(std::to_wstring(value));
-    m_subtype = dom_number_value_type::nvt_int;
+    m_numtype = dom_number_type::nvt_int;
 }
 
 dom_number::dom_number(dom_document* const doc, const double value)
     : dom_value(doc, dom_value_type::vt_number)
 {
+    this->text(dom_number::to_text(value));
+    m_numtype = dom_number_type::nvt_float;
+}
+
+std::wstring dom_number::to_text(const double value)
+{
     locutils::locale_guard lg(LC_NUMERIC, "C");
-    this->text(strutils::wformat(L"%g", value));
-    m_subtype = dom_number_value_type::nvt_float;
+    wstring s = strutils::wformat(L"%g", value);
+    if (s.find(L'.') == s.npos && s.find(L'e') == s.npos && s.find(L'E') == s.npos)
+        s += L".0";
+    return s;
+}
+
+std::wstring dom_number::to_wstring() const
+{
+    return strutils::wformat(L"%ls\nnumtype: %ls",
+                             dom_value::to_wstring().c_str(),
+                             json::to_wstring(numtype()).c_str());
 }
 
 /*
@@ -332,7 +377,7 @@ dom_literal* dom_document::create_literal(const std::wstring text)
     return new dom_literal(this, text);
 }
 
-dom_number* dom_document::create_number(const std::wstring text, const json::dom_number_value_type numtype)
+dom_number* dom_document::create_number(const std::wstring text, const json::dom_number_type numtype)
 {
     return new dom_number(this, text, numtype);
 }
