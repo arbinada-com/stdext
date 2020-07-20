@@ -131,7 +131,6 @@ namespace stdext
             dom_parser& operator =(const dom_parser&) = delete;
             dom_parser(dom_parser&&) = delete;
             dom_parser& operator =(dom_parser&&) = delete;
-            ~dom_parser();
         public:
             class context
             {
@@ -154,7 +153,6 @@ namespace stdext
             const msg_collector_t& messages() const { return m_messages; }
         private:
             ioutils::text_reader& m_reader;
-            json::lexer* m_lexer = nullptr;
             msg_collector_t& m_messages;
             json::dom_document& m_doc;
         };

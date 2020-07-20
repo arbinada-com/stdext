@@ -414,14 +414,7 @@ bool dom_handler::accept_value(dom_value_ptr& node)
  */
 json::dom_parser::dom_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc)
     : m_reader(reader), m_messages(msgs), m_doc(doc)
-{ 
-    m_lexer = new json::lexer(m_reader, m_messages);
-}
-
-json::dom_parser::~dom_parser()
-{
-    delete m_lexer;
-}
+{}
 
 bool json::dom_parser::run()
 {
