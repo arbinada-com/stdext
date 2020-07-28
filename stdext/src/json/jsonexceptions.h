@@ -18,13 +18,16 @@ namespace stdext
         {
         public:
             exception(const std::wstring msg)
-                : std::exception(), m_wmesssage(msg)
+                : std::exception(),
+                  m_wmesssage(msg),
+                  m_messsage(strutils::to_string(msg))
             {}
         public:
             std::wstring wmessage() const noexcept { return m_wmesssage; }
-            const char* what() const noexcept override { return strutils::to_string(m_wmesssage).c_str(); }
+            const char* what() const noexcept override { return m_messsage.data(); }
         protected:
             std::wstring m_wmesssage;
+            std::string m_messsage;
         };
 
     }

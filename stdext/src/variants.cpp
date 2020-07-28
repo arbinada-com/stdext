@@ -174,7 +174,7 @@ variant& variant::operator=(const std::string source)
     return *this;
 }
 
-variant::variant(const char* val) 
+variant::variant(const char* val)
     : variant(std::string(val))
 { }
 variant& variant::operator=(const char* source)
@@ -215,12 +215,12 @@ variant::~variant()
     clear();
 }
 
-template <class T> 
+template <class T>
 void variant::clear()
 {
     if (m_vtype == value_type::vt_object)
         static_cast<objref*>(m_value)->release();
-    else 
+    else
         delete static_cast<T*>(m_value);
     m_value = nullptr;
     m_vtype = value_type::vt_unknown;
@@ -472,7 +472,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
 string err_msg_convertion_failed(const value_type vtype, const char* to_type_name) noexcept
 {
     return strutils::format(
-        "Conversion failed from type %s (%d) to '%s'", 
+        "Conversion failed from type %s (%d) to '%s'",
         variants::to_string(vtype).c_str(),
         static_cast<int>(vtype),
         to_type_name
@@ -539,7 +539,7 @@ int64_t variant::to_int64() const noexcept(false)
     {
         double ipart;
         modf(*((double*)m_value), &ipart);
-        if (ipart > std::numeric_limits<int64_t>::max() || ipart < std::numeric_limits<int64_t>::min())
+        if (ipart > (double)std::numeric_limits<int64_t>::max() || ipart < (double)std::numeric_limits<int64_t>::min())
             throw variant_exception(err_msg_convertion_failed(m_vtype, "int"), variant_error::conversion_failed_number_out_of_limits);
         return static_cast<int64_t>(ipart);
     }
@@ -567,9 +567,9 @@ std::string variant::to_string() const noexcept(false)
 {
     switch (m_vtype)
     {
-    case value_type::vt_bool: 
+    case value_type::vt_bool:
         return std::to_string(to_bool());
-    case value_type::vt_double: 
+    case value_type::vt_double:
         return std::to_string(to_double());
     case value_type::vt_int:
         return std::to_string(to_int());
