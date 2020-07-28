@@ -2,6 +2,7 @@
 #include "json.h"
 #include <fstream>
 #include <limits>
+#include <stack>
 #include "strutils.h"
 #include "testutils.h"
 
@@ -13,25 +14,149 @@ using namespace testutils;
 namespace json_parser_test
 {
 
+class Handler : public json::sax_handler_intf//, public testing::Test
+{
+public:
+    typedef std::stack<json::dom_object*> object_stack_t;
+    typedef std::stack<json::dom_array*> array_stack_t;
+public:
+    Handler(json::dom_document& expected, const std::wstring& title)
+        : m_expected(expected), m_it(m_expected.begin()), m_title(title)
+    {}
+public:
+    virtual void on_literal(const json::dom_literal_type type, const std::wstring& text) override
+    {
+        wstring title = m_title + L": on_literal";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        EXPECT_EQ(m_it->type(), json::dom_value_type::vt_literal) << title;
+        EXPECT_EQ(m_it->text(), text) << title;
+        EXPECT_EQ(dynamic_cast<json::dom_literal*>(*m_it)->literal_type(), type) << title;
+        m_it++;
+    }
+    virtual void on_number(const json::dom_number_type type, const std::wstring& text) override
+    {
+        wstring title = m_title + L": on_number";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        title += L" " + text;
+        ASSERT_EQ(m_it->type(), json::dom_value_type::vt_number) << title;
+        EXPECT_EQ(m_it->text(), text) << title;
+        if (dynamic_cast<json::dom_number*>(*m_it)->numtype() != type)
+            EXPECT_TRUE(dynamic_cast<json::dom_number*>(*m_it)->numtype() == type) << title;
+        m_it++;
+    }
+    virtual void on_string(const std::wstring& text) override
+    {
+        wstring title = m_title + L": on_string";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        EXPECT_EQ(m_it->type(), json::dom_value_type::vt_string) << title;
+        EXPECT_EQ(m_it->text(), text) << title;
+        m_it++;
+    }
+    virtual void on_begin_object() override
+    {
+        wstring title = m_title + L": on_begin_object";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        ASSERT_EQ(m_it->type(), json::dom_value_type::vt_object) << title;
+        EXPECT_EQ(m_it->text(), L"") << title;
+        m_objs.push(dynamic_cast<json::dom_object*>(*m_it));
+        m_it++;
+    }
+    virtual void on_member_name(const std::wstring& text) override
+    {
+        wstring title = m_title + L": on_member_name";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        ASSERT_TRUE(m_it->member() != nullptr) << title;
+        EXPECT_EQ(m_it->member()->name(), text) << title;
+    }
+    virtual void on_end_object(const std::size_t member_count) override
+    {
+        wstring title = m_title + L": on_end_object";
+        ASSERT_FALSE(m_objs.empty()) << title;
+        EXPECT_EQ(m_objs.top()->members()->size(), member_count);
+        m_objs.pop();
+    }
+    virtual void on_begin_array() override
+    {
+        wstring title = m_title + L": on_begin_array";
+        ASSERT_TRUE(m_it != m_expected.end()) << title;
+        ASSERT_EQ(m_it->type(), json::dom_value_type::vt_array) << title;
+        EXPECT_EQ(m_it->text(), L"") << title;
+        m_arrays.push(dynamic_cast<json::dom_array*>(*m_it));
+        m_it++;
+    }
+    virtual void on_end_array(const std::size_t element_count) override
+    {
+        wstring title = m_title + L": on_end_array";
+        ASSERT_FALSE(m_arrays.empty()) << title;
+        EXPECT_EQ(m_arrays.top()->size(), element_count);
+        m_arrays.pop();
+    }
+    virtual void textpos_changed(const parsers::textpos&) override {}
+private:
+    json::dom_document& m_expected;
+    json::dom_document::iterator m_it;
+    std::wstring m_title;
+    object_stack_t m_objs;
+    array_stack_t m_arrays;
+};
+
+
+/*
+ * SAX and DOM parsers tests
+ */
 class JsonParserTest : public testing::Test
 {
 protected:
     void CheckParseText(wstring input, json::dom_document& expected, wstring title)
+    {
+        CheckParseTextSax(input, expected, title + L" [SAX]");
+        CheckParseTextDom(input, expected, title + L" [DOM]");
+    }
+
+    void CheckParseTextSax(wstring input, json::dom_document& expected, wstring title)
+    {
+        wstring title2 = title + L": ";
+        wstringstream ss(input);
+        ioutils::text_reader r(ss);
+        json::msg_collector_t mc;
+        Handler handler(expected, title);
+        json::sax_parser parser(r, mc, handler);
+        bool result = parser.run();
+        wstring err_text;
+        if (parser.has_errors())
+        {
+            for (json::message_t* err : parser.messages().errors())
+                err_text += L"\n" + err->to_wstring();
+        }
+        if (parser.has_errors() || this->HasFailure())
+        {
+            ioutils::text_writer w1(L"parser_current.json", ioutils::text_io_policy_utf8());
+            w1.write(input);
+            json::dom_document_writer w2(expected);
+            w2.conf().pretty_print(true);
+            w2.write_to_file(L"parser_expected.json", ioutils::text_io_policy_utf8());
+        }
+        if (result && parser.has_errors())
+            FAIL() << title2 + L"OK with errors:" + err_text;
+        if (!result && !parser.has_errors())
+            FAIL() << title2 + L"failed without errors:" + err_text;
+        EXPECT_FALSE(parser.has_errors()) << title2 + L"errors:" + err_text;
+    }
+
+    void CheckParseTextDom(wstring input, json::dom_document& expected, wstring title)
     {
         wstring title2 = title + L": ";
         wstringstream ss(input);
         ioutils::text_reader r(ss);
         json::msg_collector_t mc;
         json::dom_document doc;
-        json::parser parser(r, mc, doc);
+        json::dom_parser parser(r, mc, doc);
         bool result = parser.run();
         wstring err_text;
         if (parser.has_errors())
         {
             for (json::message_t* err : parser.messages().errors())
-            {
                 err_text += L"\n" + err->to_wstring();
-            }
         }
         if (result && parser.has_errors())
             FAIL() << title2 + L"OK with errors:" + err_text;
@@ -47,7 +172,7 @@ protected:
             json::dom_document_writer w2(expected);
             w2.conf().pretty_print(true);
             w2.write_to_file(L"parser_expected.json", ioutils::text_io_policy_utf8());
-            wstring msg = L"Docs are different: ";
+            wstring msg = L"Docs are different. ";
             for (const json::dom_document_diff_item& item : diff.items())
             {
                 msg += item.to_wstring() + L"\n";
@@ -56,6 +181,7 @@ protected:
         }
     }
 
+
     void CheckError(const wstring input, const json::parser_msg_kind kind, const textpos& pos, const wstring title)
     {
         wstringstream ss(input);
@@ -63,7 +189,7 @@ protected:
         r.source_name(L"ChkErrStream");
         json::msg_collector_t mc;
         json::dom_document doc;
-        json::parser parser(r, mc, doc);
+        json::dom_parser parser(r, mc, doc);
         wstring title2 = title + L": ";
         ASSERT_FALSE(parser.run()) << title2 + L"parsed OK";
         ASSERT_TRUE(parser.has_errors()) << title2 + L"no errors";
@@ -90,6 +216,9 @@ TEST_F(JsonParserTest, TestSimpleDoc)
     doc.root(doc.create_number(123.456));
     CheckParseText(L"123.456", doc, L"Num 2.1");
     CheckParseText(L"\n\t123.456\n\t\n", doc, L"Num 2.2");
+    doc.clear();
+    doc.root(doc.create_number(-214659));
+    CheckParseText(L"-214659", doc, L"Num 2.3");
     doc.clear();
     doc.root(doc.create_number(-1.23456e8));
     CheckParseText(L"-1.23456e+08", doc, L"Num 3");

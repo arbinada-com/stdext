@@ -11,6 +11,7 @@
 using namespace std;
 using namespace stdext;
 using namespace parsers;
+using namespace json;
 
 /*
  * dom_value_ptr class
@@ -32,25 +33,24 @@ bool json::dom_value_ptr::accept()
 }
 
 /*
- * parser class
+ * sax_parser class
  */
-json::parser::parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc)
-    : m_reader(reader), m_messages(msgs), m_doc(doc)
-{ 
+json::sax_parser::sax_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::sax_handler_intf& handler)
+    : m_reader(reader), m_messages(msgs), m_handler(handler)
+{
     m_lexer = new json::lexer(m_reader, m_messages);
 }
 
-json::parser::~parser() 
+json::sax_parser::~sax_parser()
 {
-    delete m_lexer;
 }
 
-void json::parser::add_error(const parser_msg_kind kind, const parsers::textpos pos)
+void json::sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos)
 {
     add_error(kind, pos, json::to_wmessage(kind));
 }
 
-void json::parser::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
+void json::sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
 {
     m_messages.add_error(
         msg_origin::parser,
@@ -61,94 +61,31 @@ void json::parser::add_error(const parser_msg_kind kind, const parsers::textpos 
 
 }
 
-bool json::parser::is_current_token(const json::token tok)
+bool json::sax_parser::is_current_token(const json::token tok)
 {
     return m_curr.token() == tok;
 }
 
-bool json::parser::is_parent_container(const json::dom_value* parent)
-{
-    return (parent == nullptr && m_doc.root() == nullptr) || (parent != nullptr && parent->is_container());
-}
-
-bool json::parser::accept_value(json::dom_value* const parent, dom_value_ptr& node, const context& ctx)
-{
-    if (parent == nullptr)
-        m_doc.root(node.value());
-    else
-    {
-        switch (parent->type())
-        {
-        case dom_value_type::vt_array:
-        {
-            json::dom_array* arr = dynamic_cast<json::dom_array*>(parent);
-            if (arr == nullptr)
-            {
-                add_error(parser_msg_kind::err_parent_is_not_container, pos());
-                return false;
-            }
-            arr->append(node.value());
-            node.accept();
-            break;
-        }
-        case dom_value_type::vt_object:
-        {
-            json::dom_object* obj = dynamic_cast<json::dom_object*>(parent);
-            if (obj == nullptr)
-            {
-                add_error(parser_msg_kind::err_parent_is_not_container, pos());
-                return false;
-            }
-            if (ctx.member_name().empty())
-            {
-                add_error(parser_msg_kind::err_member_name_is_empty, pos());
-                return false;
-            }
-            if (obj->cmembers()->contains_name(ctx.member_name()))
-            {
-                add_error(parser_msg_kind::err_member_name_duplicate_fmt, pos(),
-                    strutils::wformat(
-                        json::to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
-                        m_curr.text().c_str()));
-
-                return false;
-            }
-            obj->append_member(ctx.member_name(), node.value());
-            break;
-        }
-        default:
-            add_error(parser_msg_kind::err_parent_is_not_container, pos());
-            return false;
-        }
-    }
-    node.accept();
-    return true;
-}
-
-bool json::parser::next()
+bool json::sax_parser::next_lexeme()
 {
     return m_lexer->next_lexeme(m_curr);
 }
 
-bool json::parser::run()
+bool json::sax_parser::run()
 {
     return parse_doc();
 }
 
-bool json::parser::parse_doc()
+bool json::sax_parser::parse_doc()
 {
-    m_doc.clear();
     bool result = false;
-    if (next())
-    {
-        context ctx;
-        result = parse_value(nullptr, ctx);
-    }
+    if (next_lexeme())
+        result = parse_value();
     else if (m_lexer->eof() && !has_errors())
         return true;
     if (result && !m_lexer->eof())
     {
-        result = !next();
+        result = !next_lexeme();
         if (!result)
             add_error(parser_msg_kind::err_unexpected_lexeme_fmt, pos(),
                 strutils::wformat(
@@ -158,29 +95,29 @@ bool json::parser::parse_doc()
     return result;
 }
 
-bool json::parser::parse_value(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_value()
 {
     bool result = false;
     switch (m_curr.token())
     {
     case token::begin_array:
-        result = parse_array(parent, ctx);
+        result = parse_array();
         break;
     case token::begin_object:
-        result = parse_object(parent, ctx);
+        result = parse_object();
         break;
     case token::literal_false:
     case token::literal_null:
     case token::literal_true:
-        result = parse_literal(parent, ctx);
+        result = parse_literal();
         break;
     case token::number_decimal:
     case token::number_float:
     case token::number_int:
-        result = parse_number(parent, ctx);
+        result = parse_number();
         break;
     case token::string:
-        result = parse_string(parent, ctx);
+        result = parse_string();
         break;
     default:
         add_error(parser_msg_kind::err_expected_value_but_found_fmt, pos(),
@@ -192,45 +129,45 @@ bool json::parser::parse_value(json::dom_value* const parent, const context& ctx
     return result;
 }
 
-bool json::parser::parse_array(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_array()
 {
     bool result = is_current_token(token::begin_array);
     if (!result)
         add_error(parser_msg_kind::err_expected_array, pos());
     else
     {
-        dom_value_ptr arr(m_doc.create_array());
-        result = accept_value(parent, arr, ctx);
+        m_handler.on_begin_array();
+        std::size_t element_count = 0;
+        result = next_lexeme();
         if (result)
         {
-            result = next();
+            if (!is_current_token(token::end_array))
+                result = parse_array_items(element_count);
             if (result)
-            {
-                if (!is_current_token(token::end_array))
-                    result = parse_array_items(dynamic_cast<dom_array*>(arr.value()), ctx);
-                if (result)
-                    result = is_current_token(token::end_array);
-            }
+                result = is_current_token(token::end_array);
         }
-        if (!result)
+        if (result)
+            m_handler.on_end_array(element_count);
+        else
             add_error(parser_msg_kind::err_unclosed_array, m_lexer->pos());
     }
     return result;
 }
 
-bool json::parser::parse_array_items(json::dom_array* const parent, const context& ctx)
+bool json::sax_parser::parse_array_items(std::size_t& element_count)
 {
     bool result = true;
     bool is_next_item = true;
     while (result && is_next_item)
     {
-        result = parse_value(parent, ctx);
+        result = parse_value();
         if (result)
         {
-            is_next_item = next() && is_current_token(token::value_separator);
+            element_count++;
+            is_next_item = next_lexeme() && is_current_token(token::value_separator);
             if (is_next_item)
             {
-                result = next();
+                result = next_lexeme();
                 if (!result)
                     add_error(parser_msg_kind::err_expected_array_item, m_lexer->pos());
             }
@@ -241,33 +178,32 @@ bool json::parser::parse_array_items(json::dom_array* const parent, const contex
     return result;
 }
 
-bool json::parser::parse_object(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_object()
 {
     bool result = is_current_token(token::begin_object);
     if (!result)
         add_error(parser_msg_kind::err_expected_object, pos());
     else
     {
-        dom_value_ptr current(m_doc.create_object());
-        result = accept_value(parent, current, ctx);
+        m_handler.on_begin_object();
+        std::size_t member_count = 0;
+        result = next_lexeme();
         if (result)
         {
-            result = next();
+            if (!is_current_token(token::end_object))
+                result = parse_object_members(member_count);
             if (result)
-            {
-                if (!is_current_token(token::end_object))
-                    result = parse_object_members(dynamic_cast<dom_object*>(current.value()), ctx);
-                if (result)
-                    result = is_current_token(token::end_object);
-            }
+                result = is_current_token(token::end_object);
         }
-        if (!result)
+        if (result)
+            m_handler.on_end_object(member_count);
+        else
             add_error(parser_msg_kind::err_unclosed_object, m_lexer->pos());
     }
     return result;
 }
 
-bool json::parser::parse_object_members(json::dom_object* const parent, const context& ctx)
+bool json::sax_parser::parse_object_members(std::size_t& member_count)
 {
     bool result = true;
     bool is_next_member = true;
@@ -276,20 +212,20 @@ bool json::parser::parse_object_members(json::dom_object* const parent, const co
         result = is_current_token(token::string);
         if (result)
         {
-            context member_ctx(ctx);
-            member_ctx.member_name(m_curr.text());
-            result = next();
+            m_handler.on_member_name(m_curr.text());
+            member_count++;
+            result = next_lexeme();
             if (result)
             {
                 if (is_current_token(token::name_separator))
                 {
-                    result = next();
-                    if (result && parse_value(parent, member_ctx))
+                    result = next_lexeme();
+                    if (result && parse_value())
                     {
-                        is_next_member = next() && is_current_token(token::value_separator);
+                        is_next_member = next_lexeme() && is_current_token(token::value_separator);
                         if (is_next_member)
                         {
-                            result = next();
+                            result = next_lexeme();
                             if (!result)
                                 add_error(parser_msg_kind::err_expected_member_name, m_lexer->pos());
                         }
@@ -309,51 +245,183 @@ bool json::parser::parse_object_members(json::dom_object* const parent, const co
     return result;
 }
 
-bool json::parser::parse_literal(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_literal()
 {
     bool result = is_literal_token(m_curr.token());
     if (result)
-    {
-        dom_value_ptr node(m_doc.create_literal(m_curr.text()));
-        result = accept_value(parent, node, ctx);
-    }
+        m_handler.on_literal(json::to_literal_type(m_curr.text()), m_curr.text());
     else
         add_error(parser_msg_kind::err_expected_literal, m_curr.pos());
     return result;
 }
 
-bool json::parser::parse_number(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_number()
 {
     switch (m_curr.token())
     {
     case token::number_decimal:
     case token::number_float:
-    {
-        dom_value_ptr node(m_doc.create_number(m_curr.text(), dom_number_value_type::nvt_float));
-        return accept_value(parent, node, ctx);
-    }
-    case token::number_int: 
-    {
-        dom_value_ptr node(m_doc.create_number(m_curr.text(), dom_number_value_type::nvt_int));
-        return accept_value(parent, node, ctx);
-    }
+        m_handler.on_number(dom_number_type::nvt_float, m_curr.text());
+        return true;
+    case token::number_int:
+        m_handler.on_number(dom_number_type::nvt_int, m_curr.text());
+        return true;
     default:
         add_error(parser_msg_kind::err_expected_number, m_curr.pos());
         return false;
     }
 }
 
-bool json::parser::parse_string(json::dom_value* const parent, const context& ctx)
+bool json::sax_parser::parse_string()
 {
     bool result = m_curr.token() == token::string;
     if (result)
-    {
-        dom_value_ptr node(m_doc.create_string(m_curr.text()));
-        result = accept_value(parent, node, ctx);
-    }
+        m_handler.on_string(m_curr.text());
     else
         add_error(parser_msg_kind::err_expected_string, m_curr.pos());
     return result;
+}
+
+
+/*
+ * DOM parser handler
+ */
+void dom_handler::on_literal(const json::dom_literal_type, const std::wstring& text)
+{
+    dom_value_ptr node(m_doc.create_literal(text));
+    accept_value(node);
+}
+
+void dom_handler::on_number(const json::dom_number_type type, const std::wstring& text)
+{
+    dom_value_ptr node(m_doc.create_number(text, type));
+    accept_value(node);
+}
+
+void dom_handler::on_string(const std::wstring& text)
+{
+    dom_value_ptr node(m_doc.create_string(text));
+    accept_value(node);
+}
+
+void dom_handler::on_begin_object()
+{
+    dom_value_ptr node(m_doc.create_object());
+    if (accept_value(node))
+        m_containers.push(node.value());
+}
+
+void dom_handler::on_member_name(const std::wstring& text)
+{
+    m_member_names.push(text);
+}
+
+void dom_handler::on_end_object(const std::size_t)
+{
+    m_containers.pop();
+}
+
+void dom_handler::on_begin_array()
+{
+    dom_value_ptr node(m_doc.create_array());
+    if (accept_value(node))
+        m_containers.push(node.value());
+}
+
+void dom_handler::on_end_array(const std::size_t)
+{
+    m_containers.pop();
+}
+
+void dom_handler::add_error(const parser_msg_kind kind)
+{
+    add_error(kind, json::to_wmessage(kind));
+}
+
+void dom_handler::add_error(const parser_msg_kind kind, const std::wstring text)
+{
+    m_messages.add_error(msg_origin::parser, kind, m_pos, m_source_name, text);
+
+}
+
+bool dom_handler::accept_value(dom_value_ptr& node)
+{
+    if (m_containers.empty())
+    {
+        if (m_doc.root() == nullptr)
+        {
+            m_doc.root(node.value());
+            node.accept();
+            return true;
+        }
+        else
+        {
+            add_error(parser_msg_kind::err_parent_is_not_container);
+            return false;
+        }
+    }
+    switch (m_containers.top()->type())
+    {
+    case dom_value_type::vt_array:
+    {
+        json::dom_array* arr = dynamic_cast<json::dom_array*>(m_containers.top());
+        if (arr == nullptr)
+        {
+            add_error(parser_msg_kind::err_parent_is_not_container);
+            return false;
+        }
+        arr->append(node.value());
+        node.accept();
+        break;
+    }
+    case dom_value_type::vt_object:
+    {
+        json::dom_object* obj = dynamic_cast<json::dom_object*>(m_containers.top());
+        if (obj == nullptr)
+        {
+            add_error(parser_msg_kind::err_parent_is_not_container);
+            return false;
+        }
+        if (m_member_names.empty() || m_member_names.top().empty())
+        {
+            add_error(parser_msg_kind::err_member_name_is_empty);
+            return false;
+        }
+        if (obj->cmembers()->contains_name(m_member_names.top()))
+        {
+            add_error(parser_msg_kind::err_member_name_duplicate_fmt,
+                strutils::wformat(
+                    json::to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
+                    m_member_names.top().c_str()));
+
+            return false;
+        }
+        obj->append_member(m_member_names.top(), node.value());
+        m_member_names.pop();
+        break;
+    }
+    default:
+        add_error(parser_msg_kind::err_parent_is_not_container);
+        return false;
+    }
+    node.accept();
+    return true;
+}
+
+
+/*
+ * DOM parser class
+ */
+json::dom_parser::dom_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc)
+    : m_reader(reader), m_messages(msgs), m_doc(doc)
+{}
+
+bool json::dom_parser::run()
+{
+    m_doc.clear();
+    dom_handler handler(m_doc, m_messages, m_reader.source_name());
+    sax_parser parser(m_reader, m_messages, handler);
+    return parser.run();
 }
 
 

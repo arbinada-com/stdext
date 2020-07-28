@@ -100,7 +100,7 @@ bool dom_document_reader::read(ioutils::text_reader& reader)
     m_doc.clear();
     if (!m_source_name.empty() && reader.source_name().empty())
         reader.source_name(m_source_name);
-    json::parser parser(reader, m_messages, m_doc);
+    json::dom_parser parser(reader, m_messages, m_doc);
     bool result = parser.run();
     return result;
 }
@@ -282,8 +282,8 @@ json::dom_value* dom_document_generator::generate_value(json::dom_value_type typ
         return m_doc.create_literal(random_literal_name());
     case dom_value_type::vt_number:
         if (m_rnd.random_bool())
-            return m_doc.create_number(m_rnd.random_range(numeric_limits<int>::min(), numeric_limits<int>::max()));
-        return m_doc.create_number(std::pow(10.0, m_rnd.random_range(-20, 20)) * (m_rnd.random_float() - 0.5));
+            return m_doc.create_number((int32_t)m_rnd.random_range(numeric_limits<int>::min(), numeric_limits<int>::max()));
+        return m_doc.create_number(std::pow(10.0f, m_rnd.random_range(-20, 20)) * (m_rnd.random_float() - 0.5));
     case dom_value_type::vt_object:
         return generate_object();
     case dom_value_type::vt_string:
@@ -341,9 +341,15 @@ std::string json::to_string(const dom_document_diff_kind value)
     case dom_document_diff_kind::count_diff: return "count";
     case dom_document_diff_kind::path_diff: return "path";
     case dom_document_diff_kind::type_diff: return "type";
+    case dom_document_diff_kind::numtype_diff: return "numtype";
     case dom_document_diff_kind::value_diff: return "value";
     default: return "unknown";
     }
+}
+
+std::wstring json::to_wstring(const dom_document_diff_kind value)
+{
+    return strutils::to_wstring(json::to_string(value));
 }
 
 std::string json::dom_document_diff_item::to_string() const
@@ -353,14 +359,10 @@ std::string json::dom_document_diff_item::to_string() const
 
 std::wstring json::dom_document_diff_item::to_wstring() const
 {
-    return strutils::wformat(L"Kind: %s\nLeft value:\n\tlength: %d\n\ttext: %ls\n\tencoded:%ls\nRight value:\n\tlength: %d\n\ttext: %ls\n\tencoded:%ls",
-                             json::to_string(m_kind).c_str(),
-                             m_lval->text().length(),
-                             m_lval->text().c_str(),
-                             json::to_escaped(m_lval->text(), true).c_str(),
-                             m_rval->text().length(),
-                             m_rval->text().c_str(),
-                             json::to_escaped(m_rval->text(), true).c_str());
+    return strutils::wformat(L"Kind: %s\nLeft value:\n\t%ls\nRight value:\n\t%ls",
+                             json::to_wstring(m_kind).c_str(),
+                             strutils::replace_all(m_lval->to_wstring(), L"\n", L"\n\t").c_str(),
+                             strutils::replace_all(m_rval->to_wstring(), L"\n", L"\n\t").c_str());
 }
 
 
@@ -383,6 +385,13 @@ json::dom_document_diff json::make_diff(const json::dom_document& ldoc,
     {
         if (l_it->type() != r_it->type())
             diff.append(dom_document_diff_item(dom_document_diff_kind::type_diff, l_it.value(), r_it.value()));
+        if (l_it->type() == json::dom_value_type::vt_number)
+        {
+            const json::dom_number* ln = dynamic_cast<const json::dom_number*>(l_it.value());
+            const json::dom_number* rn = dynamic_cast<const json::dom_number*>(r_it.value());
+            if (ln != nullptr && rn != nullptr && ln->numtype() != rn->numtype())
+                diff.append(dom_document_diff_item(dom_document_diff_kind::numtype_diff, l_it.value(), r_it.value()));
+        }
         if (l_it.path() != r_it.path())
             diff.append(dom_document_diff_item(dom_document_diff_kind::path_diff, l_it.value(), r_it.value()));
         if (l_it->is_container())
