@@ -41,7 +41,9 @@ public:
         ASSERT_EQ(m_it->type(), json::dom_value_type::vt_number) << title;
         EXPECT_EQ(m_it->text(), text) << title;
         if (dynamic_cast<json::dom_number*>(*m_it)->numtype() != type)
+        {
             EXPECT_TRUE(dynamic_cast<json::dom_number*>(*m_it)->numtype() == type) << title;
+        }
         m_it++;
     }
     virtual void on_string(const std::wstring& text) override

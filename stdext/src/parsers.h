@@ -91,8 +91,8 @@ namespace stdext
             std::wstring source() const { return m_source; }
             void source(const std::wstring value) { m_source = value; }
             std::wstring text() const { return m_text; }
-            std::wstring to_wstring() const 
-            { 
+            std::wstring to_wstring() const
+            {
                 return strutils::wformat(L"%ls%ls: %ls %d: %ls",
                     m_source.c_str(),
                     m_pos.to_wstring().c_str(),
@@ -130,7 +130,7 @@ namespace stdext
             msg_collector& operator =(msg_collector&&) = delete;
             ~msg_collector() { }
         public:
-            message_t* const at(const size_type i) const { return m_data.at(i); }
+            message_t* const& at(const size_type i) const { return m_data.at(i); }
             message_t* const& operator [](const size_type i) const { return m_data.at(i); }
             const_iterator begin() const noexcept { return m_data.begin(); }
             const_iterator end() const noexcept { return m_data.end(); }

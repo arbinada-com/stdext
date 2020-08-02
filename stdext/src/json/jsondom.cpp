@@ -35,12 +35,12 @@ std::wstring json::to_wstring(const dom_value_type type)
     return strutils::to_wstring(json::to_string(type));
 }
 
-bool json::operator ==(const dom_value& v1, const dom_value& v2)
+bool stdext::json::operator ==(const dom_value& v1, const dom_value& v2)
 {
     return equal(v1, v2);
 }
 
-bool json::operator !=(const dom_value& v1, const dom_value& v2) 
+bool stdext::json::operator !=(const dom_value& v1, const dom_value& v2)
 {
     return !equal(v1, v2);
 }
@@ -78,12 +78,12 @@ bool json::equal(const dom_document& doc1, const dom_document& doc2)
  */
 dom_value::dom_value(dom_document* const doc, const dom_value_type type)
     : m_doc(doc), m_type(type), m_text(L"")
-{ 
+{
     if (m_doc == nullptr)
         throw dom_exception(L"Value should be created in document scope", dom_error::document_is_null);
 }
 
-dom_value::~dom_value() 
+dom_value::~dom_value()
 {
     clear();
 }
@@ -107,7 +107,7 @@ void dom_value::assert_same_doc_no_parent(dom_document* doc) const noexcept(fals
 }
 
 void dom_value::parent(dom_value* const value) noexcept (false)
-{ 
+{
     assert_same_doc(value->document());
     m_parent = value;
 }
@@ -230,13 +230,13 @@ dom_string::dom_string(dom_document* const doc, const std::wstring& text)
  */
 dom_object_member::dom_object_member(dom_object_members* const owner, const name_t& name, dom_value* const value)
     : m_owner(owner), m_name(json::to_unescaped(name)), m_value(value)
-{ 
+{
     if (m_owner == nullptr)
         throw dom_exception(L"Member owner is null", dom_error::owner_is_null);
 }
 
-dom_object_member::~dom_object_member() 
-{ 
+dom_object_member::~dom_object_member()
+{
     if (m_value != nullptr)
         delete m_value;
 }
@@ -421,11 +421,11 @@ void dom_document::root(dom_value* const value) noexcept(false)
 
 dom_document::iterator dom_document::begin()
 {
-    return iterator(this); 
+    return iterator(this);
 }
 dom_document::const_iterator dom_document::begin() const
-{ 
-    return const_iterator(this); 
+{
+    return const_iterator(this);
 }
 
 dom_document::iterator dom_document::end()

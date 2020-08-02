@@ -9,20 +9,28 @@ function check_last()
     fi
 }
 
+compiler_spec=linux-clang
+for arg; do
+    if [ "$arg" = "g++" ]; then
+        compiler_spec=linux-g++
+    fi
+done
+echo "Compiler spec: $compiler_spec"
+
 echo "Generating stdext library makefiles..."
 pushd ../stdext > /dev/null
-qmake stdext.pro -spec linux-clang "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
+qmake stdext.pro -spec $compiler_spec "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 check_last $?
-qmake stdext.pro -spec linux-clang "CONFIG+=stdext_gen_makefile" -nocache -nodepend
+qmake stdext.pro -spec $compiler_spec "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 check_last $?
 echo "Done"
 
 echo
 echo "Generating stdext tests makefiles..."
 cd ../stdext-test
-qmake stdext-test.pro -spec linux-clang "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
+qmake stdext-test.pro -spec $compiler_spec "CONFIG+=debug stdext_gen_makefile" -nocache -nodepend
 check_last $?
-qmake stdext-test.pro -spec linux-clang "CONFIG+=stdext_gen_makefile" -nocache -nodepend
+qmake stdext-test.pro -spec $compiler_spec "CONFIG+=stdext_gen_makefile" -nocache -nodepend
 check_last $?
 echo "Done"
 

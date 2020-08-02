@@ -35,7 +35,9 @@ protected:
     {
         EXPECT_EQ(ws.length(), expected.length()) << title + L": length";
         if (ws.length() < 100)
+        {
             EXPECT_EQ(expected, ws) << title + L": content";
+        }
         for (size_t i = 0; i < ws.length() && i < expected.length(); i++)
         {
             ASSERT_EQ(ws[i], expected[i]) << strutils::wformat(L"%ls: char[%d]", title.c_str(), i);
@@ -409,9 +411,13 @@ TEST_F(DomDocumentGeneratorTest, TestGenerationLimits)
             EXPECT_TRUE(gen.conf().value_char_range().contains_all(it->text()));
         }
         if (it->member() != nullptr)
+        {
             EXPECT_TRUE(gen.conf().name_char_range().contains_all(it->member()->name()));
+        }
         if (it->is_container())
+        {
             EXPECT_LE(it->as_container()->count(), max_children);
+        }
         EXPECT_EQ(it->document(), &doc);
         item_count++;
     }

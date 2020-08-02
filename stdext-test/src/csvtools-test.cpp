@@ -71,7 +71,9 @@ protected:
         while (rd.next_row(r))
         {
             if (!rd.eof())
+            {
                 ASSERT_EQ(1, rd.pos().col()) << title + L"Col after read row";
+            }
             row++;
             ASSERT_EQ(row, rd.row_count()) << title + L"Row row";
             csv_row_values_t expected_row = expected[row - 1];

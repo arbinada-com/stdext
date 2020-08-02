@@ -30,14 +30,14 @@ namespace stdext
             |-- dom_number
             |-- dom_object
             |-- dom_string
-            
+
             DOM object hierarchy
             ---
             document (dom_document)
             |-- root (array, object or other dom_value)
 
             array (dom_array)
-            |-- values[] 
+            |-- values[]
                 |-- value1 (dom_value)
                 ...
                 |-- valueN
@@ -170,9 +170,6 @@ namespace stdext
             virtual void text(const std::wstring value) noexcept(false) { m_text = json::to_unescaped(value); }
             dom_value_type type() const noexcept { return m_type; }
             virtual std::wstring to_wstring() const;
-        public:
-            friend bool operator ==(const dom_value& v1, const dom_value& v2);
-            friend bool operator !=(const dom_value& v1, const dom_value& v2);
         protected:
             void parent(dom_value* const value) noexcept(false);
         protected:
@@ -184,7 +181,6 @@ namespace stdext
             std::wstring m_text;
         };
 
-
         enum class dom_literal_type
         {
             lvt_false,
@@ -194,13 +190,13 @@ namespace stdext
         dom_literal_type to_literal_type(const std::wstring& value) noexcept(false);
 
         class dom_literal : public dom_value
-        { 
+        {
         public:
             dom_literal(dom_document* const doc, const std::wstring text);
         public:
             void accept(dom_value_visitor& visitor) override { visitor.visit(*this); }
             dom_literal_type literal_type() const noexcept { return m_literal_type; }
-            virtual std::wstring text() const noexcept override 
+            virtual std::wstring text() const noexcept override
             { return dom_value::text(); } // prevent error C2660 function does not take 0 arguments
             void text(const std::wstring value) noexcept(false) override;
         protected:
@@ -409,10 +405,10 @@ namespace stdext
                 dom_value* next();
                 inline void operator ++() { next(); }
                 inline const_iterator& operator ++(int) { next(); return *this; }
-                inline bool operator ==(const const_iterator& rhs) 
-                { 
+                inline bool operator ==(const const_iterator& rhs)
+                {
                     return (m_doc == rhs.m_doc) &&
-                        ((is_end() && rhs.is_end()) || m_current == rhs.m_current); 
+                        ((is_end() && rhs.is_end()) || m_current == rhs.m_current);
                 }
                 inline bool operator !=(const const_iterator& rhs) { return !(*this == rhs); }
                 inline dom_value* operator ->() const noexcept { return m_current; }
@@ -429,7 +425,7 @@ namespace stdext
             };
 
             class iterator : public const_iterator
-            { 
+            {
             public:
                 iterator(const dom_document& doc) : const_iterator(doc) {}
                 iterator(const dom_document* doc) : const_iterator(doc) {}
@@ -479,6 +475,8 @@ namespace stdext
 
         bool equal(const dom_value& v1, const dom_value& v2);
         bool equal(const dom_document& doc1, const dom_document& doc2);
+        bool operator ==(const dom_value& v1, const dom_value& v2);
+        bool operator !=(const dom_value& v1, const dom_value& v2);
 
     }
 }
