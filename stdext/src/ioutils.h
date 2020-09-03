@@ -262,6 +262,7 @@ namespace stdext
             bool eof() const;
             bool peek(wchar_t& wc);
             virtual void read_all(std::wstring& ws);
+            virtual void read_line(std::wstring& ws);
             std::wstring source_name() const noexcept { return m_source_name; }
             void source_name(const std::wstring& value) { m_source_name = value; }
         protected:

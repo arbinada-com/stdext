@@ -395,6 +395,17 @@ void text_reader::read_all(std::wstring& ws)
         ws += c;
 }
 
+void text_reader::read_line(std::wstring& ws)
+{
+    wchar_t c;
+    while (next_char(c))
+    {
+        ws += c;
+        if (c == '\n')
+            break;
+    }
+}
+
 std::streamsize text_reader::count() const
 {
     if (m_stream != nullptr)

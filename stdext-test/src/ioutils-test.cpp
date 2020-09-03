@@ -248,6 +248,30 @@ TEST_F(TextReaderTest, TestReadAll)
     CheckReadBytes(bytes, expected, policy, "Partial length");
 }
 
+TEST_F(TextReaderTest, TestReadLine)
+{
+    string bytes = "ABC\r\nDEFG\nHIJKLMNOPQRSTUVWXYZ";
+    const int lines_count = 3;
+    wstring expected[lines_count] = { L"ABC\r\n", L"DEFG\n", L"HIJKLMNOPQRSTUVWXYZ" };
+    wstring expected_all = expected[0] + expected[1] + expected[2];
+    ioutils::text_io_policy_plain policy;
+    policy.max_text_buf_size(expected_all.length() + 1);
+    stringstream ss(bytes);
+    ioutils::text_reader r1(ss, policy);
+    wstring text;
+    int i = 0;
+    while (!r1.eof())
+    {
+        wstring ws;
+        r1.read_line(ws);
+        EXPECT_EQ(ws, expected[i++]);
+        text += ws;
+    }
+    EXPECT_EQ(text, expected_all);
+    EXPECT_EQ(i, lines_count);
+}
+
+
 TEST_F(TextReaderTest, TestRead_Ansi)
 {
     CheckReadBytes("ABCDEF", L"ABCDEF", ioutils::text_io_policy_ansi(), "ASCII");
