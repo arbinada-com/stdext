@@ -195,6 +195,38 @@ namespace stdext
             warnings_t m_warnings;
             errors_t m_errors;
         };
+
+        bool is_number(const std::wstring& s);
+
+        class numeric_parser
+        {
+        public:
+            enum class numeric_type
+            {
+                nt_unknown,
+                nt_integer,
+                nt_decimal,
+                nt_float
+            };
+        public:
+            numeric_parser() {}
+            numeric_parser(const std::wstring& s);
+        public:
+            bool is_valid_number() const { return m_type != numeric_type::nt_unknown; }
+            bool read_string(const std::wstring& s);
+            bool read_char(const wchar_t c);
+            numeric_type type() const { return m_type; }
+            std::wstring value() const { return m_value; }
+        private:
+            numeric_type m_type = numeric_type::nt_unknown;
+            std::wstring m_value;
+        private:
+            void accept_char(const wchar_t c);
+        private:
+            int m_char_count = 0;
+            int m_digit_count = 0;
+            numeric_type m_accepting_type = numeric_type::nt_integer;
+        };
     }
 }
 

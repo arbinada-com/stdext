@@ -237,4 +237,71 @@ TEST_F(ParsersTest, TestMessageCollector)
     EXPECT_EQ(2, count) << L"Count 5";
 }
 
+
+class NumericParserTest : public testing::Test
+{
+protected:
+    void Check(const wstring text, numeric_parser::numeric_type expected_type)
+    {
+        numeric_parser parser;
+        for (wchar_t c : text)
+        {
+            EXPECT_TRUE(parser.read_char(c));
+        }
+        EXPECT_EQ(parser.type(), expected_type) << text;
+        EXPECT_EQ(parser.value(), text);
+    }
+    void CheckError(const wstring text)
+    {
+        numeric_parser parser;
+        for (wchar_t c : text)
+        {
+            if (!parser.read_char(c))
+                break;
+        }
+        EXPECT_EQ(parser.type(), numeric_parser::numeric_type::nt_unknown) << text;
+    }
+};
+
+TEST_F(NumericParserTest, TestValidNumbers)
+{
+    using nt = numeric_parser::numeric_type;
+    Check(L"12345", nt::nt_integer);
+    Check(L"-12345", nt::nt_integer);
+    Check(L"123.456", nt::nt_decimal);
+    Check(L"-123.456", nt::nt_decimal);
+    Check(L"1.23456E10", nt::nt_float);
+    Check(L"1.23456e10", nt::nt_float);
+    Check(L"1.23456E+10", nt::nt_float);
+    Check(L"1.23456e+10", nt::nt_float);
+    Check(L"-1.23456E10", nt::nt_float);
+    Check(L"-1.23456e10", nt::nt_float);
+    Check(L"1.23456E-10", nt::nt_float);
+    Check(L"1.23456e-10", nt::nt_float);
+    Check(L"-1.23456E-10", nt::nt_float);
+    Check(L"-1.23456e-10", nt::nt_float);
+    Check(L"0", nt::nt_integer);
+    Check(L"-0", nt::nt_integer);
+    Check(L"0.0", nt::nt_decimal);
+    Check(L"-0.0", nt::nt_decimal);
+    Check(L"0.0e0", nt::nt_float);
+    Check(L"-0.0e-0", nt::nt_float);
+}
+
+TEST_F(NumericParserTest, TestErrors)
+{
+    CheckError(L"-");
+    CheckError(L"+");
+    CheckError(L"-.");
+    CheckError(L"123.");
+    CheckError(L"123.\"");
+    CheckError(L"123.n");
+    CheckError(L"1e");
+    CheckError(L"1e");
+    CheckError(L"1e-");
+    CheckError(L"1e+");
+    CheckError(L"00");
+    CheckError(L"09");
+}
+
 }

@@ -109,10 +109,10 @@ void json::lexer::add_error(const parser_msg_kind kind, const std::wstring text)
 void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
 {
     m_messages.add_error(
-        msg_origin::lexer, 
-        kind, 
-        pos, 
-        m_reader.source_name(), 
+        msg_origin::lexer,
+        kind,
+        pos,
+        m_reader.source_name(),
         text);
 }
 
@@ -167,70 +167,35 @@ bool json::lexer::handle_literal(lexeme& lex)
 bool json::lexer::handle_number(lexeme& lex)
 {
     lex.reset(m_pos, token::number_int, m_c);
-    accept_char();
-    int int_digit_count = m_c == L'-' ? 0 : 1;
-    wchar_t prev = m_c;
-    while (next_char())
+    numeric_parser np;
+    do
     {
-        if (!is_digit(m_c))
+        if (np.read_char(m_c))
+            accept_char();
+        else
             break;
-        if (int_digit_count == 1 && prev == L'0' && m_c == L'0')
-        {
-            add_error(parser_msg_kind::err_invalid_number);
-            return false;
-        }
-        int_digit_count++;
-        accept_char(lex);
-        prev = m_c;
-    }
-    if (int_digit_count == 0)
+    } while (next_char());
+    json::token tok = token::unknown;
+    switch (np.type())
     {
+    case numeric_parser::numeric_type::nt_decimal:
+        tok = token::number_decimal;
+        break;
+    case numeric_parser::numeric_type::nt_float:
+        tok = token::number_float;
+        break;
+    case numeric_parser::numeric_type::nt_integer:
+        tok = token::number_int;
+        break;
+    default:
         add_error(parser_msg_kind::err_invalid_number);
         return false;
     }
-    if (m_c == L'.')
-    {
-        lex.token(token::number_decimal);
-        accept_char(lex);
-        int frac_digit_count = 0;
-        while (next_char())
-        {
-            if (!is_digit(m_c))
-                break;
-            frac_digit_count++;
-            accept_char(lex);
-        }
-        if (frac_digit_count == 0)
-        {
-            add_error(parser_msg_kind::err_invalid_number);
-            return false;
-        }
-    }
-    if (m_c == L'e' || m_c == L'E')
-    {
-        lex.token(token::number_float);
-        accept_char(lex);
-        int exp_digit_count = 0;
-        while (next_char())
-        {
-            if (is_digit(m_c))
-            {
-                exp_digit_count++;
-                accept_char(lex);
-            }
-            else if (exp_digit_count == 0 && (m_c == L'-' || m_c == L'+'))
-                accept_char(lex);
-            else
-                break;
-        }
-        if (exp_digit_count == 0)
-        {
-            add_error(parser_msg_kind::err_invalid_number);
-            return false;
-        }
-    }
     if (char_accepted() || is_whitespace(m_c) || is_structural(m_c))
+    {
+        lex.reset(lex.pos(), tok, np.value());
         return true;
+    }
     add_error(parser_msg_kind::err_invalid_number);
     return false;
 }

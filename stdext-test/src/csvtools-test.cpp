@@ -135,6 +135,24 @@ TEST_F(CsvToolsTest, TestStringStream)
     CheckStreamReading(L"String stream LF", policy, ss, expected);
 }
 
+TEST_F(CsvToolsTest, TestNumberValues)
+{
+    csv_values_t expected;
+    expected.push_back(csv_row_values_t({ L"1", L"\"2\"", L"3.0", L"4.1", L"0.5e+8", L"-1" }));
+    wstringstream ss = CreateTestStream(expected, L',', L"\r\n");
+    csv::reader rd(ss);
+    rd.separator(',');
+    csv::row r;
+    EXPECT_TRUE(rd.next_row(r));
+    EXPECT_EQ(r.field_count(), 6U);
+    EXPECT_TRUE(parsers::is_number(r[0].value()));
+    EXPECT_FALSE(parsers::is_number(r[1].value()));
+    EXPECT_TRUE(parsers::is_number(r[2].value()));
+    EXPECT_TRUE(parsers::is_number(r[3].value()));
+    EXPECT_TRUE(parsers::is_number(r[4].value()));
+    EXPECT_TRUE(parsers::is_number(r[5].value()));
+}
+
 TEST_F(CsvToolsTest, TestErrorRowFieldCount)
 {
     csv_values_t v;

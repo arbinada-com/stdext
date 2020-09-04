@@ -18,9 +18,9 @@ class lex_vector : public stdext::ptr_vector<json::lexeme>
     typedef stdext::ptr_vector<json::lexeme> base_t;
 public:
     lex_vector& add(
-        const json::token token, 
-        const parsers::textpos::pos_t line, 
-        const parsers::textpos::pos_t col, 
+        const json::token token,
+        const parsers::textpos::pos_t line,
+        const parsers::textpos::pos_t col,
         const std::wstring text)
     {
         push_back(new json::lexeme(token, textpos(line, col), text));
@@ -41,7 +41,7 @@ protected:
     {
         title += L": ";
         EXPECT_EQ(expected.token(), lex.token()) << title + L"expected token: " + json::to_wstring(expected.token()) + L", got: " + json::to_wstring(lex.token());
-        EXPECT_EQ(expected.pos(), lex.pos()) << title + L"pos";
+        EXPECT_EQ(expected.pos(), lex.pos()) << title + L"expected: " + expected.pos().to_wstring() + L" got: " + lex.pos().to_wstring();
         EXPECT_EQ(expected.text(), lex.text()) << title + L"text";
     }
 
@@ -83,7 +83,7 @@ protected:
         ASSERT_TRUE(lexer.has_errors()) << title2 + L"no errors";
         json::message_t* err = lexer.messages().errors()[0];
         EXPECT_TRUE(msg_origin::lexer == err->origin()) << title2 + L"origin. " + err->to_wstring();
-        EXPECT_EQ(kind, err->kind()) << title2 + L"kind. " + err->to_wstring();
+        EXPECT_EQ(kind, err->kind()) << title2 + L"kind. Expected " + to_wstring((int)kind) + L", got: " + err->to_wstring();
         EXPECT_FALSE(err->text().empty()) << title2 + L"text is empty";
         EXPECT_EQ(pos, err->pos()) << title2 + L"error pos. " + err->to_wstring();
         EXPECT_EQ(r.source_name(), err->source()) << title2 + L"source. " + err->to_wstring();
@@ -185,12 +185,12 @@ TEST_F(JsonLexerTest, TestTexts)
 {
     lex_vector lv;
     //
-    CheckText(L"", lv, L"1");
+    CheckText(L"", lv, L"Test 1");
     //
     lv.clear()
             .add(json::token::begin_array, 1, 1, L"[")
             .add(json::token::end_array, 1, 2, L"]");
-    CheckText(L"[]", lv, L"2");
+    CheckText(L"[]", lv, L"Test 2");
     //
     lv.clear()
             .add(json::token::begin_array, 1, 1, L"[")
@@ -204,13 +204,13 @@ TEST_F(JsonLexerTest, TestTexts)
             .add(json::token::name_separator, 4, 9, L":")
             .add(json::token::string, 4, 10, L"Value 1")
             .add(json::token::value_separator, 4, 19, L",");
-    CheckText(L"[]\n{}\nfalse null true\n\"Name 1\":\"Value 1\",", lv, L"3");
+    CheckText(L"[]\n{}\nfalse null true\n\"Name 1\":\"Value 1\",", lv, L"Test 3");
     //
     lv.clear()
             .add(json::token::begin_array, 1, 1, L"[")
             .add(json::token::number_float, 1, 2, L"-4.54557e+18")
             .add(json::token::end_array, 1, 14, L"]");
-    CheckText(L"[-4.54557e+18]", lv, L"3");
+    CheckText(L"[-4.54557e+18]", lv, L"Test 4");
     //
     lv.clear()
             .add(json::token::begin_object, 1, 1, L"{")
@@ -218,7 +218,7 @@ TEST_F(JsonLexerTest, TestTexts)
             .add(json::token::name_separator, 1, 12, L":")
             .add(json::token::number_float, 1, 14, L"-4.54557e+18")
             .add(json::token::end_object, 1, 27, L"}");
-    CheckText(L"{\t\"abc def\": -4.54557e+18 }", lv, L"4");
+    CheckText(L"{\t\"abc def\": -4.54557e+18 }", lv, L"Test 5");
 }
 
 TEST_F(JsonLexerTest, TestLexerErrors)
@@ -232,8 +232,8 @@ TEST_F(JsonLexerTest, TestLexerErrors)
     CheckError(L"-", json::parser_msg_kind::err_invalid_number, textpos(1, 1), L"E1012.1");
     CheckError(L"-.", json::parser_msg_kind::err_invalid_number, textpos(1, 2), L"E1012.2");
     CheckError(L"123.", json::parser_msg_kind::err_invalid_number, textpos(1, 4), L"E1012.3");
-    CheckError(L"123.\"", json::parser_msg_kind::err_invalid_number, textpos(1, 5), L"E1012.41");
-    CheckError(L"123.0\"", json::parser_msg_kind::err_invalid_number, textpos(1, 6), L"E1012.42");
+    CheckError(L"123.\"", json::parser_msg_kind::err_invalid_number, textpos(1, 5), L"E1012.4.1");
+    CheckError(L"123.0\"", json::parser_msg_kind::err_invalid_number, textpos(1, 6), L"E1012.4.2");
     CheckError(L"1e", json::parser_msg_kind::err_invalid_number, textpos(1, 2), L"E1012.5");
     CheckError(L"1eA", json::parser_msg_kind::err_invalid_number, textpos(1, 3), L"E1012.6");
     CheckError(L"1e-1A", json::parser_msg_kind::err_invalid_number, textpos(1, 5), L"E1012.7");
