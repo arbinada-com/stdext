@@ -46,7 +46,9 @@ namespace stdext
             row& operator=(row&& source) = default;
             virtual ~row() {}
         public:
+            const csv::field& operator[](const size_type pos) const { return field(pos); }
             csv::field& operator[](const size_type pos) { return field(pos); }
+            const csv::field& field(const size_type pos) const { return m_row.at(pos); }
             csv::field& field(const size_type pos) { return m_row.at(pos); }
             void append_value(const std::wstring& value)
             {
