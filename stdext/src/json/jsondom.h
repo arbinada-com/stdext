@@ -357,7 +357,7 @@ namespace stdext
         public: // container_intf implementation
             container_intf* as_container() override { return dynamic_cast<json::container_intf*>(this); }
             bool is_container() const noexcept override { return true; }
-            dom_value* get_value(const std::size_t i) override { return m_data->at(i); };
+            dom_value* get_value(const std::size_t i) override { return m_data->at(i); }
             std::size_t count() const override { return m_data->size(); }
         private:
             data_t* m_data = nullptr;
