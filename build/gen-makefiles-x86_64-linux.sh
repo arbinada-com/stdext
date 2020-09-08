@@ -9,10 +9,10 @@ function check_last()
     fi
 }
 
-compiler_spec=linux-clang
+compiler_spec=linux-g++
 for arg; do
-    if [ "$arg" = "g++" ]; then
-        compiler_spec=linux-g++
+    if [ "$arg" = "clang" ]; then
+        compiler_spec=linux-clang
     fi
 done
 echo "Compiler spec: $compiler_spec"
