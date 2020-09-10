@@ -5,8 +5,9 @@
 #include <fstream>
 
 using namespace std;
-using namespace stdext;
 
+namespace stdext
+{
 namespace csvtools_test
 {
 
@@ -265,4 +266,5 @@ TEST_F(CsvToolsTest, TestFilesUnicode)
     }
 }
 
+}
 }

@@ -8,24 +8,27 @@
 #include "../strutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace parsers;
 
-bool json::is_number_token(const json::token value)
+namespace stdext
+{
+namespace json
+{
+
+bool is_number_token(const token value)
 {
     return value == token::number_decimal ||
         value == token::number_float ||
         value == token::number_int;
 }
 
-bool json::is_literal_token(const json::token value)
+bool is_literal_token(const token value)
 {
     return value == token::literal_false ||
         value == token::literal_null ||
         value == token::literal_true;
 }
 
-bool json::is_value_token(const json::token value)
+bool is_value_token(const token value)
 {
     return value == token::begin_array ||
         value == token::begin_object ||
@@ -35,7 +38,7 @@ bool json::is_value_token(const json::token value)
 }
 
 
-std::wstring json::to_wstring(const json::token tok)
+std::wstring to_wstring(const token tok)
 {
     switch (tok)
     {
@@ -62,14 +65,14 @@ std::wstring json::to_wstring(const json::token tok)
 /*
  * lexeme class
  */
-void json::lexeme::reset(const parsers::textpos pos, const json::token tok, const wchar_t text)
+void lexeme::reset(const parsers::textpos pos, const json::token tok, const wchar_t text)
 {
     wstring s;
     s += text;
     reset(pos, tok, s);
 }
 
-void json::lexeme::reset(const parsers::textpos pos, const json::token tok, const std::wstring text)
+void lexeme::reset(const parsers::textpos pos, const json::token tok, const std::wstring text)
 {
     m_pos = pos;
     m_token = tok;
@@ -79,44 +82,44 @@ void json::lexeme::reset(const parsers::textpos pos, const json::token tok, cons
 /*
  * lexer class
  */
-void json::lexer::accept_char(lexeme& lex)
+void lexer::accept_char(lexeme& lex)
 {
     lex.inc_text(m_c);
     accept_char();
 }
 
-void json::lexer::accept_char(std::wstring& value)
+void lexer::accept_char(std::wstring& value)
 {
     value += m_c;
     accept_char();
 }
 
-void json::lexer::add_error(const parser_msg_kind kind)
+void lexer::add_error(const parser_msg_kind kind)
 {
-    add_error(kind, m_pos, json::to_wmessage(kind));
+    add_error(kind, m_pos, to_wmessage(kind));
 }
 
-void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos)
+void lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos)
 {
-    add_error(kind, pos, json::to_wmessage(kind));
+    add_error(kind, pos, to_wmessage(kind));
 }
 
-void json::lexer::add_error(const parser_msg_kind kind, const std::wstring text)
+void lexer::add_error(const parser_msg_kind kind, const std::wstring text)
 {
     add_error(kind, m_pos, text);
 }
 
-void json::lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
+void lexer::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
 {
     m_messages.add_error(
-        msg_origin::lexer,
+        parsers::msg_origin::lexer,
         kind,
         pos,
         m_reader.source_name(),
         text);
 }
 
-bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
+bool lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
 {
     std::locale loc;
     wstring value;
@@ -135,9 +138,9 @@ bool json::lexer::handle_escaped_char(wchar_t& c, const parsers::textpos start)
     return true;
 }
 
-bool json::lexer::handle_literal(lexeme& lex)
+bool lexer::handle_literal(lexeme& lex)
 {
-    textpos pos = m_pos;
+    parsers::textpos pos = m_pos;
     wstring value;
     accept_char(value);
     while (next_char())
@@ -157,17 +160,17 @@ bool json::lexer::handle_literal(lexeme& lex)
         add_error(parser_msg_kind::err_invalid_literal_fmt,
             pos,
             strutils::wformat(
-                json::to_wmessage(parser_msg_kind::err_invalid_literal_fmt),
+                to_wmessage(parser_msg_kind::err_invalid_literal_fmt),
                 value.c_str()));
         return false;
     }
     return true;
 }
 
-bool json::lexer::handle_number(lexeme& lex)
+bool lexer::handle_number(lexeme& lex)
 {
     lex.reset(m_pos, token::number_int, m_c);
-    numeric_parser np;
+    parsers::numeric_parser np;
     do
     {
         if (np.read_char(m_c))
@@ -178,13 +181,13 @@ bool json::lexer::handle_number(lexeme& lex)
     json::token tok = token::unknown;
     switch (np.type())
     {
-    case numeric_parser::numeric_type::nt_decimal:
+	case parsers::numeric_parser::numeric_type::nt_decimal:
         tok = token::number_decimal;
         break;
-    case numeric_parser::numeric_type::nt_float:
+    case parsers::numeric_parser::numeric_type::nt_float:
         tok = token::number_float;
         break;
-    case numeric_parser::numeric_type::nt_integer:
+    case parsers::numeric_parser::numeric_type::nt_integer:
         tok = token::number_int;
         break;
     default:
@@ -200,7 +203,7 @@ bool json::lexer::handle_number(lexeme& lex)
     return false;
 }
 
-bool json::lexer::handle_string(lexeme& lex)
+bool lexer::handle_string(lexeme& lex)
 {
     wstring value;
     lex.reset(m_pos, token::string, L"");
@@ -216,7 +219,7 @@ bool json::lexer::handle_string(lexeme& lex)
         }
         else if (is_escape(m_c))
         {
-            textpos pos = m_pos;
+            parsers::textpos pos = m_pos;
             if (!next_char())
                 break;
             switch (m_c)
@@ -257,7 +260,7 @@ bool json::lexer::handle_string(lexeme& lex)
                 s += m_c;
                 add_error(parser_msg_kind::err_unrecognized_escape_seq_fmt,
                     pos,
-                    strutils::wformat(json::to_wmessage(parser_msg_kind::err_unrecognized_escape_seq_fmt), s.c_str()));
+                    strutils::wformat(to_wmessage(parser_msg_kind::err_unrecognized_escape_seq_fmt), s.c_str()));
                 return false;
             }
         }
@@ -265,7 +268,7 @@ bool json::lexer::handle_string(lexeme& lex)
         {
             add_error(parser_msg_kind::err_unallowed_char_fmt,
                 strutils::wformat(
-                    json::to_wmessage(parser_msg_kind::err_unallowed_char_fmt),
+                    to_wmessage(parser_msg_kind::err_unallowed_char_fmt),
                     m_c, static_cast<unsigned int>(m_c)));
         }
     }
@@ -273,27 +276,27 @@ bool json::lexer::handle_string(lexeme& lex)
     return false;
 }
 
-bool json::lexer::is_digit(const wchar_t c)
+bool lexer::is_digit(const wchar_t c)
 {
     return c >= L'0' && c <= L'9';
 }
 
-bool json::lexer::is_escape(const wchar_t c)
+bool lexer::is_escape(const wchar_t c)
 {
     return c == L'\\';
 }
 
-bool json::lexer::is_structural(const wchar_t c)
+bool lexer::is_structural(const wchar_t c)
 {
     return c == L'[' || c == L'{' || c == L']' || c == L'}' || c == L':' || c == L',';
 }
 
-bool json::lexer::is_whitespace(const wchar_t c)
+bool lexer::is_whitespace(const wchar_t c)
 {
     return c == L' ' || c == L'\t' || c == L'\r' || c == L'\n';
 }
 
-bool json::lexer::next_char()
+bool lexer::next_char()
 {
     wchar_t prev = m_c;
     if (m_reader.next_char(m_c))
@@ -313,7 +316,7 @@ bool json::lexer::next_char()
     return false;
 }
 
-bool json::lexer::next_lexeme(lexeme& lex)
+bool lexer::next_lexeme(lexeme& lex)
 {
     if (char_accepted() || m_initial)
     {
@@ -371,7 +374,7 @@ bool json::lexer::next_lexeme(lexeme& lex)
         default:
             add_error(parser_msg_kind::err_unexpected_char_fmt,
                 strutils::wformat(
-                    json::to_wmessage(parser_msg_kind::err_unexpected_char_fmt),
+                    to_wmessage(parser_msg_kind::err_unexpected_char_fmt),
                     m_c, static_cast<unsigned int>(m_c)));
             break;
         }
@@ -379,11 +382,14 @@ bool json::lexer::next_lexeme(lexeme& lex)
     return false;
 }
 
-void json::lexer::skip_whitespaces()
+void lexer::skip_whitespaces()
 {
     while (is_whitespace(m_c))
     {
         accept_char();
         next_char();
     }
+}
+
+}
 }

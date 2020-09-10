@@ -8,12 +8,15 @@
 #include "../locutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace locutils;
 
-bool json::is_unescaped(const wchar_t c)
+namespace stdext
 {
-    return !utf16::is_noncharacter(c) &&
+namespace json
+{
+
+bool is_unescaped(const wchar_t c)
+{
+    return !locutils::utf16::is_noncharacter(c) &&
         (
             c == 0x20 || c == 0x21 ||
             (c >= 0x23 && c <= 0x5B) ||
@@ -22,7 +25,7 @@ bool json::is_unescaped(const wchar_t c)
         );
 }
 
-std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
+std::wstring to_escaped(const wchar_t c, const bool force_to_numeric)
 {
     if (force_to_numeric || !is_unescaped(c))
     {
@@ -42,7 +45,7 @@ std::wstring json::to_escaped(const wchar_t c, const bool force_to_numeric)
     return wstring{c};
 }
 
-std::wstring json::to_escaped(const std::wstring ws, const bool force_to_numeric)
+std::wstring to_escaped(const std::wstring ws, const bool force_to_numeric)
 {
     wstring ws2;
     ws2.reserve(ws.length() * (force_to_numeric ? 6 : 2));
@@ -56,7 +59,7 @@ std::wstring json::to_escaped(const std::wstring ws, const bool force_to_numeric
     return ws2;
 }
 
-std::wstring json::to_unescaped(const std::wstring ws)
+std::wstring to_unescaped(const std::wstring ws)
 {
     std::locale loc;
     wstring ws2;
@@ -84,8 +87,9 @@ std::wstring json::to_unescaped(const std::wstring ws)
     return ws2;
 }
 
-std::wstring json::to_wmessage(const parser_msg_kind kind)
+std::wstring to_wmessage(const json::parser_msg_kind kind)
 {
+    using namespace json;
     switch (kind)
     {
     // lexer
@@ -121,3 +125,5 @@ std::wstring json::to_wmessage(const parser_msg_kind kind)
     }
 }
 
+}
+}

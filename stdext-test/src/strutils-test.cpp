@@ -3,7 +3,11 @@
 #include "platforms.h"
 
 using namespace std;
-using namespace stdext;
+
+namespace stdext
+{
+namespace strutils_test
+{
 
 TEST(StrUtilsTest, TestFormat)
 {
@@ -93,4 +97,7 @@ TEST(StrUtilsTest, TestQuoted)
     EXPECT_EQ("\"\"", strutils::double_quoted("")) << L"DQuoted 2.1";
     EXPECT_EQ("\"123\"", strutils::double_quoted("123")) << L"DQuoted 2.2";
     EXPECT_EQ(L"\"123\"", strutils::double_quoted(L"123")) << L"DQuoted 2.3";
+}
+
+}
 }

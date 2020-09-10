@@ -3,6 +3,8 @@
 #include <string>
 #include "json.h"
 
+namespace stdext
+{
 namespace jsondom_test
 {
 
@@ -15,4 +17,5 @@ protected:
 
 };
 
+}
 }

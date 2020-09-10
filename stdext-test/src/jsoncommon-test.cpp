@@ -4,10 +4,9 @@
 #include "testutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace locutils;
-using namespace testutils;
 
+namespace stdext
+{
 namespace jsoncommon_test
 {
 
@@ -38,9 +37,9 @@ TEST(JsonCommonTest, TestToEscaped)
     //
     EXPECT_EQ(L"\\u0001", json::to_escaped(L"\x0001")) << "3.1";
     EXPECT_EQ(L"\\u001F", json::to_escaped(L"\x001F")) << "3.2";
-    wstring ws = {utf16::replacement_character};
+    wstring ws = {locutils::utf16::replacement_character};
     ASSERT_EQ(ws, json::to_escaped(ws)) << "3.3";
-    EXPECT_TRUE(utf16::is_noncharacter(L'\xFDD0'));
+    EXPECT_TRUE(locutils::utf16::is_noncharacter(L'\xFDD0'));
     ASSERT_EQ(L"\\uFDD0", json::to_escaped(L"\xFDD0")) << "3.4";
     //
     EXPECT_EQ(L"\xD834\xDD1E", json::to_escaped(L"\xD834\xDD1E")) << "Surrogate pair 'G clef' 1";
@@ -58,4 +57,5 @@ TEST(JsonCommonTest, TestToUnescaped)
     EXPECT_EQ(L"\\u123X", json::to_unescaped(L"\\u123X"));
 }
 
+}
 }

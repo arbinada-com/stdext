@@ -1,6 +1,6 @@
 /*
  Implementations are based on following sources:
- 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition, 
+ 1. "Practical astronomy with your calculator", Peter Duffet-Smith, 3rd edition,
     Cambridge University Press, 1988
  2. Julian date (Wikipedia)
  */
@@ -17,7 +17,9 @@
 #include "strutils.h"
 
 using namespace std;
-using namespace stdext;
+
+namespace stdext
+{
 
 #if defined(__BCPLUSPLUS__) && defined(__clang__)
 double trunc2(const double n)
@@ -89,7 +91,7 @@ datetime::datetime()
 
 
 datetime::datetime(const datepart_t year, const datepart_t month, const datepart_t day,
-                   const datepart_t hour, const datepart_t minute, const datepart_t second, 
+                   const datepart_t hour, const datepart_t minute, const datepart_t second,
                    const datepart_t millisecond,
                    const calendar_t cal)
 {
@@ -104,8 +106,8 @@ datetime::datetime(const datepart_t year, const datepart_t month, const datepart
 
 datetime::datetime(const datepart_t year, const datepart_t month, const datepart_t day,
                    const calendar_t cal)
-    : datetime(year, month, day, 
-        (year == -4712 && month == 1 && day == 1 && (cal == calendar_t::date_default || cal == calendar_t::julian) ? 12 : 0), 
+    : datetime(year, month, day,
+        (year == -4712 && month == 1 && day == 1 && (cal == calendar_t::date_default || cal == calendar_t::julian) ? 12 : 0),
         0, 0, 0, cal)
 { }
 
@@ -180,7 +182,7 @@ datetime::jd_t datetime::calendar_to_jd(const calendar_t cal, const data_t& dt)
 
 datetime::data_t datetime::jd_to_calendar(const calendar_t cal, const jd_t jd)
 {
-    
+
     double fpart, ipart;
     fpart = modf(jd + 0.5, &ipart);
     double b = ipart;
@@ -311,42 +313,42 @@ string datetime::to_string()
 	return string(buf);
 }
 
-datepart_t datetime::year() const 
-{ 
+datepart_t datetime::year() const
+{
     return jd_to_calendar(m_cal, m_jd).year;
 }
 
-datepart_t datetime::month() const 
+datepart_t datetime::month() const
 {
     return jd_to_calendar(m_cal, m_jd).month;
 }
 
-datepart_t datetime::quarter() const 
-{ 
-    return datetime::get_quarter_of_month(month()); 
+datepart_t datetime::quarter() const
+{
+    return datetime::get_quarter_of_month(month());
 }
 
-datepart_t datetime::day() const 
-{ 
+datepart_t datetime::day() const
+{
     return jd_to_calendar(m_cal, m_jd).day;
 }
 
-datepart_t datetime::hour() const 
-{ 
+datepart_t datetime::hour() const
+{
     return jd_to_calendar(m_cal, m_jd).hour;
 }
 
-datepart_t datetime::minute() const 
-{ 
+datepart_t datetime::minute() const
+{
     return jd_to_calendar(m_cal, m_jd).min;
 }
 
-datepart_t datetime::second() const 
-{ 
+datepart_t datetime::second() const
+{
     return jd_to_calendar(m_cal, m_jd).sec;
 }
 
-datepart_t datetime::millisecond() const 
+datepart_t datetime::millisecond() const
 {
     return jd_to_calendar(m_cal, m_jd).msec;
 }
@@ -527,7 +529,7 @@ datetime::jd_t datetime::jd_grain()
 {
     // Code to get grain value:
     /*
-    data_t dt0; 
+    data_t dt0;
     dt0.msec = 1;
     double grain = hms_to_hh(dt0);
     */
@@ -565,4 +567,6 @@ bool datetime::is_leap_year(const datetime& dt)
 bool datetime::is_leap_year(const datepart_t year)
 {
     return ((year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0)));
+}
+
 }

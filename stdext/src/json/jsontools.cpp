@@ -9,41 +9,11 @@
 #include <sstream>
 
 using namespace std;
-using namespace stdext;
-using namespace json;
-using namespace locutils;
 
-
-/*
- * dom_append_child_visitor class
- */
-class dom_append_child_visitor : public dom_value_visitor
+namespace stdext
 {
-public:
-    typedef dom_object_member::name_t name_t;
-public:
-    dom_append_child_visitor(dom_value* child)
-        : dom_value_visitor(), m_child(child)
-    {}
-    dom_append_child_visitor(name_t name, dom_value* child)
-        : dom_value_visitor(), m_name(name), m_child(child)
-    {}
-public:
-    virtual void visit(json::dom_literal&) override {}
-    virtual void visit(json::dom_number&) override {}
-    virtual void visit(json::dom_string&) override {}
-    void visit(dom_array& value) override
-    {
-        value.append(m_child);
-    }
-    void visit(dom_object& value) override
-    {
-        value.append_member(m_name, m_child);
-    }
-private:
-    name_t m_name;
-    dom_value* m_child;
-};
+namespace json
+{
 
 /*
  * dom_document_writer_visitor class
@@ -334,7 +304,7 @@ json::dom_value_type dom_document_generator::random_value_container_type()
 /*
  * Document diff
  */
-std::string json::to_string(const dom_document_diff_kind value)
+std::string to_string(const dom_document_diff_kind value)
 {
     switch(value)
     {
@@ -347,17 +317,17 @@ std::string json::to_string(const dom_document_diff_kind value)
     }
 }
 
-std::wstring json::to_wstring(const dom_document_diff_kind value)
+std::wstring to_wstring(const dom_document_diff_kind value)
 {
-    return strutils::to_wstring(json::to_string(value));
+    return strutils::to_wstring(to_string(value));
 }
 
-std::string json::dom_document_diff_item::to_string() const
+std::string dom_document_diff_item::to_string() const
 {
     return strutils::to_string(this->to_wstring());
 }
 
-std::wstring json::dom_document_diff_item::to_wstring() const
+std::wstring dom_document_diff_item::to_wstring() const
 {
     return strutils::wformat(L"Kind: %s\nLeft value:\n\t%ls\nRight value:\n\t%ls",
                              json::to_wstring(m_kind).c_str(),
@@ -366,15 +336,15 @@ std::wstring json::dom_document_diff_item::to_wstring() const
 }
 
 
-json::dom_document_diff json::make_diff(const json::dom_document& ldoc, const json::dom_document& rdoc)
+json::dom_document_diff make_diff(const json::dom_document& ldoc, const json::dom_document& rdoc)
 {
     json::dom_document_diff_options options;
     return json::make_diff(ldoc, rdoc, options);
 }
 
-json::dom_document_diff json::make_diff(const json::dom_document& ldoc,
-                                        const json::dom_document& rdoc,
-                                        const dom_document_diff_options& options)
+json::dom_document_diff make_diff(const json::dom_document& ldoc,
+                                  const json::dom_document& rdoc,
+                                  const dom_document_diff_options& options)
 {
     json::dom_document_diff diff;
     dom_document::const_iterator l_it = ldoc.begin();
@@ -403,17 +373,20 @@ json::dom_document_diff json::make_diff(const json::dom_document& ldoc,
         {
             bool are_equal = options.case_sensitive() ?
                 (l_it->member()->name() == r_it->member()->name()) :
-                utf16::equal_ci(l_it->member()->name(), r_it->member()->name());
+                locutils::utf16::equal_ci(l_it->member()->name(), r_it->member()->name());
             if (!are_equal)
                 diff.append(dom_document_diff_item(dom_document_diff_kind::member_name_diff, l_it.value(), r_it.value()));
         }
         bool are_equal = options.case_sensitive() ?
                     (l_it->text() == r_it->text()) :
-                    utf16::equal_ci(l_it->text(), r_it->text());
+                    locutils::utf16::equal_ci(l_it->text(), r_it->text());
         if (!are_equal)
             diff.append(dom_document_diff_item(dom_document_diff_kind::value_diff, l_it.value(), r_it.value()));
         ++l_it;
         ++r_it;
     }
     return diff;
+}
+
+}
 }

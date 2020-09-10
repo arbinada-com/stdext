@@ -6,10 +6,11 @@
 #include <limits>
 
 using namespace std;
-using namespace stdext;
-using namespace variants;
-using namespace testutils;
 
+namespace stdext
+{
+namespace variants
+{
 namespace variants_test
 {
 
@@ -35,7 +36,7 @@ private:
 
 template <class Type1, class Type2, class TypeR>
 class test_data_set : public std::vector<test_data<Type1, Type2, TypeR> >
-{ 
+{
 public:
     typedef test_data<Type1, Type2, TypeR> test_data_t;
 public:
@@ -365,7 +366,7 @@ public:
     { }
 protected:
     virtual void test_b_and(test_data_t& test) override
-    { 
+    {
         VARIANTS_DECLARE_TEST_LOCAL_VARS(bool, bool)
         VARIANTS_DECLARE_BIN_OP_TESTS(bool, &&, AND)
     }
@@ -756,7 +757,7 @@ TEST(VariantsTest, TestObjref)
 TEST(VariantsTest, TestBoolMemory)
 {
     auto func1 = [](variant n1, variant n2)->variant { return n1 && n2; };
-    memchecker chk;
+    testutils::memchecker chk;
     {
         variant v11 = true;
         variant v12 = v11;
@@ -774,7 +775,7 @@ template <class IntT>
 void TestMemoryIntType()
 {
     auto sum1 = [=](variant n1, variant n2)->variant { return n1 + n2; };
-    memchecker chk;
+    testutils::memchecker chk;
     {
         variant v11 = static_cast<IntT>(123);
         ASSERT_TRUE(v11.vtype() == variants::to_value_type(static_cast<IntT>(0))) << L"Int type";
@@ -804,7 +805,7 @@ TEST(VariantsTest, TestDoubleMemory)
 TEST(VariantsTest, TestStringMemory)
 {
     auto func1 = [](variant n1, variant n2)->variant { return n1 + n2; };
-    memchecker chk;
+    testutils::memchecker chk;
     {
         variant v11 = "ABC def";
         variant v12 = v11;
@@ -821,7 +822,7 @@ TEST(VariantsTest, TestStringMemory)
 TEST(VariantsTest, TestObjrefMemory)
 {
     auto func1 = [](variant n1, variant n2)->variant { return n1.to_object<testobj>()->value() + n2.to_object<testobj>()->value(); };
-    memchecker chk;
+    testutils::memchecker chk;
     {
         variant v11 = new testobj("Obj1");
         variant v12 = v11;
@@ -835,4 +836,6 @@ TEST(VariantsTest, TestObjrefMemory)
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
 
+}
+}
 }

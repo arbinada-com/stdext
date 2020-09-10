@@ -4,9 +4,9 @@
 #include "testutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace testutils;
 
+namespace stdext
+{
 namespace containers_test
 {
 
@@ -97,7 +97,7 @@ TEST_F(PtrVectorTest, TestExtract)
 
 TEST_F(PtrVectorTest, TestExtractMemory)
 {
-    memchecker chk;
+    testutils::memchecker chk;
     {
         TestDataPtrVector v;
         FillData(v);
@@ -161,7 +161,7 @@ TEST_F(PtrVectorTest, TestBackFront)
 TEST_F(PtrVectorTest, TestMemory)
 {
     {
-        memchecker chk;
+        testutils::memchecker chk;
         {
             ptr_vector<test_data> v;
             FillData(v);
@@ -170,7 +170,7 @@ TEST_F(PtrVectorTest, TestMemory)
         ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
     }
     {
-        memchecker chk;
+        testutils::memchecker chk;
         {
             ptr_vector<test_data> v;
             FillData(v);
@@ -180,7 +180,7 @@ TEST_F(PtrVectorTest, TestMemory)
         ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
     }
     {
-        memchecker chk;
+        testutils::memchecker chk;
         {
             ptr_vector<test_data> v;
             FillData(v);
@@ -191,4 +191,5 @@ TEST_F(PtrVectorTest, TestMemory)
     }
 }
 
+}
 }

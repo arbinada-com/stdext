@@ -6,10 +6,9 @@
 #include "testutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace parsers;
-using namespace testutils;
 
+namespace stdext
+{
 namespace json_lexer_test
 {
 
@@ -23,7 +22,7 @@ public:
         const parsers::textpos::pos_t col,
         const std::wstring text)
     {
-        push_back(new json::lexeme(token, textpos(line, col), text));
+        push_back(new json::lexeme(token, parsers::textpos(line, col), text));
         return *this;
     }
     lex_vector& clear()
@@ -68,7 +67,7 @@ protected:
         CompareLexemes(expected, lex, title);
     }
 
-    void CheckError(const wstring input, const json::parser_msg_kind kind, const textpos& pos, const wstring title)
+    void CheckError(const wstring input, const json::parser_msg_kind kind, const parsers::textpos& pos, const wstring title)
     {
         wstringstream ss(input);
         ioutils::text_reader r(ss);
@@ -82,7 +81,7 @@ protected:
         wstring title2 = title + L": ";
         ASSERT_TRUE(lexer.has_errors()) << title2 + L"no errors";
         json::message_t* err = lexer.messages().errors()[0];
-        EXPECT_TRUE(msg_origin::lexer == err->origin()) << title2 + L"origin. " + err->to_wstring();
+        EXPECT_TRUE(parsers::msg_origin::lexer == err->origin()) << title2 + L"origin. " + err->to_wstring();
         EXPECT_EQ(kind, err->kind()) << title2 + L"kind. Expected " + to_wstring((int)kind) + L", got: " + err->to_wstring();
         EXPECT_FALSE(err->text().empty()) << title2 + L"text is empty";
         EXPECT_EQ(pos, err->pos()) << title2 + L"error pos. " + err->to_wstring();
@@ -123,6 +122,7 @@ TEST_F(JsonLexerTest, TestEmptyStreams)
 
 TEST_F(JsonLexerTest, TestSimpleTokens)
 {
+    using namespace parsers;
     CheckLexeme(L"[", json::lexeme(json::token::begin_array, textpos(1, 1), L"["), L"Begin array 1.1");
     CheckLexeme(L" \t[", json::lexeme(json::token::begin_array, textpos(1, 3), L"["), L"Begin array 1.2");
     CheckLexeme(L"\r\n[", json::lexeme(json::token::begin_array, textpos(2, 1), L"["), L"Begin array 1.3");
@@ -142,6 +142,7 @@ TEST_F(JsonLexerTest, TestSimpleTokens)
 
 TEST_F(JsonLexerTest, TestStrings)
 {
+    using namespace parsers;
     CheckLexeme(L"\"Hello world!\"", json::lexeme(json::token::string, textpos(1, 1), L"Hello world!"), L"String 1");
     CheckLexeme(L"\"\\\"\"", json::lexeme(json::token::string, textpos(1, 1), L"\""), L"String 2.1");
     CheckLexeme(L"\"\\\\\"", json::lexeme(json::token::string, textpos(1, 1), L"\\"), L"String 2.2");
@@ -159,6 +160,7 @@ TEST_F(JsonLexerTest, TestStrings)
 
 TEST_F(JsonLexerTest, TestNumbers)
 {
+    using namespace parsers;
     CheckLexeme(L"12345", json::lexeme(json::token::number_int, textpos(1, 1), L"12345"), L"Num 1.1");
     CheckLexeme(L"-12345", json::lexeme(json::token::number_int, textpos(1, 1), L"-12345"), L"Num 1.2");
     CheckLexeme(L"123.456", json::lexeme(json::token::number_decimal, textpos(1, 1), L"123.456"), L"Num 2.1");
@@ -223,6 +225,7 @@ TEST_F(JsonLexerTest, TestTexts)
 
 TEST_F(JsonLexerTest, TestLexerErrors)
 {
+    using namespace parsers;
     CheckError(L"try", json::parser_msg_kind::err_invalid_literal_fmt, textpos(1, 1), L"E1010.1");
     CheckError(L"\ntrue2", json::parser_msg_kind::err_invalid_literal_fmt, textpos(2, 1), L"E1010.2");
     CheckError(L"true\ntrue2", json::parser_msg_kind::err_invalid_literal_fmt, textpos(2, 1), L"E1010.3");
@@ -258,4 +261,5 @@ TEST_F(JsonLexerTest, TestLexerErrors)
     CheckError(L"\"\\x", json::parser_msg_kind::err_unrecognized_escape_seq_fmt, textpos(1, 2), L"E1070.1");
 }
 
+}
 }

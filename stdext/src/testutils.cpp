@@ -8,8 +8,11 @@
 #include <sstream>
 
 using namespace std;
-using namespace stdext;
-using namespace testutils;
+
+namespace stdext
+{
+namespace testutils
+{
 
 /*
  * timer class
@@ -40,7 +43,7 @@ std::string timer::to_string()
 
 
 /*
- * rnd_helper class 
+ * rnd_helper class
  */
 rnd_helper::rnd_helper()
 {
@@ -183,4 +186,7 @@ std::wstring memchecker::wreport() const noexcept
 {
     std::string s = report();
     return std::wstring(s.begin(), s.end());
+}
+
+}
 }

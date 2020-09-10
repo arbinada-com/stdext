@@ -3,8 +3,9 @@
 #include "trees.h"
 
 using namespace std;
-using namespace stdext;
 
+namespace stdext
+{
 namespace trees_test
 {
 
@@ -270,4 +271,5 @@ TEST(GenericTreeTest, TestGenericTree)
     }
 }
 
+}
 }

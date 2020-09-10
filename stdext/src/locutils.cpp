@@ -11,8 +11,11 @@
 #endif
 
 using namespace std;
-using namespace stdext;
-using namespace locutils;
+
+namespace stdext
+{
+namespace locutils
+{
 
 /*
  * utf16 utils
@@ -158,7 +161,7 @@ bool utf16::try_detect_byte_order(const char* str, const size_t len, endianess::
         return true;
     }
     // Statistic based detection
-    // If more even bytes are null, then it is little-endian. 
+    // If more even bytes are null, then it is little-endian.
     int null_count = 0;
     size_t scan_depth = 100;
     if (scan_depth > len)
@@ -283,7 +286,7 @@ void utf8::add_bom(string& bytes)
 
 bool utf8::is_noncharacter(const unsigned char c)
 {
-    switch (c) 
+    switch (c)
     {
     case 0xC0:
     case 0xC1:
@@ -323,7 +326,7 @@ locale_guard::~locale_guard()
 /*
  * codecvt_utf8_wchar_t class
  */
-codecvt_utf8_wchar_t::result_t 
+codecvt_utf8_wchar_t::result_t
 codecvt_utf8_wchar_t::to_utf16(mbstate_t& state, const std::string& utf8s, std::wstring& utf16s, std::size_t& converted_bytes)
 {
     const char* first1 = utf8s.data();
@@ -348,7 +351,7 @@ codecvt_utf8_wchar_t::to_utf16(const std::string& utf8s, std::wstring& utf16s)
     return to_utf16(state, utf8s, utf16s, converted_bytes);
 }
 
-codecvt_utf8_wchar_t::result_t 
+codecvt_utf8_wchar_t::result_t
 codecvt_utf8_wchar_t::to_utf8(mbstate_t& state, const std::wstring& utf16s, std::string& utf8s)
 {
     const wchar_t* first1 = utf16s.data();
@@ -372,7 +375,7 @@ codecvt_utf8_wchar_t::to_utf8(const std::wstring& utf16s, std::string& utf8s)
 }
 // UTF-8 char* -> UTF-16 wchar_t*
 // Bitwise operators abstract away the endianness
-codecvt_utf8_wchar_t::result_t 
+codecvt_utf8_wchar_t::result_t
 codecvt_utf8_wchar_t::do_in(
     mbstate_t& state,
     const extern_type* first1, const extern_type* last1, const extern_type*& next1,
@@ -393,7 +396,7 @@ codecvt_utf8_wchar_t::do_in(
         if (c1 < utf8::chk_seq1)
             c2 = c1;
         else if (c1 < utf8::chk_seq2) // 0x80-0xDF are not first byte
-        {	
+        {
             ++next1;
             return codecvt_base_t::error;
         }
@@ -435,7 +438,7 @@ codecvt_utf8_wchar_t::do_in(
             }
         }
         if (state_adapter.codecvt_state() == codecvt_state::initial)
-        {	
+        {
             state_adapter.codecvt_state(codecvt_state::passed_once_or_more);
             if (utf16::is_bom((intern_type)c2))
             {
@@ -562,16 +565,16 @@ int codecvt_utf8_wchar_t::do_encoding() const noexcept
 }
 
 // generate bytes to return to default shift state
-codecvt_utf8_wchar_t::result_t 
+codecvt_utf8_wchar_t::result_t
 codecvt_utf8_wchar_t::do_unshift(mbstate_t&, extern_type* first2, extern_type*, extern_type*& next2) const noexcept
-{	
+{
     next2 = first2;
     return codecvt_base_t::ok;
 }
 
 // return min(len2, converted length of bytes [first1, last1))
 int codecvt_utf8_wchar_t::do_length(mbstate_t& state, const extern_type* first1, const extern_type* last1, size_t len2) const noexcept
-{	
+{
     size_t curr_length = 0;
     mbstate_t curr_state = state;
     while (curr_length < len2 && first1 != last1)
@@ -581,7 +584,7 @@ int codecvt_utf8_wchar_t::do_length(mbstate_t& state, const extern_type* first1,
         intern_type buf2[2];
         // test result of single wide-char conversion
         switch (do_in(curr_state, first1, last1, next1, buf2, buf2 + 1, next2))
-        {	
+        {
         case codecvt_base_t::noconv:
             return (int)(curr_length + (last1 - first1));
         case codecvt_base_t::ok:
@@ -602,14 +605,14 @@ int codecvt_utf8_wchar_t::do_length(mbstate_t& state, const extern_type* first1,
 /*
  * codecvt_utf16_wchar_t class
  */
-codecvt_utf16_wchar_t::result_t 
+codecvt_utf16_wchar_t::result_t
 codecvt_utf16_wchar_t::mb_to_utf16(mbstate_t& state, const std::string& mbs, std::wstring& ws)
 {
     const char* first1 = mbs.data();
     const char* last1 = first1 + mbs.length();
     const char* next1 = nullptr;
     size_t len2 = // mbstr length should be an even number (binary stream of UTF-16 bytes)
-        (mbs.length() % 2 == 0 ? mbs.length() : mbs.length() + 1) / bytes_per_character 
+        (mbs.length() % 2 == 0 ? mbs.length() : mbs.length() + 1) / bytes_per_character
         + 1;  // BOM
     ws.resize(len2);
     wchar_t* first2 = (wchar_t*)ws.data();
@@ -628,7 +631,7 @@ codecvt_utf16_wchar_t::mb_to_utf16(const std::string& mbs, std::wstring& ws)
     return mb_to_utf16(state, mbs, ws);
 }
 
-codecvt_utf16_wchar_t::result_t 
+codecvt_utf16_wchar_t::result_t
 codecvt_utf16_wchar_t::utf16_to_mb(mbstate_t& state, const std::wstring& ws, std::string& mbs)
 {
     const wchar_t* first1 = ws.data();
@@ -653,7 +656,7 @@ codecvt_utf16_wchar_t::utf16_to_mb(const std::wstring& ws, std::string& mbs)
 }
 
 // multibyte char* (extern) sequence --> UTF-16 wchar_t* (intern) sequence
-codecvt_utf16_wchar_t::result_t 
+codecvt_utf16_wchar_t::result_t
 codecvt_utf16_wchar_t::do_in(
     mbstate_t& state,
     const extern_type* first1, const extern_type* last1, const extern_type*& next1,
@@ -711,7 +714,7 @@ codecvt_utf16_wchar_t::do_in(
 }
 
 // UTF-16 wchar_t* (intern) sequence --> multibyte char* (extern) sequence
-codecvt_utf16_wchar_t::result_t 
+codecvt_utf16_wchar_t::result_t
 codecvt_utf16_wchar_t::do_out(mbstate_t& state,
                               const intern_type* first1, const intern_type* last1, const intern_type*& next1,
                               extern_type* first2, extern_type* last2, extern_type*& next2) const
@@ -780,14 +783,14 @@ codecvt_utf16_wchar_t::do_out(mbstate_t& state,
 
 codecvt_utf16_wchar_t::result_t
 codecvt_utf16_wchar_t::do_unshift(mbstate_t&, extern_type* first2, extern_type*, extern_type*& next2) const noexcept
-{	
+{
     next2 = first2;
     return codecvt_base_t::ok;
 }
 
 // return min(len2, converted length of bytes [first1, last1))
 int codecvt_utf16_wchar_t::do_length(mbstate_t& state, const extern_type* first1, const extern_type* last1, size_t len2) const noexcept
-{	
+{
     size_t curr_length = 0;
     mbstate_t curr_state = state;
     while (curr_length < len2 && first1 != last1)
@@ -825,7 +828,7 @@ int codecvt_utf16_wchar_t::do_encoding() const noexcept
 /*
  * codecvt_ansi_utf16_wchar_t class
  */
-std::string locutils::to_encoding_name(const ansi_encoding encoding, const ansi_encoding_naming naming)
+std::string to_encoding_name(const ansi_encoding encoding, const ansi_encoding_naming naming)
 {
     switch (naming)
     {
@@ -1078,4 +1081,7 @@ int codecvt_ansi_utf16_wchar_t::do_max_length() const noexcept
 int codecvt_ansi_utf16_wchar_t::do_encoding() const noexcept
 {
     return (m_cvt_mode.consume_header() || m_cvt_mode.generate_header() ? -1 : 0);
+}
+
+}
 }

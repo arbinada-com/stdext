@@ -12,10 +12,9 @@
 #include "locutils-test.h"
 
 using namespace std;
-using namespace stdext;
-using namespace locutils;
-using namespace testutils;
 
+namespace stdext
+{
 namespace json_tools_test
 {
 
@@ -203,10 +202,10 @@ TEST_F(JsonDocumentWriterTest, TestString)
     for (int i = 0x1; i < 0xFFFF; i++)
     {
         wchar_t c = static_cast<wchar_t>(i);
-        if (utf16::is_high_surrogate(c) || utf16::is_low_surrogate(c))
+        if (locutils::utf16::is_high_surrogate(c) || locutils::utf16::is_low_surrogate(c))
             continue;
-        if (utf16::is_noncharacter(c))
-            c = utf16::replacement_character;
+        if (locutils::utf16::is_noncharacter(c))
+            c = locutils::utf16::replacement_character;
         s += c;
         if (json::is_unescaped(c))
             expected += c;
@@ -219,8 +218,8 @@ TEST_F(JsonDocumentWriterTest, TestString)
     CheckDocStringWriter(doc, expected, L"Str 5");
     CheckDocFileWriter(doc, expected, L"Doc 5");
     //
-    s = {utf16::high_surrogate_min};
-    expected = {L'"', utf16::high_surrogate_min, L'"'};
+    s = {locutils::utf16::high_surrogate_min};
+    expected = {L'"', locutils::utf16::high_surrogate_min, L'"'};
     doc.clear();
     doc.root(doc.create_string(s));
     CheckDocStringWriter(doc, expected, L"Str 6.1");
@@ -574,4 +573,5 @@ TEST_F(JsonDomDocumentDiffTest, TestValue)
     CheckNoDiff(ldoc, rdoc, options, "Value 2");
 }
 
+}
 }

@@ -9,13 +9,16 @@
 #include "strutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace variants;
+
+namespace stdext
+{
+namespace variants
+{
 
 #define VARIANTS_CASE_VTYPE_STR(name) case value_type::name: return #name
 #define VARIANTS_CASE_OP_STR(name) case operation::name: return #name
 
-std::string variants::to_string(const value_type vtype)
+std::string to_string(const value_type vtype)
 {
     switch (vtype)
     {
@@ -32,7 +35,7 @@ std::string variants::to_string(const value_type vtype)
     }
 }
 
-std::string variants::to_string(const operation op)
+std::string to_string(const operation op)
 {
     switch (op)
     {
@@ -56,7 +59,7 @@ std::string variants::to_string(const operation op)
     }
 }
 
-bool variants::is_comparision(variants::operation op)
+bool is_comparision(variants::operation op)
 {
     return
         op == operation::cmp_eq ||
@@ -67,7 +70,7 @@ bool variants::is_comparision(variants::operation op)
         op == operation::cmp_neq;
 }
 
-bool variants::is_logical_op(variants::operation op)
+bool is_logical_op(variants::operation op)
 {
     return
         op == operation::b_and ||
@@ -603,4 +606,7 @@ std::wstring variant::to_wstring() const noexcept(false)
     default:
         throw variant_exception(err_msg_convertion_failed(m_vtype, "std::wstring"), variant_error::conversion_failed);
     }
+}
+
+}
 }

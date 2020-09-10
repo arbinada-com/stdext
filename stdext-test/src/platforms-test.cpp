@@ -2,7 +2,11 @@
 #include "platforms.h"
 
 using namespace std;
-using namespace stdext;
+
+namespace stdext
+{
+namespace platform_test
+{
 
 TEST(PlatformsTest, TestEndianess)
 {
@@ -13,3 +17,5 @@ TEST(PlatformsTest, TestEndianess)
 #endif
 }
 
+}
+}

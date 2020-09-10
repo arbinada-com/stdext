@@ -6,10 +6,11 @@
 #include "testutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace parsers;
-using namespace testutils;
 
+namespace stdext
+{
+namespace parsers
+{
 namespace parsers_test
 {
 
@@ -304,4 +305,6 @@ TEST_F(NumericParserTest, TestErrors)
     CheckError(L"09");
 }
 
+}
+}
 }

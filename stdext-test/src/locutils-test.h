@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+namespace stdext
+{
 namespace locutils_test
 {
 
@@ -24,4 +26,5 @@ const std::string  string_02_ansi_cp1252  =  "\xC0\xC7\xC8\xC9\xCF\xD9\xE0\xE7\x
                                           //   À   Ç   È   É   Ï   Ù   à   ç   è   é   ï   ù
 const std::wstring string_02_utf16_cp1252 = L"\u00C0\u00C7\u00C8\u00C9\u00CF\u00D9\u00E0\u00E7\u00E8\u00E9\u00EF\u00F9";
                                            //  À     Ç     È     É     Ï     Ù     à     ç     è     é     ï     ù
+}
 }

@@ -9,24 +9,26 @@
 #include "../strutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace parsers;
-using namespace json;
+
+namespace stdext
+{
+namespace json
+{
 
 /*
  * dom_value_ptr class
  */
-json::dom_value_ptr::dom_value_ptr(json::dom_value* const value)
+dom_value_ptr::dom_value_ptr(dom_value* const value)
     : m_value(value)
 { }
 
-json::dom_value_ptr::~dom_value_ptr()
+dom_value_ptr::~dom_value_ptr()
 {
     if (!m_accepted && m_value != nullptr)
         delete m_value;
 }
 
-bool json::dom_value_ptr::accept()
+bool dom_value_ptr::accept()
 {
     m_accepted = true;
     return true;
@@ -35,25 +37,25 @@ bool json::dom_value_ptr::accept()
 /*
  * sax_parser class
  */
-json::sax_parser::sax_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::sax_handler_intf& handler)
+sax_parser::sax_parser(ioutils::text_reader& reader, msg_collector_t& msgs, sax_handler_intf& handler)
     : m_reader(reader), m_messages(msgs), m_handler(handler)
 {
-    m_lexer = new json::lexer(m_reader, m_messages);
+    m_lexer = new lexer(m_reader, m_messages);
 }
 
-json::sax_parser::~sax_parser()
+sax_parser::~sax_parser()
 {
 }
 
-void json::sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos)
+void sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos)
 {
-    add_error(kind, pos, json::to_wmessage(kind));
+    add_error(kind, pos, to_wmessage(kind));
 }
 
-void json::sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
+void sax_parser::add_error(const parser_msg_kind kind, const parsers::textpos pos, const std::wstring text)
 {
     m_messages.add_error(
-        msg_origin::parser,
+        parsers::msg_origin::parser,
         kind,
         pos,
         m_reader.source_name(),
@@ -61,22 +63,22 @@ void json::sax_parser::add_error(const parser_msg_kind kind, const parsers::text
 
 }
 
-bool json::sax_parser::is_current_token(const json::token tok)
+bool sax_parser::is_current_token(const json::token tok)
 {
     return m_curr.token() == tok;
 }
 
-bool json::sax_parser::next_lexeme()
+bool sax_parser::next_lexeme()
 {
     return m_lexer->next_lexeme(m_curr);
 }
 
-bool json::sax_parser::run()
+bool sax_parser::run()
 {
     return parse_doc();
 }
 
-bool json::sax_parser::parse_doc()
+bool sax_parser::parse_doc()
 {
     bool result = false;
     if (next_lexeme())
@@ -89,13 +91,13 @@ bool json::sax_parser::parse_doc()
         if (!result)
             add_error(parser_msg_kind::err_unexpected_lexeme_fmt, pos(),
                 strutils::wformat(
-                    json::to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
+                    to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
                     m_curr.text().c_str()));
     }
     return result;
 }
 
-bool json::sax_parser::parse_value()
+bool sax_parser::parse_value()
 {
     bool result = false;
     switch (m_curr.token())
@@ -122,14 +124,14 @@ bool json::sax_parser::parse_value()
     default:
         add_error(parser_msg_kind::err_expected_value_but_found_fmt, pos(),
             strutils::wformat(
-                json::to_wmessage(parser_msg_kind::err_expected_value_but_found_fmt).c_str(),
+                to_wmessage(parser_msg_kind::err_expected_value_but_found_fmt).c_str(),
                 m_curr.text().c_str()));
         break;
     }
     return result;
 }
 
-bool json::sax_parser::parse_array()
+bool sax_parser::parse_array()
 {
     bool result = is_current_token(token::begin_array);
     if (!result)
@@ -154,7 +156,7 @@ bool json::sax_parser::parse_array()
     return result;
 }
 
-bool json::sax_parser::parse_array_items(std::size_t& element_count)
+bool sax_parser::parse_array_items(std::size_t& element_count)
 {
     bool result = true;
     bool is_next_item = true;
@@ -178,7 +180,7 @@ bool json::sax_parser::parse_array_items(std::size_t& element_count)
     return result;
 }
 
-bool json::sax_parser::parse_object()
+bool sax_parser::parse_object()
 {
     bool result = is_current_token(token::begin_object);
     if (!result)
@@ -203,7 +205,7 @@ bool json::sax_parser::parse_object()
     return result;
 }
 
-bool json::sax_parser::parse_object_members(std::size_t& member_count)
+bool sax_parser::parse_object_members(std::size_t& member_count)
 {
     bool result = true;
     bool is_next_member = true;
@@ -245,17 +247,17 @@ bool json::sax_parser::parse_object_members(std::size_t& member_count)
     return result;
 }
 
-bool json::sax_parser::parse_literal()
+bool sax_parser::parse_literal()
 {
     bool result = is_literal_token(m_curr.token());
     if (result)
-        m_handler.on_literal(json::to_literal_type(m_curr.text()), m_curr.text());
+        m_handler.on_literal(to_literal_type(m_curr.text()), m_curr.text());
     else
         add_error(parser_msg_kind::err_expected_literal, m_curr.pos());
     return result;
 }
 
-bool json::sax_parser::parse_number()
+bool sax_parser::parse_number()
 {
     switch (m_curr.token())
     {
@@ -272,7 +274,7 @@ bool json::sax_parser::parse_number()
     }
 }
 
-bool json::sax_parser::parse_string()
+bool sax_parser::parse_string()
 {
     bool result = m_curr.token() == token::string;
     if (result)
@@ -286,13 +288,13 @@ bool json::sax_parser::parse_string()
 /*
  * DOM parser handler
  */
-void dom_handler::on_literal(const json::dom_literal_type, const std::wstring& text)
+void dom_handler::on_literal(const dom_literal_type, const std::wstring& text)
 {
     dom_value_ptr node(m_doc.create_literal(text));
     accept_value(node);
 }
 
-void dom_handler::on_number(const json::dom_number_type type, const std::wstring& text)
+void dom_handler::on_number(const dom_number_type type, const std::wstring& text)
 {
     dom_value_ptr node(m_doc.create_number(text, type));
     accept_value(node);
@@ -335,12 +337,12 @@ void dom_handler::on_end_array(const std::size_t)
 
 void dom_handler::add_error(const parser_msg_kind kind)
 {
-    add_error(kind, json::to_wmessage(kind));
+    add_error(kind, to_wmessage(kind));
 }
 
 void dom_handler::add_error(const parser_msg_kind kind, const std::wstring text)
 {
-    m_messages.add_error(msg_origin::parser, kind, m_pos, m_source_name, text);
+    m_messages.add_error(parsers::msg_origin::parser, kind, m_pos, m_source_name, text);
 
 }
 
@@ -364,7 +366,7 @@ bool dom_handler::accept_value(dom_value_ptr& node)
     {
     case dom_value_type::vt_array:
     {
-        json::dom_array* arr = dynamic_cast<json::dom_array*>(m_containers.top());
+        dom_array* arr = dynamic_cast<dom_array*>(m_containers.top());
         if (arr == nullptr)
         {
             add_error(parser_msg_kind::err_parent_is_not_container);
@@ -376,7 +378,7 @@ bool dom_handler::accept_value(dom_value_ptr& node)
     }
     case dom_value_type::vt_object:
     {
-        json::dom_object* obj = dynamic_cast<json::dom_object*>(m_containers.top());
+        dom_object* obj = dynamic_cast<dom_object*>(m_containers.top());
         if (obj == nullptr)
         {
             add_error(parser_msg_kind::err_parent_is_not_container);
@@ -391,7 +393,7 @@ bool dom_handler::accept_value(dom_value_ptr& node)
         {
             add_error(parser_msg_kind::err_member_name_duplicate_fmt,
                 strutils::wformat(
-                    json::to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
+                    to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
                     m_member_names.top().c_str()));
 
             return false;
@@ -412,11 +414,11 @@ bool dom_handler::accept_value(dom_value_ptr& node)
 /*
  * DOM parser class
  */
-json::dom_parser::dom_parser(ioutils::text_reader& reader, msg_collector_t& msgs, json::dom_document& doc)
+dom_parser::dom_parser(ioutils::text_reader& reader, msg_collector_t& msgs, dom_document& doc)
     : m_reader(reader), m_messages(msgs), m_doc(doc)
 {}
 
-bool json::dom_parser::run()
+bool dom_parser::run()
 {
     m_doc.clear();
     dom_handler handler(m_doc, m_messages, m_reader.source_name());
@@ -424,4 +426,5 @@ bool json::dom_parser::run()
     return parser.run();
 }
 
-
+}
+}

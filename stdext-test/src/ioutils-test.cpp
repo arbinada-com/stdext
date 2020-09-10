@@ -7,9 +7,9 @@
 #include "locutils-test.h"
 
 using namespace std;
-using namespace stdext;
-using namespace locutils;
 
+namespace stdext
+{
 namespace ioutils_test
 {
 
@@ -25,8 +25,8 @@ protected:
         for (int i = 0x1; i <= 0xFFFF; i++)
         {
             wchar_t c = static_cast<wchar_t>(i);
-            if (utf16::is_noncharacter(c))
-                c = utf16::replacement_character;
+            if (locutils::utf16::is_noncharacter(c))
+                c = locutils::utf16::replacement_character;
             ws += c;
         }
     }
@@ -130,20 +130,20 @@ TEST_F(IOUtilsTest, TestWriteAndRead_Utf8)
     wstring ws1;
     GenerateTestWstring(ws1);
     wstring ws1_bom = ws1;
-    utf16::add_bom(ws1_bom);
+    locutils::utf16::add_bom(ws1_bom);
     {
         ioutils::text_io_policy_utf8 policy;
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-8 (NoBOM, default)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-8 (BOM, default)");
     }
     {
-        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::consume)));
+        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::consume)));
         // Paranthesis added because of "most vexing parse" https://en.wikipedia.org/wiki/Most_vexing_parse
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-8 (NoBOM, consume)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-8 (BOM, consume)");
     }
     {
-        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::generate)));
+        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::generate)));
         CheckFileWriteAndRead(ws1, ws1_bom, policy, L"UTF-8 (NoBOM, generate)");
         CheckFileWriteAndRead(ws1_bom, ws1_bom, policy, L"UTF-8 (BOM, generate)");
     }
@@ -154,7 +154,7 @@ TEST_F(IOUtilsTest, TestWriteAndRead_Utf8_SurrogatePair)
     // 'G clef' symbol (U+1D11E)
     // UTF-16: 0xD834 0xDD1E
     wstring ws1 = L"ABC \xD834\xDD1E";
-    ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::consume)));
+    ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::consume)));
     CheckFileWriteAndRead(ws1, ws1, policy, L"Pair (NoBOM, consume)");
     wstring ws2 = L"\xD834 ABC \xDD1E";
     CheckFileWriteAndRead(ws1, ws1, policy, L"Unpaired (NoBOM, consume)");
@@ -165,39 +165,39 @@ TEST_F(IOUtilsTest, TestWriteAndRead_Utf16)
     wstring ws1;
     GenerateTestWstring(ws1);
     wstring ws1_bom = ws1;
-    utf16::add_bom(ws1_bom);
+    locutils::utf16::add_bom(ws1_bom);
     {
         ioutils::text_io_policy_utf16 policy;
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-16 (NoBOM, default)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-16 (BOM, default)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(codecvt_headers::consume)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(locutils::codecvt_headers::consume)));
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-16 (NoBOM, default, consume)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-16 (BOM, default, consume)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(codecvt_headers::generate)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(locutils::codecvt_headers::generate)));
         CheckFileWriteAndRead(ws1, ws1_bom, policy, L"UTF-16 (NoBOM, default, generate)");
         CheckFileWriteAndRead(ws1_bom, ws1_bom, policy, L"UTF-16 (BOM, default, generate)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::consume)));
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-16 (NoBOM, LE, consume)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-16 (BOM, LE, consume)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::generate)));
         CheckFileWriteAndRead(ws1, ws1_bom, policy, L"UTF-16 (NoBOM, LE, generate)");
         CheckFileWriteAndRead(ws1_bom, ws1_bom, policy, L"UTF-16 (BOM, LE, generate)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::consume)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, locutils::codecvt_headers::consume)));
         CheckFileWriteAndRead(ws1, ws1, policy, L"UTF-16 (NoBOM, BE, consume)");
         CheckFileWriteAndRead(ws1_bom, ws1, policy, L"UTF-16 (BOM, BE, consume)");
     }
     {
-        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::generate)));
+        ioutils::text_io_policy_utf16 policy((locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, locutils::codecvt_headers::generate)));
         CheckFileWriteAndRead(ws1, ws1_bom, policy, L"UTF-16 (NoBOM, BE, generate)");
         CheckFileWriteAndRead(ws1_bom, ws1_bom, policy, L"UTF-16 (BOM, BE, generate)");
     }
@@ -290,7 +290,7 @@ TEST_F(TextReaderTest, TestRead_Utf8_FileToStream)
     wstring expected = locutils_test::string_01_utf16;
     // Test file streams processed as ordinary istream
     // An imbue() converter is not used but reading should produce the same result
-    ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::consume)));
+    ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::consume)));
     {
         ifstream fs("text-reader-test-01-utf8-bom.txt", ios::binary);
         CheckRead(fs, expected, policy, "BOM file I/O");
@@ -315,7 +315,7 @@ TEST_F(TextReaderTest, TestRead_Utf8_Stringstream)
     wstring expected = locutils_test::string_01_utf16;
     string bytes = locutils_test::string_01_utf8;
     string bytes_bom = bytes;
-    utf8::add_bom(bytes_bom);
+    locutils::utf8::add_bom(bytes_bom);
     {
         ioutils::text_io_policy_utf8 policy;
         CheckReadBytes(bytes, expected, policy, "1.1");
@@ -325,9 +325,9 @@ TEST_F(TextReaderTest, TestRead_Utf8_Stringstream)
         CheckReadBytes(bytes_bom, expected, policy, "1.4");
     }
     wstring expected_bom = expected;
-    utf16::add_bom(expected_bom);
+    locutils::utf16::add_bom(expected_bom);
     {
-        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::generate)));
+        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::generate)));
         CheckReadBytes(bytes, expected_bom, policy, "2.1");
         CheckReadBytes(bytes_bom, expected_bom, policy, "2.2");
         policy.max_text_buf_size(bytes.length() / 3);
@@ -341,25 +341,25 @@ TEST_F(TextReaderTest, TestRead_Utf16_FileToStream)
 {
     wstring expected = locutils_test::string_01_utf16;
     wstring expected_bom = expected;
-    utf16::add_bom(expected_bom);
+    locutils::utf16::add_bom(expected_bom);
     // Test file streams processed as ordinary istream
     // An imbue() converter is not used but reading should produce the same result
     {
         ifstream fs("text-reader-test-01-utf16-le.txt", ios::binary);
         CheckRead(fs, expected,
-                  ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
+                  ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::consume)),
                   "LE BOM file I/O");
     }
     {
         ifstream fs("text-reader-test-01-utf16-le.txt", ios::binary);
-        ioutils::text_io_policy_utf16 policy(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume));
+        ioutils::text_io_policy_utf16 policy(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::consume));
         policy.max_text_buf_size(expected.length() / 2); // File I/O only
         CheckRead(fs, expected, policy, "LE BOM file I/O small text buffer");
     }
     {
         ifstream fs("text-reader-test-01-utf16-be.txt", ios::binary);
         CheckRead(fs, expected,
-                  ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, codecvt_headers::consume)),
+                  ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::big_endian, locutils::codecvt_headers::consume)),
                   "BE BOM file I/O");
     }
 }
@@ -368,11 +368,11 @@ TEST_F(TextReaderTest, TestRead_Utf16_Stringstream)
 {
     wstring expected = locutils_test::string_01_utf16;
     wstring expected_bom = expected;
-    utf16::add_bom(expected_bom);
-    string bytes = utf16::wchar_to_multibyte(expected);
-    string bytes_bom = utf16::wchar_to_multibyte(expected_bom);
-    ASSERT_EQ(bytes.length(), expected.length() * utf16::bytes_per_character);
-    ASSERT_EQ(bytes_bom.length(), expected_bom.length() * utf16::bytes_per_character);
+    locutils::utf16::add_bom(expected_bom);
+    string bytes = locutils::utf16::wchar_to_multibyte(expected);
+    string bytes_bom = locutils::utf16::wchar_to_multibyte(expected_bom);
+    ASSERT_EQ(bytes.length(), expected.length() * locutils::utf16::bytes_per_character);
+    ASSERT_EQ(bytes_bom.length(), expected_bom.length() * locutils::utf16::bytes_per_character);
     {
         // default policy
         CheckReadBytes(bytes, expected, ioutils::text_io_policy_utf16(), "Default NoBOM");
@@ -381,16 +381,16 @@ TEST_F(TextReaderTest, TestRead_Utf16_Stringstream)
     {
         // default platform endian
         CheckReadBytes(bytes, expected,
-                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::consume)),
                        "Default NoBOM consume");
         CheckReadBytes(bytes, expected_bom,
-                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::generate)),
                        "Default NoBOM generate");
         CheckReadBytes(bytes_bom, expected,
-                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::consume)),
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::consume)),
                        "Default BOM consume");
         CheckReadBytes(bytes_bom, expected_bom,
-                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, codecvt_headers::generate)),
+                       ioutils::text_io_policy_utf16(locutils::codecvt_mode_utf16(endianess::byte_order::little_endian, locutils::codecvt_headers::generate)),
                        "Default BOM generate");
     }
 }
@@ -449,13 +449,13 @@ TEST_F(TextWriterTest, TestWrite_Utf8)
     wstring ws = locutils_test::string_01_utf16;
     string expected = locutils_test::string_01_utf8;
     {
-        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::consume)));
+        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::consume)));
         CheckWriteBytes(ws, expected, policy, "No BOM");
     }
     string expected_bom = expected;
-    utf8::add_bom(expected_bom);
+    locutils::utf8::add_bom(expected_bom);
     {
-        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(codecvt_headers::generate)));
+        ioutils::text_io_policy_utf8 policy((locutils::codecvt_mode_utf8(locutils::codecvt_headers::generate)));
         CheckWriteBytes(ws, expected_bom, policy, "Generate BOM");
     }
 }
@@ -464,22 +464,23 @@ TEST_F(TextWriterTest, TestWrite_Utf16)
 {
     wstring ws = locutils_test::string_01_utf16;
     wstring ws_bom = ws;
-    utf16::add_bom(ws_bom);
-    string expected = utf16::wchar_to_multibyte(ws, endianess::platform_value());
-    string expected_bom = utf16::wchar_to_multibyte(ws_bom, endianess::platform_value());
+    locutils::utf16::add_bom(ws_bom);
+    string expected = locutils::utf16::wchar_to_multibyte(ws, endianess::platform_value());
+    string expected_bom = locutils::utf16::wchar_to_multibyte(ws_bom, endianess::platform_value());
     CheckWriteBytes(ws, expected,
-                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(codecvt_headers::consume))),
+                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(locutils::codecvt_headers::consume))),
                     "NoBOM consume");
     CheckWriteBytes(ws_bom, expected,
-                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(codecvt_headers::consume))),
+                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(locutils::codecvt_headers::consume))),
                     "BOM consume");
     CheckWriteBytes(ws, expected_bom,
-                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(codecvt_headers::generate))),
+                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(locutils::codecvt_headers::generate))),
                     "NoBOM generate");
     CheckWriteBytes(ws_bom, expected_bom,
-                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(codecvt_headers::generate))),
+                    ioutils::text_io_policy_utf16((locutils::codecvt_mode_utf16(locutils::codecvt_headers::generate))),
                     "BOM generate");
 }
 
 
+}
 }

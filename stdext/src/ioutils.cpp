@@ -11,10 +11,11 @@
 #include <algorithm>
 
 using namespace std;
-using namespace stdext;
-using namespace ioutils;
-using namespace locutils;
 
+namespace stdext
+{
+namespace ioutils
+{
 
 /*
  * text_io_policy class
@@ -157,7 +158,7 @@ void text_io_policy_utf8::read_chars(mbstate_t& state, text_reader_stream_adapte
     string bytes;
     if (read_bytes(stream, bytes, m_max_text_buf_size))  // min length of UTF-8 bytes is equal to UTF-16 string length (in characters)
     {
-        codecvt_utf8_wchar_t::result_t result = m_cvt->error;
+        locutils::codecvt_utf8_wchar_t::result_t result = m_cvt->error;
         do
         {
             wstring ws;
@@ -238,7 +239,7 @@ void text_io_policy_utf16::set_imbue_write(text_writer_stream_adapter_base& stre
 void text_io_policy_utf16::read_chars(mbstate_t& state, text_reader_stream_adapter_base& stream, text_buffer_t& buf) const
 {
     string mbs;
-    if (read_bytes(stream, mbs, m_max_text_buf_size * utf16::bytes_per_character))
+    if (read_bytes(stream, mbs, m_max_text_buf_size * locutils::utf16::bytes_per_character))
     {
         wstring ws;
         if (m_cvt->mb_to_utf16(state, mbs, ws) == m_cvt->ok)
@@ -305,7 +306,7 @@ text_reader::text_reader(const std::wstring& file_name, const text_io_policy& po
 #if defined(__STDEXT_WINDOWS)
     m_stream = new text_wistream_adapter(new wifstream(file_name, std::ios::binary), true);
 #else
-    m_stream = new text_wistream_adapter(new wifstream(utf16::to_utf8string(file_name), std::ios::binary), true);
+    m_stream = new text_wistream_adapter(new wifstream(locutils::utf16::to_utf8string(file_name), std::ios::binary), true);
 #endif
     m_policy.set_imbue_read(*m_stream);
 }
@@ -453,7 +454,7 @@ text_writer::text_writer(const std::wstring file_name, const text_io_policy& pol
 #if defined(__STDEXT_WINDOWS)
     m_stream = new text_wostream_adapter(new wofstream(file_name, ios::binary | ios::trunc), true);
 #else
-    m_stream = new text_wostream_adapter(new wofstream(utf16::to_utf8string(file_name), ios::binary | ios::trunc), true);
+    m_stream = new text_wostream_adapter(new wofstream(locutils::utf16::to_utf8string(file_name), ios::binary | ios::trunc), true);
 #endif
     policy.set_imbue_write(*m_stream);
 }
@@ -497,3 +498,5 @@ text_writer& text_writer::write_endl()
     return write(L'\n');
 }
 
+}
+}

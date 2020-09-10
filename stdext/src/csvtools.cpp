@@ -4,10 +4,10 @@
  */
 #include "csvtools.h"
 
-
 using namespace std;
-using namespace stdext;
-using namespace parsers;
+
+namespace stdext
+{
 
 std::wstring csv::to_wstring(const reader_msg_kind value)
 {
@@ -60,7 +60,7 @@ void csv::reader::add_error(const reader_msg_kind kind, const std::wstring text)
 
 void csv::reader::add_error(const reader_msg_kind kind, parsers::textpos pos, const std::wstring text)
 {
-    m_messages.add_error(msg_origin::lexer, kind, pos, m_reader->source_name(), text);
+    m_messages.add_error(parsers::msg_origin::lexer, kind, pos, m_reader->source_name(), text);
 }
 
 bool csv::reader::next_char(wchar_t& wc)
@@ -82,7 +82,7 @@ bool csv::reader::next_row(csv::row& r)
     bool value_accepted = false;
     bool accepting_quoted_value = false;
     std::wstring value;
-    textpos lastpos; // last position before accepting row
+    parsers::textpos lastpos; // last position before accepting row
     while (!m_reader->eof() && !row_accepted)
     {
         lastpos = m_pos;
@@ -165,4 +165,6 @@ bool csv::reader::read_header()
     if (result)
         m_row_num--;
     return result;
+}
+
 }

@@ -14,10 +14,13 @@
 #include "jsoncommon.h"
 
 using namespace std;
-using namespace stdext;
-using namespace json;
 
-std::string json::to_string(const dom_value_type type)
+namespace stdext
+{
+namespace json
+{
+
+std::string to_string(const dom_value_type type)
 {
     switch (type)
     {
@@ -30,22 +33,22 @@ std::string json::to_string(const dom_value_type type)
         return "unsupported";
     }
 }
-std::wstring json::to_wstring(const dom_value_type type)
+std::wstring to_wstring(const dom_value_type type)
 {
     return strutils::to_wstring(json::to_string(type));
 }
 
-bool stdext::json::operator ==(const dom_value& v1, const dom_value& v2)
+bool operator ==(const dom_value& v1, const dom_value& v2)
 {
     return equal(v1, v2);
 }
 
-bool stdext::json::operator !=(const dom_value& v1, const dom_value& v2)
+bool operator !=(const dom_value& v1, const dom_value& v2)
 {
     return !equal(v1, v2);
 }
 
-bool json::equal(const dom_value& v1, const dom_value& v2)
+bool equal(const dom_value& v1, const dom_value& v2)
 {
     return
         v1.type() == v2.type() &&
@@ -57,7 +60,7 @@ bool json::equal(const dom_value& v1, const dom_value& v2)
             );
 }
 
-bool json::equal(const dom_document& doc1, const dom_document& doc2)
+bool equal(const dom_document& doc1, const dom_document& doc2)
 {
     dom_document::const_iterator it1 = doc1.begin();
     dom_document::const_iterator it1_end = doc1.end();
@@ -123,7 +126,7 @@ std::wstring dom_value::to_wstring() const
 /*
  * dom_literal class
  */
-dom_literal_type json::to_literal_type(const std::wstring& value) noexcept(false)
+dom_literal_type to_literal_type(const std::wstring& value) noexcept(false)
 {
     if (value == L"false")
         return dom_literal_type::lvt_false;
@@ -150,7 +153,7 @@ void dom_literal::text(const std::wstring value) noexcept(false)
 /*
  * dom_number class
  */
-std::string json::to_string(const dom_number_type numtype)
+std::string to_string(const dom_number_type numtype)
 {
     switch(numtype)
     {
@@ -161,7 +164,7 @@ std::string json::to_string(const dom_number_type numtype)
     };
 }
 
-std::wstring json::to_wstring(const dom_number_type numtype)
+std::wstring to_wstring(const dom_number_type numtype)
 {
     return strutils::to_wstring(json::to_string(numtype));
 }
@@ -494,3 +497,5 @@ dom_value* dom_document::const_iterator::next()
     return m_current;
 }
 
+}
+}

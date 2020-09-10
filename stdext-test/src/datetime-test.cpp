@@ -3,7 +3,11 @@
 #include "datetime.h"
 
 using namespace std;
-using namespace stdext;
+
+namespace stdext
+{
+namespace datetime_test
+{
 
 class DatetimeTest : public testing::Test
 {
@@ -466,4 +470,7 @@ TEST_F(DatetimeTest, TestDateInc)
     CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime(-4712, 1, 1, 12, 0, 59, 0).inc(dtunit_t::seconds, -59), L"Inc SS 1.3.2");
     CompareDates(datetime(2000, 2, 29, 0, 0, 0, 0), datetime(2000, 2, 28, 23, 59, 59, 0).inc(dtunit_t::seconds, 1), L"Inc SS 3.3.1");
     CompareDates(datetime(2000, 2, 28, 23, 59, 59, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::seconds, -1), L"Inc SS 3.3.2");
+}
+
+}
 }

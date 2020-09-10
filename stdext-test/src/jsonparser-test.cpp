@@ -7,10 +7,9 @@
 #include "testutils.h"
 
 using namespace std;
-using namespace stdext;
-using namespace parsers;
-using namespace testutils;
 
+namespace stdext
+{
 namespace json_parser_test
 {
 
@@ -184,7 +183,7 @@ protected:
     }
 
 
-    void CheckError(const wstring input, const json::parser_msg_kind kind, const textpos& pos, const wstring title)
+    void CheckError(const wstring input, const json::parser_msg_kind kind, const parsers::textpos& pos, const wstring title)
     {
         wstringstream ss(input);
         ioutils::text_reader r(ss);
@@ -196,7 +195,7 @@ protected:
         ASSERT_FALSE(parser.run()) << title2 + L"parsed OK";
         ASSERT_TRUE(parser.has_errors()) << title2 + L"no errors";
         json::message_t* err = parser.messages().errors()[0];
-        ASSERT_TRUE(msg_origin::parser == err->origin()) << title2 + L"origin. " + err->text();
+        ASSERT_TRUE(parsers::msg_origin::parser == err->origin()) << title2 + L"origin. " + err->text();
         ASSERT_EQ((int)kind, (int)err->kind()) << title2 + L"kind. " + err->text();
         ASSERT_FALSE(err->text().empty()) << title2 + L"text is empty";
         ASSERT_EQ(pos, err->pos()) << title2 + L"error pos. " + err->text();
@@ -252,6 +251,7 @@ TEST_F(JsonParserTest, TestSimpleDoc)
 
 TEST_F(JsonParserTest, TestSimpleDocErrors)
 {
+    using namespace parsers;
     CheckError(L"null\nnull", json::parser_msg_kind::err_unexpected_lexeme_fmt, textpos(2, 1), L"Unexpected lexeme 1");
     CheckError(L"123\n456", json::parser_msg_kind::err_unexpected_lexeme_fmt, textpos(2, 1), L"Unexpected lexeme 2");
     CheckError(L"\"Hello\" \"world\"", json::parser_msg_kind::err_unexpected_lexeme_fmt, textpos(1, 9), L"Unexpected lexeme 3");
@@ -281,6 +281,7 @@ TEST_F(JsonParserTest, TestArrays)
 
 TEST_F(JsonParserTest, TestArrayErrors)
 {
+    using namespace parsers;
     // Unclosed array error position is at the end of the last array item or at the start of unexpected lexeme
     CheckError(L"[", json::parser_msg_kind::err_unclosed_array, textpos(1, 1), L"1.1");
     CheckError(L"[null", json::parser_msg_kind::err_unclosed_array, textpos(1, 5), L"1.2");
@@ -314,6 +315,7 @@ TEST_F(JsonParserTest, TestObjects)
 
 TEST_F(JsonParserTest, TestObjectErrors)
 {
+    using namespace parsers;
     CheckError(L"{", json::parser_msg_kind::err_unclosed_object, textpos(1, 1), L"1.1");
     CheckError(L"{null", json::parser_msg_kind::err_expected_member_name, textpos(1, 2), L"2.1");
     CheckError(L"{\"Member1\"", json::parser_msg_kind::err_expected_name_separator, textpos(1, 10), L"3.1");
@@ -340,4 +342,5 @@ TEST_F(JsonParserTest, TestGeneratedDocs)
     }
 }
 
+}
 }

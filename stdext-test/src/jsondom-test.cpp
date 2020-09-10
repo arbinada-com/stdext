@@ -9,9 +9,9 @@
 
 
 using namespace std;
-using namespace stdext;
-using namespace testutils;
 
+namespace stdext
+{
 namespace jsondom_test
 {
 
@@ -521,7 +521,7 @@ TEST_F(JsonDomTest, TestDomDocumentComparison)
 
 TEST_F(JsonDomTest, TestDomDocumentMemory)
 {
-    memchecker chk;
+    testutils::memchecker chk;
     {
         json::dom_document doc;
         doc.root(doc.create_string(L"Hello world!"));
@@ -544,4 +544,5 @@ TEST_F(JsonDomTest, TestDomDocumentMemory)
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
 
+}
 }

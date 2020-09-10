@@ -11,7 +11,9 @@
 #include "platforms.h"
 
 using namespace std;
-using namespace stdext;
+
+namespace stdext
+{
 
 inline int basic_vsnprintf_s(std::string& s, const char* fmt, va_list args)
 {
@@ -186,10 +188,10 @@ std::wstring strutils::trim_chars(const std::wstring& s, const std::wstring& cha
 
 template<class StringT>
 StringT basic_replace(
-    StringT& s, 
-    const StringT& match, 
-    const StringT& repl, 
-    const size_t from_pos, 
+    StringT& s,
+    const StringT& match,
+    const StringT& repl,
+    const size_t from_pos,
     const bool all)
 {
     size_t pos = from_pos;
@@ -204,9 +206,9 @@ StringT basic_replace(
 }
 
 std::string strutils::replace(
-    std::string s, 
-    const std::string& match, 
-    const std::string& repl, 
+    std::string s,
+    const std::string& match,
+    const std::string& repl,
     const std::size_t from_pos,
     const bool all)
 {
@@ -265,4 +267,6 @@ wstring strutils::to_wstring(const string& s)
     for (string::size_type i = 0; i < s.length(); i++)
         ws[i] = (wchar_t)((unsigned char)s[i]);
     return ws;
+}
+
 }
