@@ -9,7 +9,7 @@ INCLUDEPATH += \
     ../stdext/src \
     ../stdext/src/json
 
-LIBS_DIR = $$PWD/../stdext/$${DESTDIR_SUBDIR}
+LIBS_DIR = ../stdext/$${DESTDIR_SUBDIR}
 win32: LIBS += -L$$LIBS_DIR/ -lstdext
 unix: LIBS += -L$$LIBS_DIR/ -lstdext
 DEPENDPATH += $$LIBS_DIR

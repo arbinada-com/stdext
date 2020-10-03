@@ -40,7 +40,7 @@ DISTNAME      = stdext-test1.0.0
 DISTDIR = /home/serge/Projects/stdext/stdext-test/debug/x86_64/linux/stdext-test1.0.0
 LINK          = g++
 LFLAGS        = 
-LIBS          = $(SUBLIBS) -L/home/serge/Projects/stdext/stdext-test/../stdext/debug/x86_64/linux/ -lstdext -lpthread   
+LIBS          = $(SUBLIBS) -L../stdext/debug/x86_64/linux/ -lstdext -lpthread   
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -184,7 +184,7 @@ TARGET        = debug/x86_64/linux/stdext-test
 first: all
 ####### Build rules
 
-debug/x86_64/linux/stdext-test: /home/serge/Projects/stdext/stdext-test/../stdext/debug/x86_64/linux/libstdext.a $(OBJECTS)  
+debug/x86_64/linux/stdext-test: ../stdext/debug/x86_64/linux/libstdext.a $(OBJECTS)  
 	@test -d debug/x86_64/linux/ || mkdir -p debug/x86_64/linux/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 	cp -f /home/serge/Projects/stdext/stdext-test/data/*.* /home/serge/Projects/stdext/stdext-test/debug/x86_64/linux/ 
