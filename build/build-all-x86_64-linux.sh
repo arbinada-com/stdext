@@ -12,10 +12,10 @@ function check_last()
 #./gen-makefiles-x86_64-linux.sh
 #check_last $?
 
-mkargs=
+mkargs=-j4
 for arg; do
-    if [ "$arg" = "rebuild" ]; then
-        mkargs=--always-make
+    if [ "$arg" = "--rebuild" ]; then
+        mkargs="$mkargs --always-make"
     fi
 done
 echo "Additional make parameters: $mkargs"

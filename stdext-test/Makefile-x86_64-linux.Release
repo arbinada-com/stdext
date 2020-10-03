@@ -187,7 +187,7 @@ first: all
 release/x86_64/linux/stdext-test: ../stdext/release/x86_64/linux/libstdext.a $(OBJECTS)  
 	@test -d release/x86_64/linux/ || mkdir -p release/x86_64/linux/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
-	cp -f /home/serge/Projects/stdext/stdext-test/data/*.* /home/serge/Projects/stdext/stdext-test/release/x86_64/linux/ 
+	cp -f ./data/*.* ./release/x86_64/linux/ 
 
 
 qmake: FORCE

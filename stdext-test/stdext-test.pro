@@ -40,4 +40,4 @@ HEADERS += \
     src/jsondom-test.h \
     src/locutils-test.h
 
-PostLink_CopyFile($$PWD/data/*.*, $$PWD/$$DESTDIR/)
+PostLink_CopyFile(./data/*.*, ./$$DESTDIR/)
