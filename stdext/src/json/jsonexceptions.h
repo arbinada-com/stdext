@@ -19,15 +19,15 @@ namespace stdext
         public:
             exception(const std::wstring msg)
                 : std::exception(),
-                  m_wmesssage(msg),
-                  m_messsage(strutils::to_string(msg))
+                  m_wmessage(msg),
+                  m_message(strutils::to_string(msg))
             {}
         public:
-            std::wstring wmessage() const noexcept { return m_wmesssage; }
-            const char* what() const noexcept override { return m_messsage.data(); }
+            std::wstring wmessage() const noexcept { return m_wmessage; }
+            const char* what() const noexcept override { return m_message.data(); }
         protected:
-            std::wstring m_wmesssage;
-            std::string m_messsage;
+            std::wstring m_wmessage;
+            std::string m_message;
         };
 
     }
