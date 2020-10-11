@@ -319,20 +319,20 @@ std::string to_string(const dom_document_diff_kind value)
 
 std::wstring to_wstring(const dom_document_diff_kind value)
 {
-    return strutils::to_wstring(to_string(value));
+    return str::to_wstring(to_string(value));
 }
 
 std::string dom_document_diff_item::to_string() const
 {
-    return strutils::to_string(this->to_wstring());
+    return str::to_string(this->to_wstring());
 }
 
 std::wstring dom_document_diff_item::to_wstring() const
 {
-    return strutils::wformat(L"Kind: %s\nLeft value:\n\t%ls\nRight value:\n\t%ls",
+    return str::wformat(L"Kind: %s\nLeft value:\n\t%ls\nRight value:\n\t%ls",
                              json::to_wstring(m_kind).c_str(),
-                             strutils::replace_all(m_lval->to_wstring(), L"\n", L"\n\t").c_str(),
-                             strutils::replace_all(m_rval->to_wstring(), L"\n", L"\n\t").c_str());
+                             str::replace_all(m_lval->to_wstring(), L"\n", L"\n\t").c_str(),
+                             str::replace_all(m_rval->to_wstring(), L"\n", L"\n\t").c_str());
 }
 
 

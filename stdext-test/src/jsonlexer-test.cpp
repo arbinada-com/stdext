@@ -99,9 +99,9 @@ protected:
         std::size_t i = 0;
         while (lexer.next_lexeme(lex))
         {
-            ASSERT_TRUE(i < expected.size()) << title2 + strutils::wformat(L"lex count %d exceeds expected one %d", i + 1, expected.size());
+            ASSERT_TRUE(i < expected.size()) << title2 + str::wformat(L"lex count %d exceeds expected one %d", i + 1, expected.size());
             json::lexeme* expected_lex = expected.at(i);
-            CompareLexemes(*expected_lex, lex, strutils::wformat(L"%ls lexeme[%d]", title.c_str(), i));
+            CompareLexemes(*expected_lex, lex, str::wformat(L"%ls lexeme[%d]", title.c_str(), i));
             i++;
         }
         EXPECT_EQ(expected.size(), i) << title2 + L"lex count";

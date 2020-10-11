@@ -336,7 +336,7 @@ TEST_F(JsonParserTest, TestGeneratedDocs)
         w.conf().pretty_print(true);
         wstring s;
         w.write(s);
-        CheckParseText(s, doc, strutils::wformat(L"Test_%d", i));
+        CheckParseText(s, doc, str::wformat(L"Test_%d", i));
         if (this->HasFailure())
             break;
     }

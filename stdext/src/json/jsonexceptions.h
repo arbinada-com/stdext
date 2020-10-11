@@ -20,7 +20,7 @@ namespace stdext
             exception(const std::wstring msg)
                 : std::exception(),
                   m_wmessage(msg),
-                  m_message(strutils::to_string(msg))
+                  m_message(str::to_string(msg))
             {}
         public:
             std::wstring wmessage() const noexcept { return m_wmessage; }

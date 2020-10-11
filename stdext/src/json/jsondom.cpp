@@ -35,7 +35,7 @@ std::string to_string(const dom_value_type type)
 }
 std::wstring to_wstring(const dom_value_type type)
 {
-    return strutils::to_wstring(json::to_string(type));
+    return str::to_wstring(json::to_string(type));
 }
 
 bool operator ==(const dom_value& v1, const dom_value& v2)
@@ -117,7 +117,7 @@ void dom_value::parent(dom_value* const value) noexcept (false)
 
 std::wstring dom_value::to_wstring() const
 {
-    return strutils::wformat(L"Length: %d\ntext: \"%ls\"\nencoded: \"%ls\"",
+    return str::wformat(L"Length: %d\ntext: \"%ls\"\nencoded: \"%ls\"",
                                   text().length(),
                                   text().c_str(),
                                   json::to_escaped(text(), true).c_str());
@@ -135,7 +135,7 @@ dom_literal_type to_literal_type(const std::wstring& value) noexcept(false)
     else if (value == L"true")
         return dom_literal_type::lvt_true;
     else
-        throw dom_exception(strutils::wformat(L"Invalid literal value '%ls'", value.c_str()), dom_error::invalid_literal);
+        throw dom_exception(str::wformat(L"Invalid literal value '%ls'", value.c_str()), dom_error::invalid_literal);
 }
 
 dom_literal::dom_literal(dom_document* const doc, const std::wstring text)
@@ -166,7 +166,7 @@ std::string to_string(const dom_number_type numtype)
 
 std::wstring to_wstring(const dom_number_type numtype)
 {
-    return strutils::to_wstring(json::to_string(numtype));
+    return str::to_wstring(json::to_string(numtype));
 }
 
 dom_number::dom_number(dom_document* const doc, const std::wstring& text, const dom_number_type numtype)
@@ -202,7 +202,7 @@ dom_number::dom_number(dom_document* const doc, const double value)
 std::wstring dom_number::to_text(const double value)
 {
     locutils::locale_guard lg(LC_NUMERIC, "C");
-    wstring s = strutils::wformat(L"%g", value);
+    wstring s = str::wformat(L"%g", value);
     if (s.find(L'.') == s.npos && s.find(L'e') == s.npos && s.find(L'E') == s.npos)
         s += L".0";
     return s;
@@ -210,7 +210,7 @@ std::wstring dom_number::to_text(const double value)
 
 std::wstring dom_number::to_wstring() const
 {
-    return strutils::wformat(L"%ls\nnumtype: %ls",
+    return str::wformat(L"%ls\nnumtype: %ls",
                              dom_value::to_wstring().c_str(),
                              json::to_wstring(numtype()).c_str());
 }
@@ -269,7 +269,7 @@ void dom_object_members::append(const name_t name, dom_value* const value) noexc
 void dom_object_members::check_name(const name_t name) const noexcept(false)
 {
     if (m_index.find(name) != m_index.end())
-        throw dom_exception(strutils::wformat(L"Duplicate name '%ls'", name.c_str()), dom_error::duplicate_name);
+        throw dom_exception(str::wformat(L"Duplicate name '%ls'", name.c_str()), dom_error::duplicate_name);
 }
 
 void dom_object_members::clear() noexcept

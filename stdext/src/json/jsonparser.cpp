@@ -90,7 +90,7 @@ bool sax_parser::parse_doc()
         result = !next_lexeme();
         if (!result)
             add_error(parser_msg_kind::err_unexpected_lexeme_fmt, pos(),
-                strutils::wformat(
+                str::wformat(
                     to_wmessage(parser_msg_kind::err_unexpected_lexeme_fmt).c_str(),
                     m_curr.text().c_str()));
     }
@@ -123,7 +123,7 @@ bool sax_parser::parse_value()
         break;
     default:
         add_error(parser_msg_kind::err_expected_value_but_found_fmt, pos(),
-            strutils::wformat(
+            str::wformat(
                 to_wmessage(parser_msg_kind::err_expected_value_but_found_fmt).c_str(),
                 m_curr.text().c_str()));
         break;
@@ -392,7 +392,7 @@ bool dom_handler::accept_value(dom_value_ptr& node)
         if (obj->cmembers()->contains_name(m_member_names.top()))
         {
             add_error(parser_msg_kind::err_member_name_duplicate_fmt,
-                strutils::wformat(
+                str::wformat(
                     to_wmessage(parser_msg_kind::err_member_name_duplicate_fmt).c_str(),
                     m_member_names.top().c_str()));
 

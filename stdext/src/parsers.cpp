@@ -58,11 +58,11 @@ void textpos::reset() noexcept
 
 std::string textpos::to_string() const
 {
-    return strutils::format("(%d,%d)", m_line, m_col);
+    return str::format("(%d,%d)", m_line, m_col);
 }
 std::wstring textpos::to_wstring() const
 {
-    return strutils::to_wstring(to_string());
+    return str::to_wstring(to_string());
 }
 
 /*

@@ -39,7 +39,7 @@ protected:
         }
         for (size_t i = 0; i < ws.length() && i < expected.length(); i++)
         {
-            ASSERT_EQ(ws[i], expected[i]) << strutils::wformat(L"%ls: char[%d]", title.c_str(), i);
+            ASSERT_EQ(ws[i], expected[i]) << str::wformat(L"%ls: char[%d]", title.c_str(), i);
         }
     }
 };
@@ -212,7 +212,7 @@ TEST_F(JsonDocumentWriterTest, TestString)
         else
             expected += json::to_escaped(c);
     }
-    expected = strutils::double_quoted(expected);
+    expected = str::double_quoted(expected);
     doc.clear();
     doc.root(doc.create_string(s));
     CheckDocStringWriter(doc, expected, L"Str 5");

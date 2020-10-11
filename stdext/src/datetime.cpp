@@ -41,13 +41,13 @@ datetime_exception::datetime_exception(const datetime_exception::kind kind)
 datetime_exception::datetime_exception(const datetime_exception::kind kind, const char* value)
     : m_kind(kind)
 {
-    m_message = strutils::format(msg_by_kind(kind), value);
+    m_message = str::format(msg_by_kind(kind), value);
 }
 
 datetime_exception::datetime_exception(const datetime_exception::kind kind, const int value)
     : m_kind(kind)
 {
-    m_message = strutils::format(msg_by_kind(kind), value);
+    m_message = str::format(msg_by_kind(kind), value);
 }
 
 const char* datetime_exception::what() const throw()
@@ -98,7 +98,7 @@ datetime::datetime(const datepart_t year, const datepart_t month, const datepart
     init(year, month, day, hour, minute, second, millisecond, cal);
     if (!is_valid())
     {
-        string s = strutils::format("Year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d",
+        string s = str::format("Year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d",
             year, month, day, hour, minute, second);
         throw datetime_exception(datetime_exception::kind::invalid_datetime_string, s.c_str());
     }
@@ -129,7 +129,7 @@ datetime::datetime(const char* str)
 
 datetime::datetime(const std::wstring& str)
 {
-    parse(strutils::to_string(str).c_str());
+    parse(str::to_string(str).c_str());
 }
 
 datetime::datetime(const wchar_t* str)

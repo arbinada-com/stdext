@@ -77,7 +77,7 @@ namespace stdext
         {
         public:
             dom_member_not_found(const std::wstring member_name)
-                : json::dom_exception(strutils::wformat(L"Member not found: %ls", member_name.c_str()),
+                : json::dom_exception(str::wformat(L"Member not found: %ls", member_name.c_str()),
                                       dom_error::member_not_found),
                   m_member_name(member_name)
             {}

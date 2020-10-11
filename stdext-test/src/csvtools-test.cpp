@@ -31,9 +31,9 @@ protected:
                     first = false;
                 bool contains_dquote = s.find(L"\"") != wstring::npos;
                 if (contains_dquote)
-                    s = strutils::replace_all(s, L"\"", L"\"\"");
+                    s = str::replace_all(s, L"\"", L"\"\"");
                 if (contains_dquote || s.find(separator) != wstring::npos || s.find(eol) != wstring::npos)
-                    s = strutils::double_quoted(s);
+                    s = str::double_quoted(s);
                 ss << s;
             }
             ss << eol;
@@ -78,16 +78,16 @@ protected:
             row++;
             ASSERT_EQ(row, rd.row_count()) << title + L"Row row";
             csv_row_values_t expected_row = expected[row - 1];
-            ASSERT_EQ(expected_row.size(), r.field_count()) << title + strutils::wformat(L"Field row. Row: %d", row);
+            ASSERT_EQ(expected_row.size(), r.field_count()) << title + str::wformat(L"Field row. Row: %d", row);
             for (size_t col = 0; col < r.field_count(); col++)
             {
-                ASSERT_EQ(expected_row[col], r[col].value()) << title + strutils::wformat(L"Unexpected value. Row: %d, field: %d", row, col + 1);
+                ASSERT_EQ(expected_row[col], r[col].value()) << title + str::wformat(L"Unexpected value. Row: %d, field: %d", row, col + 1);
             }
         }
         if (rd.has_error())
         {
             csv::reader::message_t* err = rd.errors()[0];
-            FAIL() << title + strutils::wformat(L"Unexpected error occurred: %ls", err->to_wstring().c_str());
+            FAIL() << title + str::wformat(L"Unexpected error occurred: %ls", err->to_wstring().c_str());
         }
         ASSERT_GT(row, 0) << title + L"No rows processed";
     }

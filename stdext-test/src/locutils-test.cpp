@@ -79,7 +79,7 @@ protected:
     {
         locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
         string ansi;
-        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name_iconv()) + L": ";
+        wstring title2 = title + L" - " + str::to_wstring(mode.encoding_name_iconv()) + L": ";
         int result = cvt.utf16_to_ansi(ws, ansi);
         EXPECT_EQ(result, cvt.ok) << title2 + L"result";
         EXPECT_EQ(expected.length(), ansi.length()) << title2 + L"length";
@@ -90,7 +90,7 @@ protected:
     {
         locutils::codecvt_ansi_utf16_wchar_t cvt(mode);
         wstring ws;
-        wstring title2 = title + L" - " + strutils::to_wstring(mode.encoding_name_iconv()) + L": ";
+        wstring title2 = title + L" - " + str::to_wstring(mode.encoding_name_iconv()) + L": ";
         int result = cvt.ansi_to_utf16(s, ws);
         EXPECT_EQ(result, cvt.ok) << title2 + L"result";
         EXPECT_EQ(expected.length(), ws.length()) << title2 + L"length";

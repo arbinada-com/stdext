@@ -7,13 +7,18 @@
 #include <stdarg.h>
 #include <string.h>
 
+#if defined(__STDEXT_USE_BOOST)
+#include <boost/algorithm/string.hpp>
+#include <boost/locale.hpp>
+#endif
+
 #include "strutils.h"
 #include "platforms.h"
 
 using namespace std;
 
-namespace stdext
-{
+namespace stdext {
+namespace str {
 
 inline int basic_vsnprintf_s(std::string& s, const char* fmt, va_list args)
 {
@@ -71,7 +76,7 @@ StringT basic_format(const CharT* fmt, va_list args)
     }
 }
 
-std::string strutils::format(const char* fmt, ...)
+std::string format(const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -80,7 +85,7 @@ std::string strutils::format(const char* fmt, ...)
     return s;
 }
 
-string strutils::format(const std::string fmt, ...)
+string format(const std::string fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -89,7 +94,7 @@ string strutils::format(const std::string fmt, ...)
     return s;
 }
 
-std::wstring strutils::wformat(const wchar_t* fmt, ...)
+std::wstring wformat(const wchar_t* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -98,7 +103,7 @@ std::wstring strutils::wformat(const wchar_t* fmt, ...)
     return s;
 }
 
-wstring strutils::wformat(const std::wstring fmt, ...)
+wstring wformat(const std::wstring fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -125,62 +130,62 @@ StringT basic_rtrim_chars(const StringT& s, const StringT& chars)
     return (end == StringT::npos) ? StringT() : s.substr(0, end + 1);
 }
 
-std::string strutils::ltrim(const std::string& s)
+std::string ltrim(const std::string& s)
 {
     return basic_ltrim_chars<std::string>(s, whitespaces());
 }
 
-std::wstring strutils::ltrim(const std::wstring& s)
+std::wstring ltrim(const std::wstring& s)
 {
     return basic_ltrim_chars<std::wstring>(s, wwhitespaces());
 }
 
-std::string strutils::ltrim_chars(const std::string& s, const std::string& chars)
+std::string ltrim_chars(const std::string& s, const std::string& chars)
 {
     return basic_ltrim_chars<std::string>(s, chars);
 }
 
-std::wstring strutils::ltrim_chars(const std::wstring& s, const std::wstring& chars)
+std::wstring ltrim_chars(const std::wstring& s, const std::wstring& chars)
 {
     return basic_ltrim_chars<std::wstring>(s, chars);
 }
 
-std::string strutils::rtrim(const std::string& s)
+std::string rtrim(const std::string& s)
 {
     return basic_rtrim_chars<std::string>(s, whitespaces());
 }
 
-std::wstring strutils::rtrim(const std::wstring& s)
+std::wstring rtrim(const std::wstring& s)
 {
     return basic_rtrim_chars<std::wstring>(s, wwhitespaces());
 }
 
-std::string strutils::rtrim_chars(const std::string& s, const std::string& chars)
+std::string rtrim_chars(const std::string& s, const std::string& chars)
 {
     return basic_rtrim_chars<std::string>(s, chars);
 }
 
-std::wstring strutils::rtrim_chars(const std::wstring& s, const std::wstring& chars)
+std::wstring rtrim_chars(const std::wstring& s, const std::wstring& chars)
 {
     return basic_rtrim_chars<std::wstring>(s, chars);
 }
 
-std::string strutils::trim(const std::string& s)
+std::string trim(const std::string& s)
 {
     return rtrim(ltrim(s));
 }
 
-std::wstring strutils::trim(const std::wstring& s)
+std::wstring trim(const std::wstring& s)
 {
     return rtrim(ltrim(s));
 }
 
-std::string strutils::trim_chars(const std::string& s, const std::string& chars)
+std::string trim_chars(const std::string& s, const std::string& chars)
 {
     return rtrim_chars(ltrim_chars(s, chars), chars);
 }
 
-std::wstring strutils::trim_chars(const std::wstring& s, const std::wstring& chars)
+std::wstring trim_chars(const std::wstring& s, const std::wstring& chars)
 {
     return rtrim_chars(ltrim_chars(s, chars), chars);
 }
@@ -205,7 +210,7 @@ StringT basic_replace(
     return s;
 }
 
-std::string strutils::replace(
+std::string replace(
     std::string s,
     const std::string& match,
     const std::string& repl,
@@ -215,7 +220,7 @@ std::string strutils::replace(
     return basic_replace<std::string>(s, match, repl, from_pos, all);
 }
 
-std::wstring strutils::replace(
+std::wstring replace(
     std::wstring s,
     const std::wstring& match,
     const std::wstring& repl,
@@ -225,48 +230,57 @@ std::wstring strutils::replace(
     return basic_replace<std::wstring>(s, match, repl, from_pos, all);
 }
 
-std::string strutils::replace_all(std::string s, const std::string& match, const std::string& repl)
+std::string replace_all(std::string s, const std::string& match, const std::string& repl)
 {
     return basic_replace<std::string>(s, match, repl, 0, true);
 }
 
-std::wstring strutils::replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl)
+std::wstring replace_all(std::wstring s, const std::wstring& match, const std::wstring& repl)
 {
     return basic_replace<std::wstring>(s, match, repl, 0, true);
 }
 
-std::string strutils::quoted(const std::string& s)
+std::string quoted(const std::string& s)
 {
     return "'" + s + "'";
 }
-std::wstring strutils::quoted(const std::wstring& s)
+std::wstring quoted(const std::wstring& s)
 {
     return L"'" + s + L"'";
 }
-std::string strutils::double_quoted(const std::string& s)
+std::string double_quoted(const std::string& s)
 {
     return "\"" + s + "\"";
 }
-std::wstring strutils::double_quoted(const std::wstring& s)
+std::wstring double_quoted(const std::wstring& s)
 {
     return L"\"" + s + L"\"";
 }
 
 
-string strutils::to_string(const wstring& ws)
+string to_string(const wstring& ws)
 {
+#if defined(__STDEXT_USE_BOOST)
+    return boost::locale::conv::utf_to_utf<char>(ws);
+#else
     string s(ws.begin(), ws.end()); // ANSI charset only
     return s;
+#endif
 }
 
-wstring strutils::to_wstring(const string& s)
+wstring to_wstring(const string& s)
 {
+#if defined(__STDEXT_USE_BOOST)
+    return boost::locale::conv::utf_to_utf<wchar_t>(s);
+#else
     // ANSI charset only
     wstring ws;
     ws.resize(s.length());
     for (string::size_type i = 0; i < s.length(); i++)
         ws[i] = (wchar_t)((unsigned char)s[i]);
     return ws;
+#endif
 }
 
+}
 }

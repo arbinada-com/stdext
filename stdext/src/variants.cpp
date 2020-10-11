@@ -119,7 +119,7 @@ variant& variant::operator=(const variants::variant& source)
         break;
     default:
         throw variant_exception(
-            strutils::format("Unsupported type %s (%d)", variants::to_string(source.m_vtype).c_str(), static_cast<int>(source.m_vtype)),
+            str::format("Unsupported type %s (%d)", variants::to_string(source.m_vtype).c_str(), static_cast<int>(source.m_vtype)),
             variant_error::conversion_failed);
     }
     return *this;
@@ -267,7 +267,7 @@ void variant::clear()
 
 std::string err_msg_unsupported_comparision(const operation op, const value_type vtype1, const value_type vtype2) noexcept
 {
-    return strutils::format(
+    return str::format(
         "Unsupported comparision %s between type %s (%d) and %s (%d)",
         variants::to_string(op).c_str(),
         variants::to_string(vtype1).c_str(),
@@ -279,7 +279,7 @@ std::string err_msg_unsupported_comparision(const operation op, const value_type
 
 string err_msg_unsupported_operation(const operation op, const value_type vtype1, const value_type vtype2) noexcept
 {
-    return strutils::format(
+    return str::format(
         "Unsupported operation %s between type %s (%d) and %s (%d)",
         variants::to_string(op).c_str(),
         variants::to_string(vtype1).c_str(),
@@ -474,7 +474,7 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
  */
 string err_msg_convertion_failed(const value_type vtype, const char* to_type_name) noexcept
 {
-    return strutils::format(
+    return str::format(
         "Conversion failed from type %s (%d) to '%s'",
         variants::to_string(vtype).c_str(),
         static_cast<int>(vtype),
@@ -581,7 +581,7 @@ std::string variant::to_string() const noexcept(false)
     case value_type::vt_string:
         return *((std::string*)m_value);
     case value_type::vt_wstring:
-        return strutils::to_string(*((std::wstring*)m_value));
+        return str::to_string(*((std::wstring*)m_value));
     default:
         throw variant_exception(err_msg_convertion_failed(m_vtype, "std::string"), variant_error::conversion_failed);
     }
@@ -600,7 +600,7 @@ std::wstring variant::to_wstring() const noexcept(false)
     case value_type::vt_int64:
         return std::to_wstring(to_int64());
     case value_type::vt_string:
-        return strutils::to_wstring(*((std::string*)m_value));
+        return str::to_wstring(*((std::string*)m_value));
     case value_type::vt_wstring:
         return *((std::wstring*)m_value);
     default:

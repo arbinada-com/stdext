@@ -93,7 +93,7 @@ namespace stdext
             std::wstring text() const { return m_text; }
             std::wstring to_wstring() const
             {
-                return strutils::wformat(L"%ls%ls: %ls %d: %ls",
+                return str::wformat(L"%ls%ls: %ls %d: %ls",
                     m_source.c_str(),
                     m_pos.to_wstring().c_str(),
                     parsers::to_wstring(m_severity).c_str(),

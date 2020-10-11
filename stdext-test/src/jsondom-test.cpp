@@ -120,7 +120,7 @@ TEST_F(JsonDomTest, TestValueTypeNames)
          vtype = (json::dom_value_type)(static_cast<int>(vtype) + 1))
     {
         string s = json::to_string(vtype);
-        ASSERT_NE(s, "unsupported") << strutils::wformat(L"Undefined name for value_type %d", static_cast<int>(vtype));
+        ASSERT_NE(s, "unsupported") << str::wformat(L"Undefined name for value_type %d", static_cast<int>(vtype));
     }
 }
 
@@ -220,7 +220,7 @@ TEST_F(JsonDomTest, TestDomValues_Number_Random)
             EXPECT_EQ(v1->text(), s);
             EXPECT_EQ(v2->text(), s);
             bool is_float = s.find(L'.') != s.npos || s.find(L'e') != s.npos || s.find(L'E') != s.npos;
-            ASSERT_TRUE(is_float) << s << strutils::wformat(L", value: %#g", value);
+            ASSERT_TRUE(is_float) << s << str::wformat(L", value: %#g", value);
         }
         ASSERT_EQ(v1->text(), v2->text());
         EXPECT_EQ(v1->numtype(), numtype) << L"value 1: " + v1->to_wstring();
@@ -286,20 +286,20 @@ TEST_F(JsonDomTest, TestDomMembers)
     for (size_t i = 0; i < test_data.size(); i++)
     {
         json::dom_object_member::name_t name = make_name(i + 1);
-        ASSERT_EQ(name, o1->members()->at(i)->name()) << strutils::wformat(L"Name %d", i);
-        ASSERT_TRUE(test_data[i] == (*o1)[i]->value()) << strutils::wformat(L"Value ptr %d", i);
-        ASSERT_TRUE(test_data[i]->type() == (*o1)[i]->value()->type()) << strutils::wformat(L"Value type %d", i);
-        ASSERT_TRUE(test_data[i]->text() == (*o1)[i]->value()->text()) << strutils::wformat(L"Value %d", i);
+        ASSERT_EQ(name, o1->members()->at(i)->name()) << str::wformat(L"Name %d", i);
+        ASSERT_TRUE(test_data[i] == (*o1)[i]->value()) << str::wformat(L"Value ptr %d", i);
+        ASSERT_TRUE(test_data[i]->type() == (*o1)[i]->value()->type()) << str::wformat(L"Value type %d", i);
+        ASSERT_TRUE(test_data[i]->text() == (*o1)[i]->value()->text()) << str::wformat(L"Value %d", i);
         json::dom_object_member* member = o1->find(name);
-        ASSERT_TRUE(o1->contains_member(name)) << strutils::wformat(L"Member2 name %d", i);
-        ASSERT_FALSE(member == nullptr) << strutils::wformat(L"Member2 %d", i);
-        ASSERT_FALSE(member->value() == nullptr) << strutils::wformat(L"MemberValue2 %d", i);
-        EXPECT_EQ(test_data[i], member->value()) << strutils::wformat(L"MemberValue2 ptr %d", i);
-        EXPECT_EQ(test_data[i]->type(), member->value()->type()) << strutils::wformat(L"MemberValue2 type %d", i);
-        EXPECT_EQ(test_data[i]->text(), member->value()->text()) << strutils::wformat(L"MemberValue2 %d", i);
+        ASSERT_TRUE(o1->contains_member(name)) << str::wformat(L"Member2 name %d", i);
+        ASSERT_FALSE(member == nullptr) << str::wformat(L"Member2 %d", i);
+        ASSERT_FALSE(member->value() == nullptr) << str::wformat(L"MemberValue2 %d", i);
+        EXPECT_EQ(test_data[i], member->value()) << str::wformat(L"MemberValue2 ptr %d", i);
+        EXPECT_EQ(test_data[i]->type(), member->value()->type()) << str::wformat(L"MemberValue2 type %d", i);
+        EXPECT_EQ(test_data[i]->text(), member->value()->text()) << str::wformat(L"MemberValue2 %d", i);
         json::dom_value* v2 = o1->find_value(name);
-        ASSERT_FALSE(v2 == nullptr) << strutils::wformat(L"Value2 %d", i);
-        EXPECT_EQ(v2, member->value()) << strutils::wformat(L"Value2 ptr %d", i);
+        ASSERT_FALSE(v2 == nullptr) << str::wformat(L"Value2 %d", i);
+        EXPECT_EQ(v2, member->value()) << str::wformat(L"Value2 ptr %d", i);
     }
 }
 
