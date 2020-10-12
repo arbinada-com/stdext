@@ -39,7 +39,7 @@ std::wstring to_escaped(const wchar_t c, const bool force_to_numeric)
         case L'\r': return L"\\r";
         case L'\t': return L"\\t";
         default:
-            return str::wformat(L"\\u%0.4X", c);
+            return str::wformat(L"\\u%04X", (unsigned int)c);
         }
     }
     return wstring{c};
