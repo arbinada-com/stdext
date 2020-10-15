@@ -77,7 +77,7 @@ namespace stdext
         {
         public:
             typedef parsers::msg_collector<reader_msg_kind> msg_collector_t;
-            typedef msg_collector_t::message_t message_t;
+            typedef typename msg_collector_t::message_t message_t;
         public:
             reader() = delete;
             reader(ioutils::text_reader* const rd);

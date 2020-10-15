@@ -4,7 +4,6 @@ TEMPLATE = lib
 TARGET = stdext
 CONFIG += staticlib
 
-CONFIG += c++11
 win32 {
     contains(QMAKE_CXX, cl) {
         # Up MSVC warning level

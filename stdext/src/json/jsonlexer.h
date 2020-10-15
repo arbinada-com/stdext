@@ -82,7 +82,7 @@ namespace stdext
         public:
             inline bool eof() const { return m_reader.eof(); }
             bool next_lexeme(lexeme& lex);
-            inline bool has_errors() const { return m_messages.has_errors(); }
+            inline bool has_errors() const noexcept { return m_messages.has_errors(); }
             const msg_collector_t& messages() const { return m_messages; }
             const parsers::textpos& pos() const { return m_pos; }
         public:

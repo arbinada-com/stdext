@@ -42,6 +42,14 @@ CONFIG(stdext_gen_makefile) {
     message(MAKEFILE: $$MAKEFILE)
 }
 
+win32 {
+    CONFIG += c++17
+}
+unix {
+    QMAKE_CXXFLAGS += -std=c++17 -pthread
+}
+
+
 # Copies the given file to the destination directory after link event
 defineTest(PostLink_CopyFile) {
     src_file = $$1

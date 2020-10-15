@@ -2,7 +2,7 @@ include(gtest-dependency.pri)
 include(../stdext/stdext-common.pri)
 
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console
 CONFIG += thread
 
 INCLUDEPATH += \

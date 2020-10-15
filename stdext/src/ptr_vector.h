@@ -9,11 +9,11 @@
 namespace stdext
 {
 
-    template<class Type, class Alloc = std::allocator<Type>>
+    template<class Type>
     class ptr_vector
     {
     public:
-        typedef std::vector<Type*, Alloc> vector_t;
+        typedef std::vector<Type*> vector_t;
         typedef typename vector_t::const_iterator const_iterator;
         typedef typename vector_t::iterator iterator;
         typedef typename vector_t::size_type size_type;
@@ -118,14 +118,14 @@ namespace stdext
             m_vector.erase(position);
             return t;
         }
-        
-        iterator find(const Type* value) 
-        { 
-            return std::find(m_vector.begin(), m_vector.end(), value); 
-        }
-        const_iterator find(const Type* value) const 
+
+        iterator find(const Type* value)
         {
-            return std::find(m_vector.begin(), m_vector.end(), value); 
+            return std::find(m_vector.begin(), m_vector.end(), value);
+        }
+        const_iterator find(const Type* value) const
+        {
+            return std::find(m_vector.begin(), m_vector.end(), value);
         }
     protected:
         vector_t m_vector;
