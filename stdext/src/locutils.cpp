@@ -6,6 +6,7 @@
 #include "locutils.h"
 #include <algorithm>
 #include <functional>
+#include <cwctype>
 #if defined(__STDEXT_USE_ICONV)
     #include <iconv.h>
 #endif
@@ -223,19 +224,17 @@ std::string utf16::wchar_to_multibyte(const wchar_t* ws, const size_t len)
 
 std::wstring utf16::to_lower(const std::wstring& ws)
 {
-    locale loc("");
-    const ctype<wchar_t>& ct = use_facet<ctype<wchar_t> >(loc);
+    locale_guard lg(LC_ALL, "");
     wstring ws2(ws.length(), 0);
-    transform(ws.begin(), ws.end(), ws2.begin(), std::bind1st(std::mem_fun(&ctype<wchar_t>::tolower), &ct));
+    std::transform(ws.begin(), ws.end(), ws2.begin(), std::towlower);
     return ws2;
 }
 
 std::wstring utf16::to_upper(const std::wstring& ws)
 {
-    locale loc("");
-    const ctype<wchar_t>& ct = use_facet<ctype<wchar_t> >(loc);
+    locale_guard lg(LC_ALL, "");
     wstring ws2(ws.length(), 0);
-    transform(ws.begin(), ws.end(), ws2.begin(), std::bind1st(std::mem_fun(&ctype<wchar_t>::toupper), &ct));
+    transform(ws.begin(), ws.end(), ws2.begin(), std::towupper);
     return ws2;
 }
 

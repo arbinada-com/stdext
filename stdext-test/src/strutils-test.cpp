@@ -20,8 +20,8 @@ TEST(StrUtilsTest, TestFormat)
     EXPECT_STREQ(ws, str::wformat(L"%hs", s).c_str());
 #if defined(__STDEXT_WINDOWS)
     // Safe versions of formatting functions (xxxprintf_s) are used on Windows
-    EXPECT_STREQ(ws, strutils::wformat(L"%s", ws).c_str());
-    EXPECT_STREQ(ws, strutils::wformat(L"%S", s).c_str());
+    EXPECT_STREQ(ws, str::wformat(L"%s", ws).c_str());
+    EXPECT_STREQ(ws, str::wformat(L"%S", s).c_str());
 #endif
     EXPECT_EQ(L"The value is 123456789 12345.6789", str::wformat(L"%ls %d %5.4f", ws, i, f));
 }
