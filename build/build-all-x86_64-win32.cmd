@@ -1,6 +1,6 @@
 @echo off
 
-if not "%VSCMD_ARG_HOST_ARCH%"=="x64" (
+if not "%VSCMD_ARG_TGT_ARCH%"=="x64" (
     echo.Run this batch from VS x64 native tools command prompt
     exit /b 1
 )
