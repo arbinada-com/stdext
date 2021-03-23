@@ -13,9 +13,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace locutils
+namespace stdext::locutils
 {
 
 /*
@@ -1083,4 +1081,4 @@ int codecvt_ansi_utf16_wchar_t::do_encoding() const noexcept
 }
 
 }
-}
+

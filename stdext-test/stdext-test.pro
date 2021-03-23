@@ -19,25 +19,25 @@ unix: PRE_TARGETDEPS += $$LIBS_DIR/libstdext.a
 #message(Pre targetdeps: $$PRE_TARGETDEPS)
 
 SOURCES += \
-    src/jsoncommon-test.cpp \
+    src/containers_test.cpp \
+    src/csvtools_test.cpp \
+    src/datetime_test.cpp \
+    src/ioutils_test.cpp \
+    src/jsoncommon_test.cpp \
+    src/jsondom_test.cpp \
+    src/jsonlexer_test.cpp \
+    src/jsonparser_test.cpp \
+    src/jsontools_test.cpp \
+    src/locutils_test.cpp \
     src/main.cpp \
-    src/containers-test.cpp \
-    src/csvtools-test.cpp \
-    src/datetime-test.cpp \
-    src/ioutils-test.cpp \
-    src/jsondom-test.cpp \
-    src/jsonlexer-test.cpp \
-    src/jsonparser-test.cpp \
-    src/jsontools-test.cpp \
-    src/locutils-test.cpp \
-    src/parsers-test.cpp \
-    src/platforms-test.cpp \
-    src/strutils-test.cpp \
-    src/trees-test.cpp \
-    src/variants-test.cpp
+    src/parsers_test.cpp \
+    src/platforms_test.cpp \
+    src/strutils_test.cpp \
+    src/trees_test.cpp \
+    src/variants_test.cpp
 
 HEADERS += \
-    src/jsondom-test.h \
-    src/locutils-test.h
+    src/jsondom_test.h \
+    src/locutils_test.h
 
 PostLink_CopyFile(./data/*.*, ./$$DESTDIR/)

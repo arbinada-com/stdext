@@ -9,19 +9,17 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace testutils
+namespace stdext::testutils
 {
 
 /*
  * timer class
  */
-timer::timer(std::string title)
+timer::timer(const std::string& title)
     : m_title(title)
 {}
 
-void timer::start(std::string title)
+void timer::start(const string& title)
 {
     m_point_title = title;
     m_t1 = std::chrono::system_clock::now();
@@ -189,4 +187,4 @@ std::wstring memchecker::wreport() const noexcept
 }
 
 }
-}
+

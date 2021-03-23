@@ -7,9 +7,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace variants
+namespace stdext::variants
 {
 namespace variants_test
 {
@@ -751,6 +749,109 @@ TEST(VariantsTest, TestObjref)
     ASSERT_EQ("Sub:Obj2", (std::string)v4.to_object<testobjbase>()->value()) << L"Value 4.2";
 }
 
+TEST(VariantsTest, DateTime)
+{
+    variant v1 = stdext::datetime("2020-02-03");
+    ASSERT_TRUE(v1.vtype() == value_type::vt_datetime);
+    variant v2 = v1;
+    ASSERT_TRUE(v2.vtype() == value_type::vt_datetime);
+    ASSERT_EQ(v1.to_datetime(), v2.to_datetime());
+    ASSERT_EQ(v1, v2);
+    v2.to_datetime().inc(stdext::dtunit_t::seconds, 1);
+    ASSERT_NE(v1, v2);
+    ASSERT_TRUE(v1 < v2);
+    ASSERT_TRUE(v1 <= v2);
+    ASSERT_FALSE(v1 > v2);
+    ASSERT_FALSE(v1 >= v2);
+    variant v3 = variants::null();
+    EXPECT_THROW(v3.to_datetime(), variant_exception);
+    ASSERT_FALSE(v1 == v3);
+    ASSERT_FALSE(v1 != v3);
+    ASSERT_FALSE(v1 < v3);
+    ASSERT_FALSE(v1 <= v3);
+    ASSERT_FALSE(v1 > v3);
+    ASSERT_FALSE(v1 >= v3);
+    ASSERT_FALSE(variants::null() == variants::null());
+    variant v4(stdext::datetime(stdext::datetime(2020, 1, 2, 3, 14, 35, 123)));
+    ASSERT_TRUE(v4.vtype() == value_type::vt_datetime);
+    EXPECT_EQ(v4.to_datetime().year(), 2020);
+    EXPECT_EQ(v4.to_datetime().month(), 1);
+    EXPECT_EQ(v4.to_datetime().day(), 2);
+    EXPECT_EQ(v4.to_datetime().hour(), 3);
+    EXPECT_EQ(v4.to_datetime().minute(), 14);
+    EXPECT_EQ(v4.to_datetime().second(), 35);
+    EXPECT_EQ(v4.to_datetime().millisecond(), 123);
+    EXPECT_EQ(v4.to_string(), "2020-01-02 03:14:35.123");
+}
+
+variant test_get_value(const variant& v)
+{
+    return v;
+}
+
+TEST(VariantsTest, Null)
+{
+    variant v1;
+    EXPECT_TRUE(v1.vtype() == value_type::vt_unknown);
+    EXPECT_THROW(v1.to_string(), variant_exception);
+    EXPECT_TRUE(v1.is_null());
+    v1 = "Test";
+    EXPECT_TRUE(v1.vtype() == value_type::vt_string);
+    EXPECT_FALSE(v1.is_null());
+    v1.clear();
+    EXPECT_TRUE(v1.vtype() == value_type::vt_unknown);
+    EXPECT_THROW(v1.to_string(), variant_exception);
+    EXPECT_TRUE(v1.is_null());
+    variant v2 = null();
+    EXPECT_TRUE(v2.vtype() == value_type::vt_unknown);
+    EXPECT_TRUE(v2.is_null());
+    variant v3 = variants::null();
+    ASSERT_FALSE(v2 == v3);
+    ASSERT_FALSE(v2 != v3);
+    ASSERT_FALSE(v2 < v3);
+    ASSERT_FALSE(v2 <= v3);
+    ASSERT_FALSE(v2 > v3);
+    ASSERT_FALSE(v2 >= v3);
+    variant v4 = test_get_value(null());
+    EXPECT_TRUE(v4.is_null());
+    variant v5 = v1;
+    EXPECT_TRUE(v5.vtype() == value_type::vt_unknown);
+    EXPECT_THROW(v5.to_string(), variant_exception);
+    variant v6(v1);
+    EXPECT_TRUE(v6.vtype() == value_type::vt_unknown);
+    EXPECT_THROW(v6.to_string(), variant_exception);
+    std::vector<variant> x(2);
+    EXPECT_TRUE(x[0].vtype() == value_type::vt_unknown);
+    EXPECT_TRUE(x[1].vtype() == value_type::vt_unknown);
+    auto x2 = x;
+    EXPECT_TRUE(x2[0].vtype() == value_type::vt_unknown);
+    EXPECT_TRUE(x2[1].vtype() == value_type::vt_unknown);
+}
+
+TEST(VariantsTest, Optional)
+{
+    {
+        optional<int> opt1;
+        variant v1 = optional_to_var(opt1);
+        EXPECT_TRUE(v1.is_null());
+        opt1 = 123;
+        v1 = optional_to_var(opt1);
+        EXPECT_FALSE(v1.is_null());
+        EXPECT_EQ(opt1.value(), v1.to_int());
+    }
+    {
+        optional<int> opt2;
+        variant v2;
+        var_to_optional(v2, opt2);
+        EXPECT_FALSE(opt2.has_value());
+        v2 = 123;
+        var_to_optional(v2, opt2);
+        EXPECT_TRUE(opt2.has_value());
+        EXPECT_EQ(opt2.value(), v2.to_int());
+    }
+}
+
+
 /*
  * Memory checks
  */
@@ -836,6 +937,5 @@ TEST(VariantsTest, TestObjrefMemory)
     ASSERT_FALSE(chk.has_leaks()) << chk.wreport();
 }
 
-}
 }
 }

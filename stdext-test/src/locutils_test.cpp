@@ -1,7 +1,6 @@
 ﻿#include <gtest/gtest.h>
-#include "locutils-test.h"
-#include "locutils.h"
 #include <sstream>
+#include "locutils_test.h"
 #include "testutils.h"
 #include "strutils.h"
 

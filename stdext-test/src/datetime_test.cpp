@@ -1,12 +1,11 @@
-#include <cstdlib>
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include "datetime.h"
+#include "locutils.h"
 
 using namespace std;
 
-namespace stdext
-{
-namespace datetime_test
+namespace stdext::datetime_test
 {
 
 class DatetimeTest : public testing::Test
@@ -72,7 +71,7 @@ protected:
     }
 };
 
-TEST_F(DatetimeTest, TestTimePart)
+TEST_F(DatetimeTest, TimePart)
 {
     datetime::data_t dt1(0, 0, 0, 18, 0, 0, 0);
     double hh = datetime::hms_to_hh(dt1);
@@ -116,7 +115,7 @@ TEST_F(DatetimeTest, TestTimePart)
     CompareDatetimeData(dt1, dt2, L"HH 7.2");
 }
 
-TEST_F(DatetimeTest, TestJulianDateCalcs)
+TEST_F(DatetimeTest, JulianDateCalcs)
 {
     // Epoch date 1 Jan 4713 BC 12:00 (julian) = 24 Nov 4714 BC 12:00 (gregorian)
     // Important note: for NNNN BC years the year parameter is specified as -(NNNN + 1)
@@ -198,7 +197,7 @@ TEST_F(DatetimeTest, TestJulianDateCalcs)
     CompareDatetimeData(d1, d1, L"2 Aug 1942 at 15:00:00 - 1");
 }
 
-TEST_F(DatetimeTest, TestConstructors)
+TEST_F(DatetimeTest, Constructors)
 {
     datetime d11;
     ASSERT_EQ(d11.calendar(), calendar_t::julian) << L"ctor 1.1";
@@ -241,7 +240,7 @@ TEST_F(DatetimeTest, TestConstructors)
     }
 }
 
-TEST_F(DatetimeTest, TestQuarterOfMonth)
+TEST_F(DatetimeTest, QuarterOfMonth)
 {
     auto chkQuarter = [](datepart_t month, datepart_t quarter)
     {
@@ -264,7 +263,7 @@ TEST_F(DatetimeTest, TestQuarterOfMonth)
     chkQuarter(12, 4);
 }
 
-TEST_F(DatetimeTest, TestDateParts)
+TEST_F(DatetimeTest, DateParts)
 {
     datetime d1("2019-10-20 21:22:23");
     ASSERT_EQ((datepart_t)2019, d1.year()) << L"year 1";
@@ -287,7 +286,7 @@ TEST_F(DatetimeTest, TestDateParts)
     ASSERT_EQ((datepart_t)678, d2.millisecond()) << L"millisecond 2";
 }
 
-TEST_F(DatetimeTest, TestDayOfWeek)
+TEST_F(DatetimeTest, DayOfWeek)
 {
     ASSERT_EQ((datepart_t)1, datetime("2019-11-04").day_of_week()) << L"DOW 1.1";
     ASSERT_EQ((datepart_t)2, datetime("2019-11-05").day_of_week()) << L"DOW 1.2";
@@ -301,7 +300,7 @@ TEST_F(DatetimeTest, TestDayOfWeek)
     ASSERT_EQ((datepart_t)7, datetime("1985-02-17").day_of_week()) << L"DOW 2";
 }
 
-TEST_F(DatetimeTest, TestDayOfYear)
+TEST_F(DatetimeTest, DayOfYear)
 {
     ASSERT_EQ((datepart_t)1, datetime(-4712, 1, 1, 12, 0, 0, 0, calendar_t::julian).day_of_year()) << L"DOY 1";
     ASSERT_EQ((datepart_t)48, datetime("1985-02-17").day_of_year()) << L"DOY 2";
@@ -333,7 +332,7 @@ TEST_F(DatetimeTest, TestDayOfYear)
     ASSERT_EQ((datepart_t)365, datetime("2019-12-31").day_of_year()) << L"DOY 2019.12.2";
 }
 
-TEST_F(DatetimeTest, TestDateDiff)
+TEST_F(DatetimeTest, DateDiff)
 {
     // Years
     ASSERT_EQ(0, (int)datetime("2012-01-01").diff(dtunit_t::years, datetime("2012-01-31"))) << L"Diff YY 1.1";
@@ -386,7 +385,7 @@ TEST_F(DatetimeTest, TestDateDiff)
     ASSERT_EQ(86400, (int)datetime(2001, 1, 1, 0, 0, 0, 0).diff(dtunit_t::seconds, datetime(2001, 1, 2, 0, 0, 0, 0))) << L"Diff SS 3.1";
 }
 
-TEST_F(DatetimeTest, TestDateInc)
+TEST_F(DatetimeTest, DateInc)
 {
     // Years
     CompareDates(datetime(-4712, 1, 1, 12, 0, 0, 0), datetime().inc(dtunit_t::years, 0), L"Inc YY 1.1");
@@ -472,5 +471,32 @@ TEST_F(DatetimeTest, TestDateInc)
     CompareDates(datetime(2000, 2, 28, 23, 59, 59, 0), datetime(2000, 2, 29, 0, 0, 0, 0).inc(dtunit_t::seconds, -1), L"Inc SS 3.3.2");
 }
 
+TEST_F(DatetimeTest, CompareOperators)
+{
+    datetime d1(-4712, 1, 1, 12, 0, 0, 0), d2(-4712, 1, 1, 12, 0, 0, 0);
+    EXPECT_TRUE(d1 == d2);
+    EXPECT_FALSE(d1 != d2);
+    EXPECT_EQ(d1, d2);
+    EXPECT_FALSE(d1 < d2);
+    EXPECT_TRUE(d1 <= d2);
+    EXPECT_FALSE(d1 > d2);
+    EXPECT_TRUE(d1 >= d2);
+    d2.inc(dtunit_t::seconds, 1);
+    EXPECT_FALSE(d1 == d2);
+    EXPECT_TRUE(d1 != d2);
+    EXPECT_TRUE(d1 < d2);
+    EXPECT_TRUE(d1 <= d2);
+    EXPECT_FALSE(d1 > d2);
+    EXPECT_FALSE(d1 >= d2);
 }
+
+TEST_F(DatetimeTest, OutputFormats) {
+    datetime d1(2020, 12, 6, 22, 53, 41, 684);
+    EXPECT_EQ(d1.to_string(), "2020-12-06 22:53:41.684");
+    EXPECT_EQ(d1.to_string("%Y-%m-%dT%H:%M:%S"), "2020-12-06T22:53:41");
+    EXPECT_EQ(d1.to_string("%H:%M:%S.%f"), "22:53:41.684");
+    locutils::locale_guard(LC_ALL, "en_US.UTF-8");
+    EXPECT_EQ(d1.to_string("%b %e, %Y"), "Dec  6, 2020");
+}
+
 }

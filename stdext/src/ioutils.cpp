@@ -12,9 +12,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace ioutils
+namespace stdext::ioutils
 {
 
 /*
@@ -22,8 +20,7 @@ namespace ioutils
  */
 void text_io_policy::push_back_chars(const std::wstring& ws, text_buffer_t& buf) const
 {
-    for (const wchar_t& wc : ws)
-        buf.push_back(wc);
+    std::for_each(ws.begin(), ws.end(), [&](const wchar_t& wc) { buf.push_back(wc); });
 }
 
 
@@ -447,7 +444,7 @@ text_writer::text_writer(std::ostream& stream, const text_io_policy& policy)
     : m_stream(new text_ostream_adapter(&stream, false)), m_policy(policy)
 {}
 
-text_writer::text_writer(const std::wstring file_name, const text_io_policy& policy)
+text_writer::text_writer(const std::wstring& file_name, const text_io_policy& policy)
     : m_policy(policy)
 {
     m_use_file_io = true;
@@ -498,5 +495,4 @@ text_writer& text_writer::write_endl()
     return write(L'\n');
 }
 
-}
 }

@@ -237,13 +237,13 @@ public:
     public:
         typedef iterator_base base_t;
     public:
-        iterator(const gtree* tree)
+        explicit iterator(const gtree* tree)
             : base_t(tree)
         {
             base_t::m_current = tree->first_child();
             base_t::m_curr_root = base_t::m_current;
         }
-        iterator(const gtree& tree)
+        explicit iterator(const gtree& tree)
             : iterator(&tree)
         {}
     public:
@@ -296,14 +296,14 @@ public:
     public:
         typedef iterator_base base_t;
     public:
-        iterator_bottom_up(const gtree* tree)
+        explicit iterator_bottom_up(const gtree* tree)
             : base_t(tree)
         {
             base_t::m_current = tree->first_child();
             down();
             base_t::m_curr_root = base_t::m_current;
         }
-        iterator_bottom_up(const gtree& tree)
+        explicit iterator_bottom_up(const gtree& tree)
             : iterator(&tree)
         {}
     public:
@@ -387,7 +387,7 @@ public:
     typedef gtree<T> tree_t;
     typedef typename tree_t::size_type size_type;
 public:
-    gtree_node(tree_t* const tree)
+    explicit gtree_node(tree_t* const tree)
         : m_tree(tree),
           m_parent(nullptr),
           m_prev_sibling(nullptr), m_next_sibling(nullptr),

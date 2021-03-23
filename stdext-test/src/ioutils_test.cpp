@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "testutils.h"
 #include "strutils.h"
-#include "locutils-test.h"
+#include "locutils_test.h"
 
 using namespace std;
 

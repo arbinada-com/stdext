@@ -8,8 +8,8 @@
 #include "locutils.h"
 #include "strutils.h"
 #include "testutils.h"
-#include "jsondom-test.h"
-#include "locutils-test.h"
+#include "jsondom_test.h"
+#include "locutils_test.h"
 
 using namespace std;
 

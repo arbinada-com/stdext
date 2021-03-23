@@ -10,9 +10,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace variants
+namespace stdext::variants
 {
 
 #define VARIANTS_CASE_VTYPE_STR(name) case value_type::name: return #name
@@ -23,6 +21,7 @@ std::string to_string(const value_type vtype)
     switch (vtype)
     {
         VARIANTS_CASE_VTYPE_STR(vt_bool);
+        VARIANTS_CASE_VTYPE_STR(vt_datetime);
         VARIANTS_CASE_VTYPE_STR(vt_double);
         VARIANTS_CASE_VTYPE_STR(vt_int);
         VARIANTS_CASE_VTYPE_STR(vt_int64);
@@ -59,6 +58,9 @@ std::string to_string(const operation op)
     }
 }
 
+#undef VARIANTS_CASE_VTYPE_STR
+#undef VARIANTS_CASE_OP_STR
+
 bool is_comparision(variants::operation op)
 {
     return
@@ -94,17 +96,24 @@ variant& variant::operator=(const variants::variant& source)
     clear();
     switch (source.m_vtype)
     {
+    case value_type::vt_unknown:
+        m_vtype = value_type::vt_unknown;
+        m_value = nullptr;
+        break;
     case value_type::vt_bool:
         *this = source.to_bool();
+        break;
+    case value_type::vt_datetime:
+        *this = source.to_datetime();
+        break;
+    case value_type::vt_double:
+        *this = source.to_double();
         break;
     case value_type::vt_int:
         *this = source.to_int();
         break;
     case value_type::vt_int64:
         *this = source.to_int64();
-        break;
-    case value_type::vt_double:
-        *this = source.to_double();
         break;
     case value_type::vt_string:
         *this = source.to_string();
@@ -158,6 +167,13 @@ variant& variant::operator=(const int64_t source)
 {
     m_vtype = value_type::vt_int64;
     m_value = new int64_t(source);
+    return *this;
+}
+
+variant::variant(const stdext::datetime& val) { *this = val; }
+variant& variant::operator=(const stdext::datetime& source) {
+    m_vtype = value_type::vt_datetime;
+    m_value = new stdext::datetime(source);
     return *this;
 }
 
@@ -238,14 +254,17 @@ void variant::clear()
         case value_type::vt_bool:
             delete (bool*)m_value;
             break;
+        case value_type::vt_datetime:
+            delete (stdext::datetime*)m_value;
+            break;
+        case value_type::vt_double:
+            delete (double*)m_value;
+            break;
         case value_type::vt_int:
             delete (int*)m_value;
             break;
         case value_type::vt_int64:
             delete (int64_t*)m_value;
-            break;
-        case value_type::vt_double:
-            delete (double*)m_value;
             break;
         case value_type::vt_string:
             delete (std::string*)m_value;
@@ -297,6 +316,14 @@ value_type deduce_compatible_type(const value_type t1, const value_type t2) noex
         if (t2 == value_type::vt_bool)
             return t2;
         break;
+    case value_type::vt_datetime:
+        if (t2 == value_type::vt_datetime)
+            return t2;
+        break;
+    case value_type::vt_double:
+        if (t2 == value_type::vt_int || t2 == value_type::vt_int64 || t2 == value_type::vt_double)
+            return value_type::vt_double;
+        break;
     case value_type::vt_int:
         if (t2 == value_type::vt_int || t2 == value_type::vt_int64 || t2 == value_type::vt_double)
             return t2;
@@ -312,10 +339,6 @@ value_type deduce_compatible_type(const value_type t1, const value_type t2) noex
         default:
             return value_type::vt_unknown;
         }
-        break;
-    case value_type::vt_double:
-        if (t2 == value_type::vt_int || t2 == value_type::vt_int64 || t2 == value_type::vt_double)
-            return value_type::vt_double;
         break;
     case value_type::vt_string:
         if (t2 == value_type::vt_string)
@@ -393,9 +416,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() == v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() == v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() == v2.to_double();
         case value_type::vt_int: return v1.to_int() == v2.to_int();
         case value_type::vt_int64: return v1.to_int64() == v2.to_int64();
-        case value_type::vt_double: return v1.to_double() == v2.to_double();
         case value_type::vt_string: return v1.to_string() == v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() == v2.to_wstring();
         default: break;
@@ -405,9 +429,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() != v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() != v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() != v2.to_double();
         case value_type::vt_int: return v1.to_int() != v2.to_int();
         case value_type::vt_int64: return v1.to_int64() != v2.to_int64();
-        case value_type::vt_double: return v1.to_double() != v2.to_double();
         case value_type::vt_string: return v1.to_string() != v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() != v2.to_wstring();
         default: break;
@@ -417,9 +442,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() > v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() > v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() > v2.to_double();
         case value_type::vt_int: return v1.to_int() > v2.to_int();
         case value_type::vt_int64: return v1.to_int64() > v2.to_int64();
-        case value_type::vt_double: return v1.to_double() > v2.to_double();
         case value_type::vt_string: return v1.to_string() > v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() > v2.to_wstring();
         default: break;
@@ -429,9 +455,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() >= v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() >= v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() >= v2.to_double();
         case value_type::vt_int: return v1.to_int() >= v2.to_int();
         case value_type::vt_int64: return v1.to_int64() >= v2.to_int64();
-        case value_type::vt_double: return v1.to_double() >= v2.to_double();
         case value_type::vt_string: return v1.to_string() >= v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() >= v2.to_wstring();
         default: break;
@@ -441,9 +468,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() < v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() < v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() < v2.to_double();
         case value_type::vt_int: return v1.to_int() < v2.to_int();
         case value_type::vt_int64: return v1.to_int64() < v2.to_int64();
-        case value_type::vt_double: return v1.to_double() < v2.to_double();
         case value_type::vt_string: return v1.to_string() < v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() < v2.to_wstring();
         default: break;
@@ -453,9 +481,10 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         switch (deduce_compatible_type(v1, v2))
         {
         case value_type::vt_bool: return v1.to_bool() <= v2.to_bool();
+        case value_type::vt_datetime: return v1.to_datetime() <= v2.to_datetime();
+        case value_type::vt_double: return v1.to_double() <= v2.to_double();
         case value_type::vt_int: return v1.to_int() <= v2.to_int();
         case value_type::vt_int64: return v1.to_int64() <= v2.to_int64();
-        case value_type::vt_double: return v1.to_double() <= v2.to_double();
         case value_type::vt_string: return v1.to_string() <= v2.to_string();
         case value_type::vt_wstring: return v1.to_wstring() <= v2.to_wstring();
         default: break;
@@ -465,14 +494,18 @@ variant variant::do_operation(const variant& v1, const variant& v2, const operat
         break;
     }
     if (is_comparision(op))
+    {
+        if (v1.is_null() || v2.is_null())
+            return false;
         throw variant_exception(err_msg_unsupported_comparision(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);
+    }
     throw variant_exception(err_msg_unsupported_operation(op, v1.vtype(), v2.vtype()), variant_error::operation_failed_binary);
 }
 
 /*
  * Convertion functions
  */
-string err_msg_convertion_failed(const value_type vtype, const char* to_type_name) noexcept
+std::string err_msg_convertion_failed(const value_type vtype, const char* to_type_name) noexcept
 {
     return str::format(
         "Conversion failed from type %s (%d) to '%s'",
@@ -480,11 +513,6 @@ string err_msg_convertion_failed(const value_type vtype, const char* to_type_nam
         static_cast<int>(vtype),
         to_type_name
     );
-}
-
-inline bool variant::is_vtype(const value_type vtype) const noexcept
-{
-    return m_vtype == vtype;
 }
 
 bool variant::is_vtype(const std::initializer_list<value_type> vtypes) const noexcept
@@ -551,6 +579,13 @@ int64_t variant::to_int64() const noexcept(false)
     }
 }
 
+stdext::datetime& variant::to_datetime() const noexcept(false)
+{
+    if (!is_vtype(value_type::vt_datetime))
+        throw variant_exception(err_msg_convertion_failed(m_vtype, "datetime"), variant_error::conversion_failed);
+    return *((stdext::datetime*)m_value);
+}
+
 double variant::to_double() const noexcept(false)
 {
     switch (m_vtype)
@@ -572,6 +607,8 @@ std::string variant::to_string() const noexcept(false)
     {
     case value_type::vt_bool:
         return std::to_string(to_bool());
+    case value_type::vt_datetime:
+        return to_datetime().to_string();
     case value_type::vt_double:
         return std::to_string(to_double());
     case value_type::vt_int:
@@ -608,5 +645,9 @@ std::wstring variant::to_wstring() const noexcept(false)
     }
 }
 
+variant null()
+{
+    return variant();
 }
+
 }

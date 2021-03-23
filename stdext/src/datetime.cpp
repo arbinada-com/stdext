@@ -5,13 +5,13 @@
  2. Julian date (Wikipedia)
  */
 
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <cstdlib>
 #include <cmath>
 #include <cwchar>
+#include <iomanip>
 #include "datetime.h"
 #include "platforms.h"
 #include "strutils.h"
@@ -50,7 +50,7 @@ datetime_exception::datetime_exception(const datetime_exception::kind kind, cons
     m_message = str::format(msg_by_kind(kind), value);
 }
 
-const char* datetime_exception::what() const throw()
+const char* datetime_exception::what() const noexcept
 {
     return m_message.c_str();
 }
@@ -124,7 +124,7 @@ datetime::datetime(const struct tm &t)
 
 datetime::datetime(const char* str)
 {
-	parse(str);
+    parse(str);
 }
 
 datetime::datetime(const std::wstring& str)
@@ -139,7 +139,7 @@ datetime::datetime(const wchar_t* str)
 
 datetime::datetime(const std::string& str)
 {
-	parse(str.c_str());
+    parse(str.c_str());
 }
 
 void datetime::init(const datepart_t year, const datepart_t month, const datepart_t day,
@@ -237,7 +237,7 @@ datetime::data_t datetime::hh_to_hms(const double hh)
     return dt;
 }
 
-double datetime::hms_to_hh(const data_t time)
+double datetime::hms_to_hh(const data_t& time)
 {
     double ss = time.sec + (time.msec / 1000.0);
     double hh = ((((ss / 60.0) + time.min) / 60.0) + time.hour) / 24.0;
@@ -266,33 +266,33 @@ void datetime::parse(const char* str)
 {
     datepart_t year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, millisec = 0;
     int npos = EOF;
-	if (strchr(str, '-') != NULL)
-	{
+    if (strchr(str, '-') != NULL)
+    {
         // try to read date and time
         if (strchr(str, 'T') != NULL)
 #if defined(__STDEXT_WINDOWS)
-            npos = sscanf_s(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = sscanf_s(str, "%4d-%2d-%2dT%2d:%2d:%2d.%3d", &year, &month, &day, &hour, &minute, &second, &millisec);
 #else
-            npos = std::sscanf(str, "%4d-%2u-%2uT%2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = std::sscanf(str, "%4d-%2d-%2dT%2d:%2d:%2d.%3d", &year, &month, &day, &hour, &minute, &second, &millisec);
 #endif
         else
 #if defined(__STDEXT_WINDOWS)
-            npos = sscanf_s(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = sscanf_s(str, "%4d-%2d-%2d %2d:%2d:%2d.%3d", &year, &month, &day, &hour, &minute, &second, &millisec);
 #else
-            npos = std::sscanf(str, "%4d-%2u-%2u %2u:%2u:%2u.%3u", &year, &month, &day, &hour, &minute, &second, &millisec);
+            npos = std::sscanf(str, "%4d-%2d-%2d %2d:%2d:%2d.%3d", &year, &month, &day, &hour, &minute, &second, &millisec);
 #endif
         if (npos < 3 || npos == EOF || npos == 4)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
     }
-	else
-	{
-		// try to read time only
+    else
+    {
+        // try to read time only
 #if defined(__STDEXT_WINDOWS)
-        npos = sscanf_s(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
+        npos = sscanf_s(str, "%2d:%2d:%2d.%3d", &hour, &minute, &second, &millisec);
 #else
-        npos = std::sscanf(str, "%2u:%2u:%2u.%3u", &hour, &minute, &second, &millisec);
+        npos = std::sscanf(str, "%2d:%2d:%2d.%3d", &hour, &minute, &second, &millisec);
 #endif
-		if (npos < 2 || npos == EOF)
+        if (npos < 2 || npos == EOF)
             throw datetime_exception(datetime_exception::kind::invalid_datetime_string, str);
         datetime dt = datetime::now();
         year = dt.year();
@@ -300,7 +300,7 @@ void datetime::parse(const char* str)
         day = dt.day();
     }
     init(year, month, day, hour, minute, second, millisec, calendar_t::date_default);
-	if (!is_valid())
+    if (!is_valid())
         throw datetime_exception(datetime_exception::kind::invalid_datetime_value, str);
 }
 
@@ -308,9 +308,23 @@ void datetime::parse(const char* str)
 string datetime::to_string()
 {
     char buf[64];
-    snprintf(buf, sizeof(buf) - 1, "%04u-%02u-%02u %02u:%02u:%02u.%03u",
+    snprintf(buf, sizeof(buf) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
              year(), month(), day(), hour(), minute(), second(), millisecond());
-	return string(buf);
+    return string(buf);
+}
+
+std::string datetime::to_string(const std::string& format)
+{
+    std::tm tm = {};
+    tm.tm_year = year() - 1900;
+    tm.tm_mon = month() - 1;
+    tm.tm_mday = day();
+    tm.tm_hour = hour();
+    tm.tm_min = minute();
+    tm.tm_sec = second();
+    std::stringstream buf;
+    buf << std::put_time(&tm, format.c_str());
+    return str::replace_all(buf.str(), "%f", std::to_string(millisecond()));
 }
 
 datepart_t datetime::year() const
@@ -398,7 +412,7 @@ datepart_t datetime::day_of_year() const
 }
 
 
-long datetime::diff(const datetime_unit unit, const datetime& dt_then) const
+long datetime::diff(const dtunit_t unit, const datetime& dt_then) const
 {
     switch (unit)
     {
@@ -545,12 +559,12 @@ void datetime::trunc_to_jd_grain(jd_t& jd)
 
 datepart_t datetime::days_in_month(datepart_t month, datepart_t year)
 {
-	static datepart_t days[MONTHS_IN_YEAR] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-	if (month < 0 || month > MONTHS_IN_YEAR)
+    static datepart_t days[MONTHS_IN_YEAR] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month < 0 || month > MONTHS_IN_YEAR)
         throw datetime_exception(datetime_exception::kind::invalid_date_part, (int)dtunit_t::months);
-	if (month == 2 && is_leap_year(year))
-		return 29;
-	return days[month - 1];
+    if (month == 2 && is_leap_year(year))
+        return 29;
+    return days[month - 1];
 }
 
 
@@ -567,6 +581,11 @@ bool datetime::is_leap_year(const datetime& dt)
 bool datetime::is_leap_year(const datepart_t year)
 {
     return ((year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0)));
+}
+
+bool datetime::equal(const datetime& val) const
+{
+    return this->jd() == val.jd();
 }
 
 }

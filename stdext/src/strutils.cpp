@@ -17,8 +17,7 @@
 
 using namespace std;
 
-namespace stdext {
-namespace str {
+namespace stdext::str {
 
 inline int basic_vsnprintf_s(std::string& s, const char* fmt, va_list args)
 {
@@ -282,5 +281,4 @@ wstring to_wstring(const string& s)
 #endif
 }
 
-}
 }

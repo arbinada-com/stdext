@@ -1,15 +1,15 @@
 /*
  C++ standard library extensions
- (c) 2001-2020 Serguei Tarassov (see license.txt)
+ (c) 2001-2021 Serguei Tarassov (see license.txt)
  */
 #include "csvtools.h"
 
 using namespace std;
 
-namespace stdext
+namespace stdext::csv
 {
 
-std::wstring csv::to_wstring(const reader_msg_kind value)
+std::wstring to_wstring(const reader_msg_kind value)
 {
     switch(value)
     {
@@ -27,53 +27,53 @@ std::wstring csv::to_wstring(const reader_msg_kind value)
 /*
  * CSV parser and reader
  */
-csv::reader::reader(ioutils::text_reader* const rd)
+reader::reader(ioutils::text_reader* const rd)
     : m_reader(rd), m_owns_reader(false)
 {}
 
-csv::reader::reader(std::wistream& stream)
+reader::reader(std::wistream& stream)
     : m_reader(new ioutils::text_reader(stream)), m_owns_reader(true)
 {}
 
-csv::reader::reader(std::wistream& stream, const ioutils::text_io_policy& policy)
+reader::reader(std::wistream& stream, const ioutils::text_io_policy& policy)
     : m_reader(new ioutils::text_reader(stream, policy)), m_owns_reader(true)
 {}
 
-csv::reader::reader(const std::wstring file_name, const ioutils::text_io_policy& policy)
+reader::reader(const wstring& file_name, const ioutils::text_io_policy& policy)
     : m_reader(new ioutils::text_reader(file_name, policy)), m_owns_reader(true)
 {}
 
-csv::reader::reader(std::wifstream& stream, const ioutils::text_io_policy& policy)
+reader::reader(std::wifstream& stream, const ioutils::text_io_policy& policy)
     : m_reader(new ioutils::text_reader(stream, policy)), m_owns_reader(true)
 {}
 
-csv::reader::~reader()
+reader::~reader()
 {
     if (m_owns_reader && m_reader != nullptr)
         delete m_reader;
 }
 
-void csv::reader::add_error(const reader_msg_kind kind, const std::wstring text)
+void reader::add_error(const reader_msg_kind kind, const wstring& text)
 {
     add_error(kind, m_pos, text);
 }
 
-void csv::reader::add_error(const reader_msg_kind kind, parsers::textpos pos, const std::wstring text)
+void reader::add_error(const reader_msg_kind kind, parsers::textpos pos, const std::wstring& text)
 {
     m_messages.add_error(parsers::msg_origin::lexer, kind, pos, m_reader->source_name(), text);
 }
 
-bool csv::reader::next_char(wchar_t& wc)
+bool reader::next_char(wchar_t& wc)
 {
     if (m_reader->next_char(wc))
     {
-        m_pos++;
+        ++m_pos;
         return true;
     }
     return false;
 }
 
-bool csv::reader::next_row(csv::row& r)
+bool reader::next_row(row& r)
 {
     r.clear();
     if (m_reader->eof())
@@ -159,7 +159,7 @@ bool csv::reader::next_row(csv::row& r)
     return true;
 }
 
-bool csv::reader::read_header()
+bool reader::read_header()
 {
     bool result = next_row(m_header);
     if (result)

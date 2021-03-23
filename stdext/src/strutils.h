@@ -8,8 +8,7 @@
 
 #include <string>
 
-namespace stdext {
-namespace str {
+namespace stdext::str {
 
 std::string format(const char* fmt, ...);
 std::string format(const std::string fmt, ...);
@@ -51,5 +50,6 @@ std::wstring double_quoted(const std::wstring& s);
 
 std::string to_string(const std::wstring& ws);
 std::wstring to_wstring(const std::string& s);
+
 }
-}
+

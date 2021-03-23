@@ -1,10 +1,9 @@
 /*
  C++ standard library extensions
- (c) 2001-2019 Serguei Tarassov (see license.txt)
+ (c) 2001-2021 Serguei Tarassov (see license.txt)
 
  The datetime class helps to manipulate date and time values
  */
-
 #pragma once
 
 #include <time.h>
@@ -15,13 +14,14 @@ namespace stdext
 {
 
     typedef int datepart_t;
-    typedef enum class calendar
+    enum class calendar_t
     {
         julian,
         gregorian,
         date_default
-    } calendar_t;
-    typedef enum class datetime_unit
+    };
+
+    enum class dtunit_t
     {
         seconds,
         minutes,
@@ -29,7 +29,7 @@ namespace stdext
         days,
         months,
         years
-    } dtunit_t;
+    };
 
     class datetime_exception : public std::exception
     {
@@ -45,12 +45,11 @@ namespace stdext
                 unknown_calendar,
                 not_implemented
             };
-
         public:
-            datetime_exception(const datetime_exception::kind kind);
+            explicit datetime_exception(const datetime_exception::kind kind);
             datetime_exception(const datetime_exception::kind kind, const char* value);
             datetime_exception(const datetime_exception::kind kind, const int value);
-            const char* what() const throw() override;
+            const char* what() const noexcept override;
         private:
             static std::string msg_by_kind(const datetime_exception::kind kind);
             std::string msg_by_kind() { return msg_by_kind(m_kind); }
@@ -91,7 +90,7 @@ namespace stdext
                 : year(year), month(month), day(day), hour(0), min(0), sec(0), msec(0)
             { }
             data(const datepart_t year, const datepart_t month, const datepart_t day,
-                 const datepart_t hour, const datepart_t minute, const datepart_t second, 
+                 const datepart_t hour, const datepart_t minute, const datepart_t second,
                  const datepart_t millisecond)
                 : year(year), month(month), day(day), hour(hour), min(minute), sec(second), msec(millisecond)
             { }
@@ -106,16 +105,13 @@ namespace stdext
          * Default constructor initializes the object with the zero date (November 17, 1858 at 00:00:00)
          */
         datetime();
-
-        datetime(const struct tm &t);
-
+        explicit datetime(const struct tm &t);
         datetime(const datepart_t year, const datepart_t month, const datepart_t day,
                  const datepart_t hour, const datepart_t minute, const datepart_t second,
                  const datepart_t millisecond,
                  const calendar_t cal = calendar_t::date_default);
         datetime(const datepart_t year, const datepart_t month, const datepart_t day,
                  const calendar_t cal = calendar_t::date_default);
-
         /*
          Initializes the object with the values taken from the ISO-formatted string like:
             "YYYY-MM-DD hh:mm:ss"
@@ -133,12 +129,23 @@ namespace stdext
         explicit datetime(const std::wstring& str);
 
         /*
-         Copy/move constructors and assigment operators
+         * Copy/move constructors and assigment operators
          */
         datetime(const datetime& dt) = default;
         datetime& operator =(const datetime& dt) = default;
         datetime(datetime&& dt) noexcept = default;
         datetime& operator =(datetime&& dt) noexcept = default;
+
+        /*
+         * Operators
+         */
+        bool operator ==(const datetime& rhs) const { return this->equal(rhs); }
+        bool operator !=(const datetime& rhs) const { return !this->equal(rhs); }
+        bool equal(const datetime& val) const;
+        bool operator <(const datetime& rhs) const { return jd() < rhs.jd(); }
+        bool operator <=(const datetime& rhs) const { return jd() <= rhs.jd(); }
+        bool operator >(const datetime& rhs) const { return jd() > rhs.jd(); }
+        bool operator >=(const datetime& rhs) const { return jd() >= rhs.jd(); }
 
         /*
          * Returns the parts of date
@@ -169,12 +176,14 @@ namespace stdext
 
 
         /*
-         Returns the date and time in format "YYYY-MM-DD hh:mm:ss"
+         Returns the date and time in the specified format or
+         in the ISO format "YYYY-MM-DD hh:mm:ss.zzz" by default
          */
         std::string to_string();
+        std::string to_string(const std::string& format);
 
-        /* 
-         Increments the date/time value. 
+        /*
+         Increments the date/time value.
          The offset is specified in the date/time units
          */
         datetime& inc(const dtunit_t unit, const int offset) noexcept(false);
@@ -184,7 +193,7 @@ namespace stdext
          Warning: only days, months and years units are accepted
          otherwise throw exception
          */
-        long diff(const datetime_unit unit, const datetime& dt_then) const noexcept(false);
+        long diff(const dtunit_t unit, const datetime& dt_then) const noexcept(false);
 
         /*
          Returns true if the specified year is a leap year
@@ -210,7 +219,7 @@ namespace stdext
         static data_t jd_to_calendar(const calendar_t cal, const jd_t jd);
         static inline jd_t jd_to_mjd(const jd_t jd) { return jd - 2400000.5; }
         static data_t hh_to_hms(const double hh);
-        static double hms_to_hh(const data_t time);
+        static double hms_to_hh(const data_t& time);
 
         jd_t jd() const { return m_jd; }
         jd_t mjd() const { return jd_to_mjd(m_jd); }
@@ -237,7 +246,6 @@ namespace stdext
     private:
         jd_t       m_jd = 0.0;
         calendar_t m_cal = calendar_t::julian;
-
     };
 }
 

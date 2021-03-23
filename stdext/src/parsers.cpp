@@ -8,9 +8,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace parsers
+namespace stdext::parsers
 {
 
 std::wstring to_wstring(const msg_severity value)
@@ -165,5 +163,5 @@ bool is_number(const std::wstring& s)
 }
 
 }
-}
+
 
