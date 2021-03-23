@@ -5,9 +5,7 @@
 
 using namespace std;
 
-namespace stdext
-{
-namespace containers_test
+namespace stdext::containers_test
 {
 
 class test_data
@@ -16,17 +14,21 @@ public:
     test_data()
         : m_int_value(0), m_str_value(L"")
     { }
-    test_data(const int int_value, const wstring str_value)
+    test_data(const int int_value, const wstring& str_value)
         : m_int_value(int_value), m_str_value(str_value)
     { }
     test_data(const test_data&) = default;
     test_data& operator = (const test_data&) = default;
     test_data(test_data&&) = default;
     test_data& operator = (test_data&&) = default;
+    virtual ~test_data() {}
     bool operator == (const test_data& rhs) const
     {
         return m_int_value == rhs.m_int_value && m_str_value == rhs.m_str_value;
     }
+public:
+    virtual std::string get_type_name() const { return "test_data"; }
+public:
     std::wstring str_value() const { return m_str_value; }
     int int_value() const { return m_int_value; }
 private:
@@ -34,7 +36,18 @@ private:
     wstring m_str_value;
 };
 
+class test_data_ext :  public test_data
+{
+public:
+    test_data_ext(const int int_value, const std::wstring& str_value)
+        : test_data(int_value, str_value)
+    {}
+public:
+    virtual std::string get_type_name() const override { return "test_data_ext"; }
+};
+
 typedef ptr_vector<test_data> TestDataPtrVector;
+
 
 class PtrVectorTest : public testing::Test
 {
@@ -158,6 +171,42 @@ TEST_F(PtrVectorTest, TestBackFront)
     EXPECT_EQ(d2->str_value(), v1->back()->str_value());
 }
 
+TEST_F(PtrVectorTest, VersusVectorOfUniquePtrs)
+{
+    typedef ptr_vector<test_data> ptrvec_t;
+    typedef std::vector< std::unique_ptr<test_data> > vecuptr_t;
+    ptrvec_t  v1;
+    vecuptr_t v2;
+    // add only
+    v1.push_back(new test_data(1, L"test 1"));
+    v2.emplace_back(std::make_unique<test_data>(1, L"test 1"));
+    // add / get
+    auto* d1 = new test_data_ext(2, L"test 2");
+    v1.push_back(d1);
+    //
+    v2.emplace_back(std::make_unique<test_data_ext>(2, L"test 2"));
+    auto* d2 = static_cast<test_data_ext*>(v2.back().get());
+    // or
+    auto* d3 = static_cast<test_data_ext*>(v2.emplace_back(std::make_unique<test_data_ext>(2, L"test 2")).get());
+    // Get
+    EXPECT_EQ(d1->int_value(), d2->int_value());
+    EXPECT_EQ(d1->int_value(), d3->int_value());
+    EXPECT_EQ(v1.front()->int_value(), v2.front()->int_value());
+    EXPECT_EQ(v1[0]->get_type_name(), "test_data");
+    EXPECT_EQ(v2[0]->get_type_name(), "test_data");
+    EXPECT_EQ(v1[1]->get_type_name(), "test_data_ext");
+    EXPECT_EQ(v2[1]->get_type_name(), "test_data_ext");
+    // Loop
+    for (const test_data* item1 : v1)
+    {
+        EXPECT_TRUE(item1->int_value() > 0);
+    }
+    for (const auto& item2 : v2)
+    {
+        EXPECT_TRUE(item2->int_value() > 0);
+    }
+}
+
 TEST_F(PtrVectorTest, TestMemory)
 {
     {
@@ -191,5 +240,4 @@ TEST_F(PtrVectorTest, TestMemory)
     }
 }
 
-}
 }
