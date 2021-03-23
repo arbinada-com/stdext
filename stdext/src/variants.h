@@ -9,6 +9,7 @@
 #include <exception>
 #include <string>
 #include <cstdint>
+#include <optional>
 #include "datetime.h"
 
 namespace stdext::variants

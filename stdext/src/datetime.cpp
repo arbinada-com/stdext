@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <cwchar>
+#include <sstream>
 #include <iomanip>
 #include "datetime.h"
 #include "platforms.h"
@@ -323,8 +324,8 @@ std::string datetime::to_string(const std::string& format)
     tm.tm_min = minute();
     tm.tm_sec = second();
     std::stringstream buf;
-    buf << std::put_time(&tm, format.c_str());
-    return str::replace_all(buf.str(), "%f", std::to_string(millisecond()));
+    buf << std::put_time(&tm, str::replace_all(format, "%f", std::to_string(millisecond())).c_str());
+    return buf.str();
 }
 
 datepart_t datetime::year() const
