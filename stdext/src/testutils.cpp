@@ -55,11 +55,40 @@ int rnd_helper::random_range(int from, int to) // [from, to]
     return dist(m_engine);
 }
 
+int64_t rnd_helper::random_range64(int64_t from, int64_t to)
+{
+    std::uniform_int_distribution<int64_t> dist(from, to);
+    return dist(m_engine);
+}
+
+
 double rnd_helper::random_float() // [0, 1)
 {
     std::mt19937 gen(m_device());
     std::uniform_real_distribution<double> dist(0, 1);
     return dist(gen);
+}
+
+std::string rnd_helper::random_string(const int avg_length)
+{
+    int length = abs(avg_length);
+    int deviation = random_range(0, length);
+    return random_string(length - deviation, length + deviation);
+}
+
+std::string rnd_helper::random_string(const int min_length, const int max_length)
+{
+    locutils::uchar_range range;
+    range.min(32);
+    int length = random_range(min_length, max_length);
+    string s;
+    s.resize(length);
+    for (int i = 0; i < length; i++)
+    {
+        unsigned char c = static_cast<unsigned char>(random_range(range.min(), range.max()));
+        s[i] = c;
+    }
+    return s;
 }
 
 std::wstring rnd_helper::random_wstring(const int avg_length)

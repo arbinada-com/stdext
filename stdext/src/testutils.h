@@ -48,8 +48,11 @@ namespace stdext::testutils
         rnd_helper();
     public:
         int random_range(int from, int to); // [from, to]
+        int64_t random_range64(int64_t from, int64_t to); // [from, to]
         double random_float(); // [0, 1)
         bool random_bool() { return random_range(0, 1) == 0; }
+        std::string random_string(const int avg_length);
+        std::string random_string(const int min_length, const int max_length);
         std::wstring random_wstring(const int avg_length);
         std::wstring random_wstring(const int avg_length, const locutils::wchar_range& range);
         std::wstring random_wstring(const int min_length, const int max_length);
