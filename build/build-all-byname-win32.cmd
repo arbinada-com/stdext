@@ -7,7 +7,7 @@ if "%MAKEFILE_NAME%"=="" (
 
 set NMAKE_CMD=nmake
 for %%a in (%*) do (
-    if /i "%%a"=="rebuild" set NMAKE_CMD=%NMAKE_CMD% /A
+    if /i "%%a"=="--rebuild" set NMAKE_CMD=%NMAKE_CMD% /A
 )
 echo.NMAKE_CMD: %NMAKE_CMD%
 
